@@ -1,0 +1,4 @@
+= Vert.x AMQP Client
+
+Prototype of a new AMQP client for Eclipse Vert.x
+
