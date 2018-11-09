@@ -25,7 +25,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
 
     public AmqpClientOptions(JsonObject json) {
         super(json);
-        // TODO Converter
+        AmqpClientOptionsConverter.fromJson(json, this);
     }
 
     public AmqpClientOptions(AmqpClientOptions other) {
@@ -38,7 +38,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
 
     public JsonObject toJson() {
         JsonObject json = super.toJson();
-        // TODO Converter
+        AmqpClientOptionsConverter.toJson(this, json);
         return json;
     }
 

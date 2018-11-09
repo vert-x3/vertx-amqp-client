@@ -26,12 +26,13 @@ public class AmqpLinkOptions {
 
 
     public AmqpLinkOptions(JsonObject json) {
-        // TODO converter
+        super();
+        AmqpLinkOptionsConverter.fromJson(json, this);
     }
 
     public JsonObject toJson() {
         JsonObject json = new JsonObject();
-        // TODO converter
+        AmqpLinkOptionsConverter.toJson(this, json);
         return json;
     }
 
