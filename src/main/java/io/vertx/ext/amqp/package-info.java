@@ -17,7 +17,6 @@
 
 @ModuleGen(name = "vertx-amqp-client", groupPackage = "io.vertx")
 //@Document(fileName = "index.adoc")
-package io.vertx.ext.amqp;
+  package io.vertx.ext.amqp;
 
 import io.vertx.codegen.annotations.ModuleGen;
-import io.vertx.docgen.Document;
