@@ -1,9 +1,6 @@
 package io.vertx.ext.amqp;
 
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.json.JsonArray;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 
 /**
  * Converter for {@link io.vertx.ext.amqp.AmqpLinkOptions}.
@@ -16,22 +13,22 @@ public class AmqpLinkOptionsConverter {
       switch (member.getKey()) {
         case "autoDrained":
           if (member.getValue() instanceof Boolean) {
-            obj.setAutoDrained((Boolean)member.getValue());
+            obj.setAutoDrained((Boolean) member.getValue());
           }
           break;
         case "autoSettle":
           if (member.getValue() instanceof Boolean) {
-            obj.setAutoSettle((Boolean)member.getValue());
+            obj.setAutoSettle((Boolean) member.getValue());
           }
           break;
         case "dynamicAddress":
           if (member.getValue() instanceof Boolean) {
-            obj.setDynamicAddress((Boolean)member.getValue());
+            obj.setDynamicAddress((Boolean) member.getValue());
           }
           break;
         case "name":
           if (member.getValue() instanceof String) {
-            obj.setName((String)member.getValue());
+            obj.setName((String) member.getValue());
           }
           break;
       }

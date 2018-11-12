@@ -6,69 +6,69 @@ import io.vertx.core.json.JsonObject;
 @DataObject(generateConverter = true, inheritConverter = true, publicConverter = true)
 public class AmqpLinkOptions {
 
-    private String name;
-    private boolean dynamicAddress;
+  private String name;
+  private boolean dynamicAddress;
 
-    // TODO Not sure they belong here.
-    private boolean autoSettle;
-    private boolean autoDrained;
+  // TODO Not sure they belong here.
+  private boolean autoSettle;
+  private boolean autoDrained;
 
-    public AmqpLinkOptions() {
-        super();
-    }
+  public AmqpLinkOptions() {
+    super();
+  }
 
-    public AmqpLinkOptions(AmqpLinkOptions other) {
-        this.name = other.name;
-        this.dynamicAddress = other.dynamicAddress;
-        this.autoSettle = other.autoSettle;
-        this.autoDrained = other.autoDrained;
-    }
+  public AmqpLinkOptions(AmqpLinkOptions other) {
+    this.name = other.name;
+    this.dynamicAddress = other.dynamicAddress;
+    this.autoSettle = other.autoSettle;
+    this.autoDrained = other.autoDrained;
+  }
 
 
-    public AmqpLinkOptions(JsonObject json) {
-        super();
-        AmqpLinkOptionsConverter.fromJson(json, this);
-    }
+  public AmqpLinkOptions(JsonObject json) {
+    super();
+    AmqpLinkOptionsConverter.fromJson(json, this);
+  }
 
-    public JsonObject toJson() {
-        JsonObject json = new JsonObject();
-        AmqpLinkOptionsConverter.toJson(this, json);
-        return json;
-    }
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject();
+    AmqpLinkOptionsConverter.toJson(this, json);
+    return json;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public AmqpLinkOptions setName(String name) {
-        this.name = name;
-        return this;
-    }
+  public AmqpLinkOptions setName(String name) {
+    this.name = name;
+    return this;
+  }
 
-    public boolean isDynamicAddress() {
-        return dynamicAddress;
-    }
+  public boolean isDynamicAddress() {
+    return dynamicAddress;
+  }
 
-    public AmqpLinkOptions setDynamicAddress(boolean dynamicAddress) {
-        this.dynamicAddress = dynamicAddress;
-        return this;
-    }
+  public AmqpLinkOptions setDynamicAddress(boolean dynamicAddress) {
+    this.dynamicAddress = dynamicAddress;
+    return this;
+  }
 
-    public boolean isAutoSettle() {
-        return autoSettle;
-    }
+  public boolean isAutoSettle() {
+    return autoSettle;
+  }
 
-    public AmqpLinkOptions setAutoSettle(boolean autoSettle) {
-        this.autoSettle = autoSettle;
-        return this;
-    }
+  public AmqpLinkOptions setAutoSettle(boolean autoSettle) {
+    this.autoSettle = autoSettle;
+    return this;
+  }
 
-    public boolean isAutoDrained() {
-        return autoDrained;
-    }
+  public boolean isAutoDrained() {
+    return autoDrained;
+  }
 
-    public AmqpLinkOptions setAutoDrained(boolean autoDrained) {
-        this.autoDrained = autoDrained;
-        return this;
-    }
+  public AmqpLinkOptions setAutoDrained(boolean autoDrained) {
+    this.autoDrained = autoDrained;
+    return this;
+  }
 }

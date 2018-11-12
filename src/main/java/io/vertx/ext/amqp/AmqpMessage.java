@@ -8,110 +8,106 @@ import io.vertx.core.json.JsonObject;
 @VertxGen
 public interface AmqpMessage {
 
-    boolean isDurable();
+  boolean isDurable();
 
-    @Fluent
-    AmqpMessage setDurable(boolean durable);
+  @Fluent
+  AmqpMessage setDurable(boolean durable);
 
-    boolean isFirstAcquirer();
+  boolean isFirstAcquirer();
 
-    @Fluent
-    AmqpMessage setFirstAcquirer(boolean fa);
+  @Fluent
+  AmqpMessage setFirstAcquirer(boolean fa);
 
-    int priority();
+  int priority();
 
-    @Fluent
-    AmqpMessage setPriority(int p);
+  @Fluent
+  AmqpMessage setPriority(int p);
 
-    String id();
+  String id();
 
-    @Fluent
-    AmqpMessage setId(String id);
+  @Fluent
+  AmqpMessage setId(String id);
 
-    String address();
+  String address();
 
-    @Fluent
-    AmqpMessage setAddress(String address);
+  @Fluent
+  AmqpMessage setAddress(String address);
 
-    String replyTo();
+  String replyTo();
 
-    @Fluent
-    AmqpMessage setReplyTo(String rep);
+  @Fluent
+  AmqpMessage setReplyTo(String rep);
 
-    String correlationId();
+  String correlationId();
 
-    @Fluent
-    AmqpMessage setCorrelationId(String correlationId);
+  @Fluent
+  AmqpMessage setCorrelationId(String correlationId);
 
-    Buffer body();
+  Buffer body();
 
-    <T> T bodyAs(Class<T> target);
+  <T> T bodyAs(Class<T> target);
 
-    @Fluent
-    AmqpMessage setBody(Buffer buffer);
+  @Fluent
+  AmqpMessage setBody(Buffer buffer);
 
-    String subject();
+  String subject();
 
-    @Fluent
-    AmqpMessage setSubject(String subject);
+  @Fluent
+  AmqpMessage setSubject(String subject);
 
-    String contentType();
+  String contentType();
 
-    @Fluent
-    AmqpMessage setContentType(String ct);
+  @Fluent
+  AmqpMessage setContentType(String ct);
 
-    String contentEncoding();
+  String contentEncoding();
 
-    @Fluent
-    AmqpMessage setContentEncoding(String ce);
+  @Fluent
+  AmqpMessage setContentEncoding(String ce);
 
-    long expiryTime();
+  long expiryTime();
 
-    @Fluent
-    AmqpMessage setExpiryTime(long ttl);
+  @Fluent
+  AmqpMessage setExpiryTime(long ttl);
 
-    long creationTime();
+  long creationTime();
 
-    @Fluent
-    AmqpMessage setCreationTime(long now);
+  @Fluent
+  AmqpMessage setCreationTime(long now);
 
-    long ttl();
+  long ttl();
 
-    @Fluent
-    AmqpMessage setTtl(long ttl);
+  @Fluent
+  AmqpMessage setTtl(long ttl);
 
-    int deliveryCount();
+  int deliveryCount();
 
-    @Fluent
-    AmqpMessage setDeliveryCount(int count);
+  @Fluent
+  AmqpMessage setDeliveryCount(int count);
 
-    String groupId();
+  String groupId();
 
-    @Fluent
-    AmqpMessage setGroupId(String groupId);
+  @Fluent
+  AmqpMessage setGroupId(String groupId);
 
-    String replyToGroupId();
+  String replyToGroupId();
 
-    @Fluent
-    AmqpMessage setReplyToGroupId(String groupId);
+  @Fluent
+  AmqpMessage setReplyToGroupId(String groupId);
 
-    int groupSequence();
+  int groupSequence();
 
-    @Fluent
-    AmqpMessage setGroupSequence(int seq);
+  @Fluent
+  AmqpMessage setGroupSequence(int seq);
 
-    JsonObject applicationProperties();
+  JsonObject applicationProperties();
 
-    @Fluent
-    AmqpMessage setApplicationProperties(JsonObject json);
+  @Fluent
+  AmqpMessage setApplicationProperties(JsonObject json);
 
-    //TODO What type should we use for delivery annotations and message annotations
+  //TODO What type should we use for delivery annotations and message annotations
 
-    // TODO Add header/ footer
-
-
-
-
+  // TODO Add header/ footer
 
 
 }
