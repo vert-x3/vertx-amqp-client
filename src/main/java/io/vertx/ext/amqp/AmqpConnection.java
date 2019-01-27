@@ -26,23 +26,25 @@ public interface AmqpConnection {
   /**
    * Creates a receiver used to consumer messages from the given node address.
    *
-   * @param address           The source address to attach the consumer to.
-   * @param completionHandler the handler called with the receiver, once opened
+   * @param address           The source address to attach the consumer to, must not be {@code null}
+   * @param messageHandler    The message handler, must not be {@code null}
+   * @param completionHandler the handler called with the receiver has been opened
    * @return the connection.
    */
   @Fluent
-  AmqpConnection receiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
+  AmqpConnection receiver(String address, Handler<AmqpMessage> messageHandler, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
    * Creates a receiver used to consumer messages from the given node address.
    *
    * @param address           The source address to attach the consumer to.
    * @param receiverOptions   The options for this receiver.
+   * @param messageHandler    The message handler, must not be {@code null}
    * @param completionHandler The handler called with the receiver, once opened
    * @return the connection.
    */
   @Fluent
-  AmqpConnection receiver(String address, AmqpLinkOptions receiverOptions, Handler<AsyncResult<AmqpReceiver>> completionHandler);
+  AmqpConnection receiver(String address, AmqpLinkOptions receiverOptions, Handler<AmqpMessage> messageHandler, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
    * Creates a sender used to send messages to the given node address. If no address (i.e null) is specified then a
@@ -65,15 +67,7 @@ public interface AmqpConnection {
    * @return the connection.
    */
   @Fluent
-  AmqpConnection createSender(String address, AmqpLinkOptions senderOptions, Handler<AsyncResult<AmqpSender>> completionHandler);
-
-  /**
-   * Disconnects the underlying transport connection. This can occur asynchronously
-   * and may not complete until some time after the method has returned.
-   *
-   * @see #disconnectHandler(Handler)
-   */
-  void disconnect();
+  AmqpConnection sender(String address, AmqpLinkOptions senderOptions, Handler<AsyncResult<AmqpSender>> completionHandler);
 
   /**
    * Sets a handler for when an AMQP Close frame is received from the remote peer.
@@ -82,14 +76,6 @@ public interface AmqpConnection {
    * @return the connection
    */
   @Fluent
-  AmqpConnection closeHandler(Handler<AsyncResult<AmqpConnection>> remoteCloseHandler);
+  AmqpConnection closeHandler(Handler<AmqpConnection> remoteCloseHandler);
 
-  /**
-   * Sets a handler for when the underlying transport connection indicates it has disconnected.
-   *
-   * @param disconnectHandler the handler
-   * @return the connection
-   */
-  @Fluent
-  AmqpConnection disconnectHandler(Handler<AmqpConnection> disconnectHandler);
 }

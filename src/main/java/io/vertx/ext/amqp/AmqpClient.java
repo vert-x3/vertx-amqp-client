@@ -5,57 +5,38 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.ext.amqp.impl.AmqpClientImpl;
+
+import java.util.Objects;
 
 @VertxGen
 public interface AmqpClient {
 
+  static AmqpClient create() {
+    return new AmqpClientImpl(Vertx.vertx(), new AmqpClientOptions());
+  }
+
+  static AmqpClient create(AmqpClientOptions options) {
+    return new AmqpClientImpl(Vertx.vertx(), options);
+  }
+
   /**
-   * Connect to the given host and port, without credentials.
+   * Connect to the AMQP borker or router, without credentials.
    *
-   * @param host              the host to connect to
-   * @param port              the port to connect to
    * @param connectionHandler handler that will process the result, giving either the connection or failure cause.
    */
   @Fluent
-  AmqpClient connect(String host, int port, Handler<AsyncResult<AmqpConnection>> connectionHandler);
+  AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler);
 
   /**
-   * Connect to the given host and port, with credentials (if required by server peer).
+   * Creates a default instance of {@link AmqpClient}
    *
-   * @param host              the host to connect to
-   * @param port              the port to connect to
-   * @param username          the user name to use in any SASL negotiation that requires it
-   * @param password          the password to use in any SASL negotiation that requires it
-   * @param connectionHandler handler that will process the result, giving either the connection or failure cause.
+   * @param vertx   the vert.x instance, must not be {@code null}
+   * @param options the AMQP options
+   * @return the AMQP client instance
    */
-  @Fluent
-  AmqpClient connect(String host, int port, String username, String password,
-                     Handler<AsyncResult<AmqpConnection>> connectionHandler);
-
-  /**
-   * Connect to the given host and port, without credentials.
-   *
-   * @param host              the host to connect to
-   * @param port              the port to connect to
-   * @param options           the options to apply
-   * @param connectionHandler handler that will process the result, giving either the connection or failure cause.
-   */
-  @Fluent
-  AmqpClient connect(String host, int port, AmqpClientOptions options,
-                     Handler<AsyncResult<AmqpConnection>> connectionHandler);
-
-  /**
-   * Connect to the given host and port, with credentials (if required by server peer).
-   *
-   * @param options           the options to apply
-   * @param host              the host to connect to
-   * @param port              the port to connect to
-   * @param username          the user name to use in any SASL negotiation that requires it
-   * @param password          the password to use in any SASL negotiation that requires it
-   * @param connectionHandler handler that will process the result, giving either the connection or failure cause.
-   */
-  @Fluent
-  AmqpClient connect(String host, int port, String username, String password, AmqpClientOptions options,
-                     Handler<AsyncResult<AmqpConnection>> connectionHandler);
-
+  static AmqpClient create(Vertx vertx, AmqpClientOptions options) {
+    return new AmqpClientImpl(Objects.requireNonNull(vertx), options);
+  }
 }

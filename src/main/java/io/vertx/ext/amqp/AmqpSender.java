@@ -1,14 +1,13 @@
 package io.vertx.ext.amqp;
 
 import io.vertx.codegen.annotations.Fluent;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.streams.WriteStream;
 
+// TODO Implement write stream.
 @VertxGen
-public interface AmqpSender extends WriteStream<AmqpMessage> {
+public interface AmqpSender {
 
   @Fluent
   AmqpSender send(AmqpMessage message);
@@ -21,26 +20,4 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
 
   @Fluent
   AmqpSender sendWithAck(String address, AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler);
-
-  @Override
-  @Fluent
-  AmqpSender exceptionHandler(Handler<Throwable> handler);
-
-  @Override
-  @Fluent
-  AmqpSender write(AmqpMessage message);
-
-  @Override
-  void end();
-
-  @Override
-  @Fluent
-  AmqpSender setWriteQueueMaxSize(int i);
-
-  @Override
-  boolean writeQueueFull();
-
-  @Override
-  @Fluent
-  AmqpSender drainHandler(@Nullable Handler<Void> handler);
 }
