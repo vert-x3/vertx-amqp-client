@@ -14,11 +14,12 @@ public class AmqpClientOptions extends ProtonClientOptions {
   // TODO Capabilities and properties
   // TODO default sender and receiver options
 
-  private String host;
-  private int port;
-  private String username;
-  private String pwd;
+  private String host = getHostFromSysOrEnv();
 
+  private int port = getPortFromSysOrEnv();
+
+  private String username;
+  private String password;
   public AmqpClientOptions() {
     super();
   }
@@ -31,7 +32,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
   public AmqpClientOptions(AmqpClientOptions other) {
     super(other);
     this.host = other.host;
-    this.pwd = other.pwd;
+    this.password = other.password;
     this.username = other.username;
     this.port = other.port;
   }
@@ -71,11 +72,11 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   public String getPassword() {
-    return pwd;
+    return password;
   }
 
   public AmqpClientOptions getPassword(String pwd) {
-    this.pwd = pwd;
+    this.password = pwd;
     return this;
   }
 
@@ -188,13 +189,13 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   @Override
-  public AmqpClientOptions addCrlPath(String crlPath) throws NullPointerException {
+  public AmqpClientOptions addCrlPath(String crlPath) {
     super.addCrlPath(crlPath);
     return this;
   }
 
   @Override
-  public AmqpClientOptions addCrlValue(Buffer crlValue) throws NullPointerException {
+  public AmqpClientOptions addCrlValue(Buffer crlValue) {
     super.addCrlValue(crlValue);
     return this;
   }
@@ -317,5 +318,31 @@ public class AmqpClientOptions extends ProtonClientOptions {
   public AmqpClientOptions setMaxFrameSize(int maxFrameSize) {
     super.setMaxFrameSize(maxFrameSize);
     return this;
+  }
+
+  public AmqpClientOptions setPassword(String password) {
+      this.password = password;
+      return this;
+  }
+
+  private String getHostFromSysOrEnv() {
+    String sys = System.getProperty("amqp-client-host");
+    if (sys == null) {
+      return System.getenv("AMQP_CLIENT_HOST");
+    }
+    return sys;
+  }
+
+  private int getPortFromSysOrEnv() {
+    String sys = System.getProperty("amqp-client-port");
+    if (sys == null) {
+      String env = System.getenv("AMQP_CLIENT_PORT");
+      if (env == null) {
+        return 5672;
+      } else {
+        return Integer.parseInt(env);
+      }
+    }
+    return Integer.parseInt(sys);
   }
 }
