@@ -6,7 +6,6 @@ import io.vertx.core.Handler;
 import io.vertx.ext.amqp.AmqpMessage;
 import io.vertx.ext.amqp.AmqpSender;
 import io.vertx.proton.ProtonSender;
-import org.apache.qpid.proton.amqp.transport.DeliveryState;
 
 public class AmqpSenderImpl implements AmqpSender {
   private final ProtonSender sender;
@@ -30,10 +29,21 @@ public class AmqpSenderImpl implements AmqpSender {
   @Override
   public AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler) {
     sender.send(message.unwrap(), delivery -> {
-      if (delivery.getRemoteState().getType() == DeliveryState.DeliveryStateType.Rejected) {
-        acknowledgementHandler.handle(Future.failedFuture("rejected"));
-      } else if (delivery.getRemoteState().getType() == DeliveryState.DeliveryStateType.Accepted) {
-        acknowledgementHandler.handle(Future.succeededFuture());
+      switch (delivery.getRemoteState().getType()) {
+        case Rejected:
+          acknowledgementHandler.handle(Future.failedFuture("message rejected (REJECTED"));
+          break;
+        case Modified:
+          acknowledgementHandler.handle(Future.failedFuture("message rejected (MODIFIED)"));
+          break;
+        case Released:
+          acknowledgementHandler.handle(Future.failedFuture("message rejected (RELEASED)"));
+          break;
+        case Accepted:
+          acknowledgementHandler.handle(Future.succeededFuture());
+          break;
+        default:
+          throw new UnsupportedOperationException("Unsupported delivery type: " + delivery.getRemoteState().getType());
       }
     });
     return this;
