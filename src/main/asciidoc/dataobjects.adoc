@@ -9,6 +9,7 @@
 |===
 ^|Name | Type ^| Description
 |[[connectTimeout]]`@connectTimeout`|`Number (int)`|-
+|[[containerId]]`@containerId`|`String`|-
 |[[crlPaths]]`@crlPaths`|`Array of String`|-
 |[[crlValues]]`@crlValues`|`Array of Buffer`|-
 |[[enabledCipherSuites]]`@enabledCipherSuites`|`Array of String`|-
@@ -58,6 +59,20 @@
 
 [[AmqpLinkOptions]]
 == AmqpLinkOptions
+
+
+[cols=">25%,25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[autoDrained]]`@autoDrained`|`Boolean`|-
+|[[autoSettle]]`@autoSettle`|`Boolean`|-
+|[[dynamicAddress]]`@dynamicAddress`|`Boolean`|-
+|[[name]]`@name`|`String`|-
+|===
+
+[[AmqpReceiverOptions]]
+== AmqpReceiverOptions
 
 
 [cols=">25%,25%,50%"]

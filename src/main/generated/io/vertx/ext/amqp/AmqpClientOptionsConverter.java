@@ -19,6 +19,11 @@ public class AmqpClientOptionsConverter {
             obj.setConnectTimeout(((Number)member.getValue()).intValue());
           }
           break;
+        case "containerId":
+          if (member.getValue() instanceof String) {
+            obj.setContainerId((String)member.getValue());
+          }
+          break;
         case "crlPaths":
           if (member.getValue() instanceof JsonArray) {
             ((Iterable<Object>)member.getValue()).forEach( item -> {
@@ -271,6 +276,9 @@ public class AmqpClientOptionsConverter {
 
   public static void toJson(AmqpClientOptions obj, java.util.Map<String, Object> json) {
     json.put("connectTimeout", obj.getConnectTimeout());
+    if (obj.getContainerId() != null) {
+      json.put("containerId", obj.getContainerId());
+    }
     if (obj.getCrlPaths() != null) {
       JsonArray array = new JsonArray();
       obj.getCrlPaths().forEach(item -> array.add(item));
