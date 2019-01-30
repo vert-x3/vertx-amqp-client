@@ -35,6 +35,9 @@ public class AmqpClientImpl implements AmqpClient {
         if (connection.succeeded()) {
           connection.result().openHandler(conn -> {
             if (conn.succeeded()) {
+              if (options.getContainerId() != null) {
+                connection.result().setContainer(options.getContainerId());
+              }
               AmqpConnection amqp = new AmqpConnectionImpl(options, context, conn.result());
               context.runOnContext(x -> connectionHandler.handle(Future.succeededFuture(amqp)));
             } else {

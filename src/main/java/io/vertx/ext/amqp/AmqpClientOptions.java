@@ -7,6 +7,7 @@ import io.vertx.core.net.*;
 import io.vertx.proton.ProtonClientOptions;
 
 import java.util.Set;
+import java.util.UUID;
 
 @DataObject(generateConverter = true, publicConverter = true, inheritConverter = true)
 public class AmqpClientOptions extends ProtonClientOptions {
@@ -20,6 +21,9 @@ public class AmqpClientOptions extends ProtonClientOptions {
 
   private String username;
   private String password;
+
+  private String containerId = UUID.randomUUID().toString();
+
   public AmqpClientOptions() {
     super();
   }
@@ -35,6 +39,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
     this.password = other.password;
     this.username = other.username;
     this.port = other.port;
+    this.containerId = other.containerId;
   }
 
   public JsonObject toJson() {
@@ -77,6 +82,15 @@ public class AmqpClientOptions extends ProtonClientOptions {
 
   public AmqpClientOptions getPassword(String pwd) {
     this.password = pwd;
+    return this;
+  }
+
+  public String getContainerId() {
+    return containerId;
+  }
+
+  public AmqpClientOptions setContainerId(String containerId) {
+    this.containerId = containerId;
     return this;
   }
 
