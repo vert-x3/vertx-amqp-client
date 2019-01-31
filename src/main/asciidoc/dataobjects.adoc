@@ -79,9 +79,14 @@
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
-|[[autoDrained]]`@autoDrained`|`Boolean`|-
-|[[autoSettle]]`@autoSettle`|`Boolean`|-
-|[[dynamicAddress]]`@dynamicAddress`|`Boolean`|-
-|[[name]]`@name`|`String`|-
+|[[dynamic]]`@dynamic`|`Boolean`|+++
+Sets whether the link remote terminus to be used should indicate it is
+ 'dynamic', requesting the peer names it with a dynamic address.
+ The address provided by the peer can then be inspected using
+  (or inspecting the remote
+ terminus details directly) after the link has remotely opened.
++++
+|[[linkName]]`@linkName`|`String`|-
+|[[qos]]`@qos`|`String`|-
 |===
 

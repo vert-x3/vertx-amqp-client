@@ -44,7 +44,8 @@ public interface AmqpConnection {
    * @return the connection.
    */
   @Fluent
-  AmqpConnection receiver(String address, AmqpLinkOptions receiverOptions, Handler<AmqpMessage> messageHandler, Handler<AsyncResult<AmqpReceiver>> completionHandler);
+  AmqpConnection receiver(String address, AmqpReceiverOptions receiverOptions, Handler<AmqpMessage> messageHandler,
+                          Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
    * Creates a sender used to send messages to the given node address. If no address (i.e null) is specified then a
