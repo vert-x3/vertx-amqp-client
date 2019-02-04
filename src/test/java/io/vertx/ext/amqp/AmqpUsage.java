@@ -1,5 +1,6 @@
 package io.vertx.ext.amqp;
 
+import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
@@ -24,6 +25,8 @@ import static org.awaitility.Awaitility.await;
 public class AmqpUsage {
 
   private static Logger LOGGER = LogManager.getLogger(AmqpUsage.class);
+  private final Vertx vertx;
+  private final Context context;
   private ProtonClient client;
   private ProtonConnection connection;
 
@@ -34,7 +37,9 @@ public class AmqpUsage {
 
   public AmqpUsage(Vertx vertx, String host, int port, String user, String pwd) {
     CountDownLatch latch = new CountDownLatch(1);
-    vertx.runOnContext(x -> {
+    this.vertx = vertx;
+    this.context = vertx.getOrCreateContext();
+    context.runOnContext(x -> {
       client = ProtonClient.create(vertx);
       client.connect(host, port, user, pwd, conn -> {
         if (conn.succeeded()) {
@@ -64,14 +69,19 @@ public class AmqpUsage {
    */
   public void produce(String topic, int messageCount, Runnable completionCallback, Supplier<Object> messageSupplier) {
     CountDownLatch ready = new CountDownLatch(1);
-    ProtonSender sender = connection.createSender(topic)
-      .openHandler(s -> ready.countDown())
-      .open();
+    ProtonSender sender = connection.createSender(topic);
+    context.runOnContext(x -> {
+      sender
+        .openHandler(s -> ready.countDown())
+        .open();
+    });
+
     try {
       ready.await();
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
+
     Thread t = new Thread(() -> {
       LOGGER.info("Starting AMQP sender to write {} messages", messageCount);
       try {
@@ -86,8 +96,11 @@ public class AmqpUsage {
           message.setDurable(true);
           message.setTtl(10000);
           CountDownLatch latch = new CountDownLatch(1);
-          sender.send(message, x ->
-            latch.countDown()
+          System.out.println("SENDING " + payload);
+          context.runOnContext((y) ->
+            sender.send(message, x ->
+              latch.countDown()
+            )
           );
           latch.await();
           LOGGER.info("Producer sent message {}", payload);
@@ -98,7 +111,7 @@ public class AmqpUsage {
         if (completionCallback != null) {
           completionCallback.run();
         }
-        sender.close();
+        context.runOnContext(x -> sender.close());
       }
     });
     t.setName(topic + "-thread");
@@ -128,7 +141,7 @@ public class AmqpUsage {
       try {
         receiver.handler((delivery, message) -> {
           LOGGER.info("Consumer {}: consuming message {}", topic, message.getBody());
-           consumerFunction.accept(AmqpMessage.create(message).build());
+          consumerFunction.accept(AmqpMessage.create(message).build());
           if (!continuation.getAsBoolean()) {
             receiver.close();
           }
@@ -148,7 +161,7 @@ public class AmqpUsage {
   }
 
   public void consumeStrings(String topic, BooleanSupplier continuation, Runnable completion, Consumer<String> consumerFunction) {
-    this.consume(topic, continuation, completion, value -> consumerFunction.accept(value.body().toString("UTF-8")));
+    this.consume(topic, continuation, completion, value -> consumerFunction.accept(value.getBodyAsString()));
   }
 
   public void consumeStrings(String topicName, int count, long timeout, TimeUnit unit, Runnable completion, Consumer<String> consumer) {

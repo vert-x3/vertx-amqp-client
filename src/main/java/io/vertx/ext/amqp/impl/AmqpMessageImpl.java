@@ -1,15 +1,21 @@
 package io.vertx.ext.amqp.impl;
 
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.amqp.AmqpMessage;
+import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Data;
+import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 public class AmqpMessageImpl implements AmqpMessage {
   private final Message message;
@@ -62,35 +68,124 @@ public class AmqpMessageImpl implements AmqpMessage {
   }
 
   @Override
-  public Buffer body() {
-    switch (message.getBody().getType()) {
-      case Data:
-        Data data = (Data) message.getBody();
-        return Buffer.buffer(data.getValue().getArray());
-      case AmqpValue:
-        AmqpValue value = (AmqpValue) message.getBody();
-        return asBuffer(value.getValue());
-      case AmqpSequence:
-        List list = ((AmqpSequence) message.getBody()).getValue();
-        return Json.encodeToBuffer(list);
-      default:
-        throw new UnsupportedOperationException("Not yet accepted type: " + message.getBody().getType());
-    }
+  public boolean isBodyNull() {
+    // TODO To be checked
+    return getAmqpValue() == null;
   }
 
-  private Buffer asBuffer(Object value) {
-    if (value == null) {
-      return null;
+  private Object getAmqpValue() {
+    if (message.getBody().getType() != Section.SectionType.AmqpValue) {
+      throw new IllegalStateException("The body is not an AMQP Value");
     }
-    if (value instanceof String) {
-      return Buffer.buffer((String) value);
-    }
-    return Json.encodeToBuffer(value);
+    return ((AmqpValue) message.getBody()).getValue();
   }
 
   @Override
-  public <T> T bodyAs(Class<T> target) {
-    throw new UnsupportedOperationException("NOT YET SUPPORTED");
+  public boolean getBodyAsBoolean() {
+    return (boolean) getAmqpValue();
+  }
+
+  @Override
+  public byte getBodyAsByte() {
+    return (byte) getAmqpValue();
+  }
+
+  @Override
+  public short getBodyAsShort() {
+    return (short) getAmqpValue();
+  }
+
+  @Override
+  public int getBodyAsInteger() {
+    return (int) getAmqpValue();
+  }
+
+  @Override
+  public long getBodyAsLong() {
+    return (long) getAmqpValue();
+  }
+
+  @Override
+  public float getBodyAsFloat() {
+    return (float) getAmqpValue();
+  }
+
+  @Override
+  public double getBodyAsDouble() {
+    return (double) getAmqpValue();
+  }
+
+  @Override
+  public BigDecimal getBodyAsBigDecimal() {
+    Object value = getAmqpValue();
+    if (value instanceof Number) {
+      Number number = ((Number) value);
+      return BigDecimal.valueOf(number.longValue());
+    }
+    throw new IllegalStateException("The value " + value + " must be a Number, Decimal32, Decimal64 or a Decimal128");
+  }
+
+  @Override
+  public char getBodyAsChar() {
+    return (char) getAmqpValue();
+  }
+
+  @Override
+  public Instant getBodyAsTimestamp() {
+    Object value = getAmqpValue();
+    if (!(value instanceof Date)) {
+      throw new IllegalStateException("Expecting a Date object, got a " + value);
+    }
+    return ((Date) value).toInstant();
+  }
+
+  @Override
+  public UUID getBodyAsUUID() {
+    return (UUID) getAmqpValue();
+  }
+
+  @Override
+  public Buffer getBodyAsBinary() {
+    Section body = message.getBody();
+    if (body.getType() != Section.SectionType.Data) {
+      throw new IllegalStateException("The body is not of type 'data'");
+    }
+    byte[] bytes = ((Data) message.getBody()).getValue().getArray();
+    return Buffer.buffer(bytes);
+  }
+
+  @Override
+  public String getBodyAsString() {
+    return (String) getAmqpValue();
+  }
+
+  @Override
+  public String getBodyAsSymbol() {
+    // TODO To be checked
+    Object value = getAmqpValue();
+    if (value instanceof Symbol) {
+      return ((Symbol) value).toString();
+    }
+    throw new IllegalStateException("Expected a Symbol, got a " + value.getClass());
+  }
+
+  @Override
+  public <T> List<T> getBodyAsList() {
+    Section body = message.getBody();
+    if (body.getType() != Section.SectionType.AmqpSequence) {
+      throw new IllegalStateException("The body is not of type 'sequence'");
+    }
+    return (List<T>) ((AmqpSequence) message.getBody()).getValue();
+  }
+
+  @Override
+  public JsonObject getBodyAsJsonObject() {
+    return getBodyAsBinary().toJsonObject();
+  }
+
+  @Override
+  public JsonArray getBodyAsJsonArray() {
+    return getBodyAsBinary().toJsonArray();
   }
 
   @Override

@@ -45,40 +45,6 @@ public class SenderTest extends ArtemisTestBase {
   }
 
   @Test
-  public void testThatMessagedContainingJsonObjectsAreSent() {
-    String queue = UUID.randomUUID().toString();
-    List<String> list = new CopyOnWriteArrayList<>();
-    usage.consumeStrings(queue, 1, 1, TimeUnit.MINUTES, null, list::add);
-    AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password)
-    ).connect(connection -> {
-        System.out.println("Connected: " + connection.result());
-        connection.result().sender(queue, done -> {
-          if (done.failed()) {
-            done.cause().printStackTrace();
-          } else {
-            JsonObject json1 = new JsonObject().put("message", "hello").put("count", 1);
-            JsonObject json2 = new JsonObject().put("message", "world").put("count", 2);
-            done.result().send(AmqpMessage.create().body(json1).address(queue).build());
-            done.result().send(AmqpMessage.create().body(json2).address(queue).build());
-          }
-        });
-      }
-    );
-
-    await().until(() -> list.size() == 2);
-    JsonObject res1 = new JsonObject(list.get(0));
-    JsonObject res2 = new JsonObject(list.get(1));
-    assertThat(res1.getString("message")).isEqualTo("hello");
-    assertThat(res1.getInteger("count")).isEqualTo(1);
-    assertThat(res2.getString("message")).isEqualTo("world");
-    assertThat(res2.getInteger("count")).isEqualTo(2);
-  }
-
-  @Test
   public void testThatMessagedAreAcknowledged() {
     String queue = UUID.randomUUID().toString();
     List<String> list = new CopyOnWriteArrayList<>();
@@ -90,7 +56,6 @@ public class SenderTest extends ArtemisTestBase {
       .setUsername(username)
       .setPassword(password)
     ).connect(connection -> {
-        System.out.println("Connected: " + connection.result());
         connection.result().sender(queue, done -> {
           if (done.failed()) {
             done.cause().printStackTrace();
