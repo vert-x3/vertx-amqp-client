@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,10 +24,13 @@ public class ReceiverTest extends ArtemisTestBase {
       .setUsername(username)
       .setPassword(password)
     ).connect(connection -> {
-        connection.result().receiver(queue, message -> list.add(message.body().toString("UTF-8")),
+        connection.result().receiver(queue, message -> list.add(message.getBodyAsString()),
           done ->
-            usage.produceStrings(queue, 10, null,
-              () -> Integer.toString(count.getAndIncrement())));
+            CompletableFuture.runAsync(() -> {
+              usage.produceStrings(queue, 10, null,
+                () -> Integer.toString(count.getAndIncrement()));
+            })
+        );
       }
     );
 

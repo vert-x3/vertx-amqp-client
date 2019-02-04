@@ -1,15 +1,26 @@
 package io.vertx.ext.amqp;
 
 import io.vertx.codegen.annotations.GenIgnore;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.amqp.impl.AmqpMessageImpl;
+import org.apache.qpid.proton.amqp.Binary;
+import org.apache.qpid.proton.amqp.Decimal128;
+import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
+import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.message.Message;
 
-@GenIgnore
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@GenIgnore(GenIgnore.PERMITTED_TYPE)
 public class AmqpMessageBuilder {
 
   private Message message;
@@ -61,13 +72,8 @@ public class AmqpMessageBuilder {
     return this;
   }
 
-  public AmqpMessageBuilder body(JsonObject value) {
-    message.setBody(new AmqpValue(value.encode()));
-    return this;
-  }
-
-  public AmqpMessageBuilder body(JsonArray value) {
-    message.setBody(new AmqpSequence(value.getList()));
+  public AmqpMessageBuilder bodyAsSymbol(String value) {
+    message.setBody(new AmqpValue(Symbol.valueOf(value)));
     return this;
   }
 
@@ -117,4 +123,83 @@ public class AmqpMessageBuilder {
     return this;
   }
 
+  public AmqpMessageBuilder body(boolean v) {
+    message.setBody(new AmqpValue(v));
+    return this;
+  }
+
+  public AmqpMessageBuilder body(byte v) {
+    message.setBody(new AmqpValue(v));
+    return this;
+  }
+
+  public AmqpMessageBuilder body(short v) {
+    message.setBody(new AmqpValue(v));
+    return this;
+  }
+
+  public AmqpMessageBuilder body(int v) {
+    message.setBody(new AmqpValue(v));
+    return this;
+  }
+
+  public AmqpMessageBuilder body(long v) {
+    message.setBody(new AmqpValue(v));
+    return this;
+  }
+
+  public AmqpMessageBuilder body(float v) {
+    message.setBody(new AmqpValue(v));
+    return this;
+  }
+
+  public AmqpMessageBuilder body(double v) {
+    message.setBody(new AmqpValue(v));
+    return this;
+  }
+
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  public AmqpMessageBuilder body(BigDecimal value) {
+    message.setBody(new AmqpValue(new Decimal128(value)));
+    return this;
+  }
+
+  public AmqpMessageBuilder body(char c) {
+    message.setBody(new AmqpValue(c));
+    return this;
+  }
+
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  public AmqpMessageBuilder body(Instant v) {
+    message.setBody(new AmqpValue(Date.from(v)));
+    return this;
+  }
+
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  public AmqpMessageBuilder body(UUID v) {
+    message.setBody(new AmqpValue(v));
+    return this;
+  }
+
+  // TODO How to use symbol?
+
+  public AmqpMessageBuilder body(List list) {
+    message.setBody(new AmqpSequence(list));
+    return this;
+  }
+
+  public AmqpMessageBuilder body(Buffer buffer) {
+    message.setBody(new Data(new Binary(buffer.getBytes())));
+    return this;
+  }
+
+  public AmqpMessageBuilder body(JsonObject json) {
+    return contentType("application/json")
+      .body(json.toBuffer());
+  }
+
+  public AmqpMessageBuilder body(JsonArray json) {
+    return contentType("application/json")
+      .body(json.toBuffer());
+  }
 }
