@@ -78,8 +78,8 @@ public class SenderTest extends ArtemisTestBase {
             done.result().sendWithAck(AmqpMessage.create().body("hello").address(queue).build(), x -> {
               if (x.succeeded()) {
                 acks.incrementAndGet();
-                done.result().sendWithAck(AmqpMessage.create().body("world").address(queue).build(), x -> {
-                  if (x.succeeded()) {
+                done.result().sendWithAck(AmqpMessage.create().body("world").address(queue).build(), y -> {
+                  if (y.succeeded()) {
                     acks.incrementAndGet();
                   }
                 });
