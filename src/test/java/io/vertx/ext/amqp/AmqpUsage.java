@@ -117,6 +117,12 @@ public class AmqpUsage {
     });
     t.setName(topic + "-thread");
     t.start();
+
+    try {
+      ready.await();
+    } catch (InterruptedException e) {
+      LOGGER.error("Interrupted while waiting for the ProtonSender to be opened", e);
+    }
   }
 
   public void produceStrings(String topic, int messageCount, Runnable completionCallback, Supplier<String> messageSupplier) {
@@ -137,18 +143,24 @@ public class AmqpUsage {
    */
   public void consume(String topic, BooleanSupplier continuation, Runnable completion,
                       Consumer<AmqpMessage> consumerFunction) {
+    CountDownLatch latch = new CountDownLatch(1);
     ProtonReceiver receiver = connection.createReceiver(topic);
     Thread t = new Thread(() -> {
       try {
-        receiver.handler((delivery, message) -> {
-          LOGGER.info("Consumer {}: consuming message {}", topic, message.getBody());
-          consumerFunction.accept(AmqpMessage.create(message).build());
-          if (!continuation.getAsBoolean()) {
-            receiver.close();
-          }
-        })
-          .openHandler(r -> LOGGER.info("Starting consumer to read messages on {}", topic))
-          .open();
+        context.runOnContext(x -> {
+          receiver.handler((delivery, message) -> {
+            LOGGER.info("Consumer {}: consuming message {}", topic, message.getBody());
+            consumerFunction.accept(AmqpMessage.create(message).build());
+            if (!continuation.getAsBoolean()) {
+              receiver.close();
+            }
+          })
+            .openHandler(r -> {
+              LOGGER.info("Starting consumer to read messages on {}", topic);
+              latch.countDown();
+            })
+            .open();
+        });
       } catch (Exception e) {
         LOGGER.error("Unable to receive messages from {}", topic, e);
       } finally {
@@ -159,6 +171,11 @@ public class AmqpUsage {
     });
     t.setName(topic + "-thread");
     t.start();
+    try {
+      latch.await();
+    } catch (InterruptedException e) {
+      LOGGER.error("Interrupted while waiting for the ProtonReceiver to be opened", e);
+    }
   }
 
   public void consumeStrings(String topic, BooleanSupplier continuation, Runnable completion, Consumer<String> consumerFunction) {
