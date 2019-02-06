@@ -17,7 +17,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   AmqpConnectionImpl(AmqpClientOptions options, Context context, ProtonConnection connection) {
     this.options = options;
-    this.connection = connection;
+    this.connection = Objects.requireNonNull(connection, "connection cannot be `null`");
     this.context = context;
   }
 
