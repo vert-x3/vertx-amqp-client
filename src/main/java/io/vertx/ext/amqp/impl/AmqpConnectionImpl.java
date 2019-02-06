@@ -52,33 +52,40 @@ public class AmqpConnectionImpl implements AmqpConnection {
     if (receiverOptions != null) {
       receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
     }
-
-    receiver
-      .handler((delivery, message) -> handler.handle(new AmqpMessageBuilder(message).build()))
-      .openHandler(res -> {
-        if (res.failed()) {
-          completionHandler.handle(res.mapEmpty());
-        } else {
-          completionHandler.handle(Future.succeededFuture(new AmqpReceiverImpl(address, res.result())));
-        }
-      })
-      .open();
+    context.runOnContext(x -> {
+      receiver
+        .handler((delivery, message) -> handler.handle(new AmqpMessageBuilder(message).build()))
+        .openHandler(res -> {
+          if (res.failed()) {
+            completionHandler.handle(res.mapEmpty());
+          } else {
+            completionHandler.handle(Future.succeededFuture(new AmqpReceiverImpl(address, res.result())));
+          }
+        })
+        .open();
+    });
     return this;
   }
 
   @Override
   public AmqpConnection sender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
     ProtonSender sender = connection.createSender(address);
-    sender
-      .openHandler(done -> {
-        if (done.failed()) {
-          completionHandler.handle(done.mapEmpty());
-        } else {
-          completionHandler.handle(Future.succeededFuture(new AmqpSenderImpl(done.result())));
-        }
-      })
-      .open();
+    openSender(completionHandler, sender);
     return this;
+  }
+
+  private void openSender(Handler<AsyncResult<AmqpSender>> completionHandler, ProtonSender sender) {
+    context.runOnContext(x -> {
+      sender
+        .openHandler(done -> {
+          if (done.failed()) {
+            completionHandler.handle(done.mapEmpty());
+          } else {
+            completionHandler.handle(Future.succeededFuture(new AmqpSenderImpl(done.result(), context)));
+          }
+        })
+        .open();
+    });
   }
 
   @Override
@@ -91,15 +98,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
     }
 
     ProtonSender sender = connection.createSender(address, linkOptions);
-    sender
-      .openHandler(done -> {
-        if (done.failed()) {
-          completionHandler.handle(done.mapEmpty());
-        } else {
-          completionHandler.handle(Future.succeededFuture(new AmqpSenderImpl(done.result())));
-        }
-      })
-      .open();
+    openSender(completionHandler, sender);
     return this;
   }
 
@@ -107,7 +106,9 @@ public class AmqpConnectionImpl implements AmqpConnection {
   public AmqpConnection closeHandler(Handler<AmqpConnection> remoteCloseHandler) {
     this.connection.closeHandler(pc -> {
       if (remoteCloseHandler != null) {
-        remoteCloseHandler.handle(this);
+        context.runOnContext(x -> {
+          remoteCloseHandler.handle(this);
+        });
       }
     });
     return this;
