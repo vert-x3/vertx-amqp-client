@@ -27,7 +27,6 @@ public class SenderTest extends ArtemisTestBase {
       .setUsername(username)
       .setPassword(password)
     ).connect(connection -> {
-        System.out.println("Connected: " + connection.result());
         connection.result().sender(queue, done -> {
           if (done.failed()) {
             done.cause().printStackTrace();

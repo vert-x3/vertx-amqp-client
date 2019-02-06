@@ -11,10 +11,10 @@ import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class AmqpMessageImpl implements AmqpMessage {
@@ -69,8 +69,7 @@ public class AmqpMessageImpl implements AmqpMessage {
 
   @Override
   public boolean isBodyNull() {
-    // TODO To be checked
-    return getAmqpValue() == null;
+    return  message.getBody() == null || getAmqpValue() == null;
   }
 
   private Object getAmqpValue() {
@@ -113,16 +112,6 @@ public class AmqpMessageImpl implements AmqpMessage {
   @Override
   public double getBodyAsDouble() {
     return (double) getAmqpValue();
-  }
-
-  @Override
-  public BigDecimal getBodyAsBigDecimal() {
-    Object value = getAmqpValue();
-    if (value instanceof Number) {
-      Number number = ((Number) value);
-      return BigDecimal.valueOf(number.longValue());
-    }
-    throw new IllegalStateException("The value " + value + " must be a Number, Decimal32, Decimal64 or a Decimal128");
   }
 
   @Override
@@ -169,14 +158,35 @@ public class AmqpMessageImpl implements AmqpMessage {
     throw new IllegalStateException("Expected a Symbol, got a " + value.getClass());
   }
 
+  /**
+   * @noinspection unchecked
+   */
   @Override
   public <T> List<T> getBodyAsList() {
     Section body = message.getBody();
-    if (body.getType() != Section.SectionType.AmqpSequence) {
-      throw new IllegalStateException("The body is not of type 'sequence'");
+    if (body.getType() == Section.SectionType.AmqpSequence) {
+      return (List<T>) ((AmqpSequence) message.getBody()).getValue();
+    } else {
+      Object value = getAmqpValue();
+      if (value instanceof List) {
+        return (List<T>) value;
+      }
+      throw new IllegalStateException("Cannot extract a list from the message body");
     }
-    return (List<T>) ((AmqpSequence) message.getBody()).getValue();
   }
+
+  /**
+   * @noinspection unchecked
+   */
+  @Override
+  public <K,V> Map<K, V> getBodyAsMap() {
+    Object value = getAmqpValue();
+    if (value instanceof Map) {
+      return (Map<K, V>) value;
+    }
+    throw new IllegalStateException("Cannot extract a map from the message body");
+  }
+
 
   @Override
   public JsonObject getBodyAsJsonObject() {
