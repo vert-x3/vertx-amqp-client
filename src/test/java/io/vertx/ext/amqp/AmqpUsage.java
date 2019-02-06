@@ -2,16 +2,15 @@ package io.vertx.ext.amqp;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.proton.ProtonClient;
-import io.vertx.proton.ProtonConnection;
-import io.vertx.proton.ProtonReceiver;
-import io.vertx.proton.ProtonSender;
+import io.vertx.proton.*;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,10 +24,12 @@ import static org.awaitility.Awaitility.await;
 public class AmqpUsage {
 
   private static Logger LOGGER = LoggerFactory.getLogger(AmqpUsage.class);
-  private final Vertx vertx;
   private final Context context;
   private ProtonClient client;
   private ProtonConnection connection;
+
+  private List<ProtonSender> senders = new CopyOnWriteArrayList<>();
+  private List<ProtonReceiver> receivers = new CopyOnWriteArrayList<>();
 
 
   public AmqpUsage(Vertx vertx, String host, int port) {
@@ -37,7 +38,6 @@ public class AmqpUsage {
 
   public AmqpUsage(Vertx vertx, String host, int port, String user, String pwd) {
     CountDownLatch latch = new CountDownLatch(1);
-    this.vertx = vertx;
     this.context = vertx.getOrCreateContext();
     context.runOnContext(x -> {
       client = ProtonClient.create(vertx);
@@ -70,6 +70,7 @@ public class AmqpUsage {
   public void produce(String topic, int messageCount, Runnable completionCallback, Supplier<Object> messageSupplier) {
     CountDownLatch ready = new CountDownLatch(1);
     ProtonSender sender = connection.createSender(topic);
+    senders.add(sender);
     context.runOnContext(x -> {
       sender
         .openHandler(s -> ready.countDown())
@@ -145,6 +146,7 @@ public class AmqpUsage {
                       Consumer<AmqpMessage> consumerFunction) {
     CountDownLatch latch = new CountDownLatch(1);
     ProtonReceiver receiver = connection.createReceiver(topic);
+    receivers.add(receiver);
     Thread t = new Thread(() -> {
       try {
         context.runOnContext(x -> {
@@ -214,11 +216,16 @@ public class AmqpUsage {
   }
 
   public void close() {
+    senders.forEach(ProtonLink::close);
+    receivers.forEach(ProtonLink::close);
+
     if (connection != null && !connection.isDisconnected()) {
       connection.close();
       connection.disconnect();
       await().until(() -> connection.isDisconnected());
     }
+
+
   }
 }
 
