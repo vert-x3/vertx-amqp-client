@@ -6,7 +6,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.amqp.impl.AmqpMessageImpl;
 import org.apache.qpid.proton.amqp.Binary;
-import org.apache.qpid.proton.amqp.Decimal128;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
@@ -14,10 +13,10 @@ import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.message.Message;
 
-import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @GenIgnore(GenIgnore.PERMITTED_TYPE)
@@ -158,12 +157,6 @@ public class AmqpMessageBuilder {
     return this;
   }
 
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  public AmqpMessageBuilder body(BigDecimal value) {
-    message.setBody(new AmqpValue(new Decimal128(value)));
-    return this;
-  }
-
   public AmqpMessageBuilder body(char c) {
     message.setBody(new AmqpValue(c));
     return this;
@@ -181,10 +174,14 @@ public class AmqpMessageBuilder {
     return this;
   }
 
-  // TODO How to use symbol?
-
   public AmqpMessageBuilder body(List list) {
-    message.setBody(new AmqpSequence(list));
+    message.setBody(new AmqpValue(list));
+    return this;
+  }
+
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  public AmqpMessageBuilder body(Map map) {
+    message.setBody(new AmqpValue(map));
     return this;
   }
 

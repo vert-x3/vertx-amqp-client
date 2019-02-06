@@ -7,9 +7,9 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.apache.qpid.proton.message.Message;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @VertxGen
@@ -60,9 +60,6 @@ public interface AmqpMessage {
 
   double getBodyAsDouble();
 
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  BigDecimal getBodyAsBigDecimal();
-
   char getBodyAsChar();
 
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
@@ -78,6 +75,9 @@ public interface AmqpMessage {
   String getBodyAsSymbol();
 
   <T> List<T> getBodyAsList();
+
+  @GenIgnore
+  <K, V> Map<K, V> getBodyAsMap();
 
   JsonObject getBodyAsJsonObject();
 

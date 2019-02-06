@@ -4,20 +4,18 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import org.apache.qpid.proton.amqp.*;
+import org.apache.qpid.proton.amqp.Binary;
+import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
+import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,6 +56,30 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   @After
   public void tearDown() {
     vertx.close();
+  }
+
+  @Test
+  public void testNull() {
+    List<Boolean> list = new CopyOnWriteArrayList<>();
+    connection.receiver(address, message -> {
+      list.add(message.isBodyNull());
+    }, done -> {
+      if (done.failed()) {
+        done.cause().printStackTrace();
+      }
+      CompletableFuture.runAsync(() -> {
+        try {
+          // Send Amqpvalue(null)
+          usage.produce(address, 1, null, () -> new AmqpValue(null));
+          // Send no body
+          usage.produce(address, 1, null, () -> null);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      });
+    });
+    await().until(() -> list.size() == 2);
+    assertThat(list).containsExactly(true, true);
   }
 
   @Test
@@ -223,32 +245,6 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   }
 
   @Test
-  @Ignore
-  public void testDecimal() {
-    List<Object> list = new CopyOnWriteArrayList<>();
-    BigDecimal bd = new BigDecimal(1234567789);
-    connection.receiver(address, message -> {
-      System.out.println("Receiving... " + message);
-      list.add(message.getBodyAsBigDecimal());
-    }, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> new Decimal32(bd));
-          usage.produce(address, 1, null, () -> new Decimal64(bd));
-          usage.produce(address, 1, null, () -> new Decimal128(bd));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 3);
-    assertThat(list).containsExactly(bd, bd, bd);
-  }
-
-  @Test
   public void testCharacter() {
     List<Object> list = new CopyOnWriteArrayList<>();
     char c = 'c';
@@ -381,7 +377,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   }
 
   @Test
-  public void testList() {
+  public void testListPassedAsAmqpSequence() {
     List<Object> list = new CopyOnWriteArrayList<>();
     List<Object> l = new ArrayList<>();
     l.add("foo");
@@ -404,6 +400,57 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     await().until(() -> list.size() == 1);
     assertThat(list).containsExactly(l);
   }
+
+  @Test
+  public void testListPassedAsAmqpValue() {
+    List<Object> list = new CopyOnWriteArrayList<>();
+    List<Object> l = new ArrayList<>();
+    l.add("foo");
+    l.add(1);
+    l.add(true);
+    connection.receiver(address, message -> {
+      list.add(message.getBodyAsList());
+    }, done -> {
+      if (done.failed()) {
+        done.cause().printStackTrace();
+      }
+      CompletableFuture.runAsync(() -> {
+        try {
+          usage.produce(address, 1, null, () -> new AmqpValue(l));
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      });
+    });
+    await().until(() -> list.size() == 1);
+    assertThat(list).containsExactly(l);
+  }
+
+
+  @Test
+  public void testMap() {
+    List<Map<String, String>> list = new CopyOnWriteArrayList<>();
+    Map<String, String> map = new HashMap<>();
+    map.put("1", "hello");
+    map.put("2", "bonjour");
+    connection.receiver(address, message -> {
+      list.add(message.getBodyAsMap());
+    }, done -> {
+      if (done.failed()) {
+        done.cause().printStackTrace();
+      }
+      CompletableFuture.runAsync(() -> {
+        try {
+          usage.produce(address, 1, null, () -> new AmqpValue(map));
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      });
+    });
+    await().until(() -> list.size() == 1);
+    assertThat(list.get(0)).containsAllEntriesOf(map);
+  }
+
 
   @Test
   public void testJsonObject() {
