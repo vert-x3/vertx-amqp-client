@@ -1,6 +1,8 @@
 package io.vertx.ext.amqp;
 
-import io.vertx.core.json.JsonObject;
+import io.vertx.core.Vertx;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
@@ -13,15 +15,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 public class SenderTest extends ArtemisTestBase {
+  private Vertx vertx;
 
   //TODO Test the error with bad credentials
+
+  @Before
+  public void setUp() {
+    vertx = Vertx.vertx();
+  }
+
+  @After
+  public void tearDown() throws InterruptedException {
+    super.tearDown();
+    vertx.close();
+  }
 
   @Test
   public void testThatMessagedAreSent() {
     String queue = UUID.randomUUID().toString();
     List<String> list = new CopyOnWriteArrayList<>();
     usage.consumeStrings(queue, 1, 1, TimeUnit.MINUTES, null, list::add);
-    AmqpClient.create(new AmqpClientOptions()
+    AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost(host)
       .setPort(port)
       .setUsername(username)
@@ -50,7 +64,7 @@ public class SenderTest extends ArtemisTestBase {
     List<String> list = new CopyOnWriteArrayList<>();
     AtomicInteger acks = new AtomicInteger();
     usage.consumeStrings(queue, 1, 1, TimeUnit.MINUTES, null, list::add);
-    AmqpClient.create(new AmqpClientOptions()
+    AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost(host)
       .setPort(port)
       .setUsername(username)
