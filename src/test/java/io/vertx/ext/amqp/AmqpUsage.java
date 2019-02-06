@@ -6,11 +6,11 @@ import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +24,7 @@ import static org.awaitility.Awaitility.await;
 
 public class AmqpUsage {
 
-  private static Logger LOGGER = LogManager.getLogger(AmqpUsage.class);
+  private static Logger LOGGER = LoggerFactory.getLogger(AmqpUsage.class);
   private final Vertx vertx;
   private final Context context;
   private ProtonClient client;
