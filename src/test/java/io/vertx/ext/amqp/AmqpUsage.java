@@ -90,13 +90,14 @@ public class AmqpUsage {
           Message message = message();
           if (payload instanceof Section) {
             message.setBody((Section) payload);
-          } else {
+          } else if (payload != null) {
             message.setBody(new AmqpValue(payload));
+          } else {
+            // Don't set a body.
           }
           message.setDurable(true);
           message.setTtl(10000);
           CountDownLatch latch = new CountDownLatch(1);
-          System.out.println("SENDING " + payload);
           context.runOnContext((y) ->
             sender.send(message, x ->
               latch.countDown()
