@@ -29,6 +29,7 @@ public class SenderTest extends ArtemisTestBase {
     ).connect(connection -> {
         connection.result().sender(queue, done -> {
           if (done.failed()) {
+            System.out.println("Unable to get a sender: " + done.cause());
             done.cause().printStackTrace();
           } else {
             // Sending a few messages
