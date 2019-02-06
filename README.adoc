@@ -2,6 +2,9 @@
 
 Prototype of a new AMQP client for Eclipse Vert.x.
 
+image:https://travis-ci.org/vert-x3/vertx-amqp-client.svg?branch=master["Build Status", link="https://travis-ci.org/vert-x3/vertx-amqp-client"]
+
+
 == Build
 
 === Requirements
