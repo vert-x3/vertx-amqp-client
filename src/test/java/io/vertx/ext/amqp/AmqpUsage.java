@@ -2,7 +2,10 @@ package io.vertx.ext.amqp;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.proton.*;
+import io.vertx.proton.ProtonClient;
+import io.vertx.proton.ProtonConnection;
+import io.vertx.proton.ProtonReceiver;
+import io.vertx.proton.ProtonSender;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.message.Message;
@@ -19,7 +22,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static io.vertx.proton.ProtonHelper.message;
-import static org.awaitility.Awaitility.await;
 
 public class AmqpUsage {
 
@@ -215,14 +217,33 @@ public class AmqpUsage {
     };
   }
 
-  public void close() {
-    senders.forEach(ProtonLink::close);
-    receivers.forEach(ProtonLink::close);
+  public void close() throws InterruptedException {
+    CountDownLatch entities = new CountDownLatch(senders.size() + receivers.size());
+    senders.forEach(sender -> {
+      if (sender.isOpen()) {
+        sender.closeHandler(x -> entities.countDown()).close();
+      } else {
+        entities.countDown();
+      }
+    });
+    receivers.forEach(receiver -> {
+      if (receiver.isOpen()) {
+        receiver.closeHandler(x -> entities.countDown()).close();
+      } else {
+        entities.countDown();
+      }
+    });
+    entities.await(30, TimeUnit.SECONDS);
+
 
     if (connection != null && !connection.isDisconnected()) {
-      connection.close();
-      connection.disconnect();
-      await().until(() -> connection.isDisconnected());
+      CountDownLatch latch = new CountDownLatch(1);
+      connection
+        .closeHandler(x -> {
+          latch.countDown();
+        })
+        .close();
+      latch.await(10, TimeUnit.SECONDS);
     }
 
 

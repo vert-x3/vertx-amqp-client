@@ -18,10 +18,11 @@ public interface AmqpConnection {
    * For locally initiated connections, the {@link #closeHandler(Handler)} may be used to handle the peer sending their
    * Close frame (if they haven't already).
    *
+   * @param done the close handler notified when the connection is closed. May be {@code null}.
    * @return the connection
    */
   @Fluent
-  AmqpConnection close();
+  AmqpConnection close(Handler<AsyncResult<Void>> done);
 
   /**
    * Creates a receiver used to consumer messages from the given node address.

@@ -1,5 +1,8 @@
 package io.vertx.ext.amqp;
 
+import io.vertx.core.Vertx;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -12,10 +15,23 @@ import static org.hamcrest.Matchers.is;
 
 public class ConnectionTest extends ArtemisTestBase {
 
+
+  private Vertx vertx;
+
+  @Before
+  public void init() {
+    vertx = Vertx.vertx();
+  }
+
+  @After
+  public void destroy() {
+    vertx.close();
+  }
+
   @Test
   public void testConnectionSuccessWithDetailsPassedInOptions() {
     AtomicBoolean done = new AtomicBoolean();
-    AmqpClient.create(new AmqpClientOptions()
+    client = AmqpClient.create(new AmqpClientOptions()
       .setHost(host)
       .setPort(port)
     ).connect(
@@ -30,7 +46,7 @@ public class ConnectionTest extends ArtemisTestBase {
     System.setProperty("amqp-client-host", host);
     System.setProperty("amqp-client-port", Integer.toString(port));
     AtomicBoolean done = new AtomicBoolean();
-    AmqpClient.create().connect(
+    client = AmqpClient.create().connect(
       ar -> done.set(ar.succeeded())
     );
 
@@ -44,7 +60,7 @@ public class ConnectionTest extends ArtemisTestBase {
   public void testConnectionFailedBecauseOfBadHost() {
     AtomicBoolean done = new AtomicBoolean();
     AtomicReference<Throwable> failure = new AtomicReference<>();
-    AmqpClient.create(new AmqpClientOptions()
+    client = AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost("org.acme")
       .setPort(port)
     ).connect(

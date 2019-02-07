@@ -18,7 +18,7 @@ public class ReceiverTest extends ArtemisTestBase {
     AtomicInteger count = new AtomicInteger();
     String queue = UUID.randomUUID().toString();
     List<String> list = new CopyOnWriteArrayList<>();
-    AmqpClient.create(new AmqpClientOptions()
+    client = AmqpClient.create(new AmqpClientOptions()
       .setHost(host)
       .setPort(port)
       .setUsername(username)

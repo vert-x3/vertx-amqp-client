@@ -33,10 +33,10 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   private String address;
 
   @Before
-  public void setUp() {
+  public void init() {
     vertx = Vertx.vertx();
     AtomicReference<AmqpConnection> reference = new AtomicReference<>();
-    AmqpClient.create(vertx, new AmqpClientOptions()
+    client = AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost(host)
       .setPort(port)
       .setUsername(username)
@@ -54,7 +54,8 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   }
 
   @After
-  public void tearDown() {
+  public void tearDown() throws InterruptedException {
+    super.tearDown();
     vertx.close();
   }
 
