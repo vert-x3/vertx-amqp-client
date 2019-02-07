@@ -3,26 +3,20 @@ package io.vertx.ext.amqp.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.ext.amqp.AmqpClientOptions;
-import io.vertx.ext.amqp.AmqpLinkOptions;
-import io.vertx.ext.amqp.AmqpMessage;
 import io.vertx.ext.amqp.AmqpReceiver;
-import io.vertx.proton.ProtonConnection;
-import io.vertx.proton.ProtonLinkOptions;
 import io.vertx.proton.ProtonReceiver;
-
-import java.util.Objects;
 
 public class AmqpReceiverImpl implements AmqpReceiver {
 
 
   private final String address;
   private final ProtonReceiver receiver;
+  private final AmqpConnectionImpl connection;
 
-  public AmqpReceiverImpl(String address, ProtonReceiver receiver) {
+  public AmqpReceiverImpl(String address, AmqpConnectionImpl connection, ProtonReceiver receiver) {
     this.address = address;
     this.receiver = receiver;
+    this.connection = connection;
   }
 
   @Override
@@ -31,15 +25,16 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   }
 
   @Override
-  public AmqpReceiver close() {
-    this.receiver.close();
-    this.receiver.detach();
-    return this;
-  }
+  public void close(Handler<AsyncResult<Void>> handler) {
+    if (handler == null) {
+      handler = x -> {
+      };
+    }
+    connection.unregister(this);
+    Future<Void> future = Future.<Void>future().setHandler(handler);
+    this.receiver
+      .closeHandler(x -> future.handle(x.mapEmpty()))
+      .close();
 
-  @Override
-  public AmqpReceiver close(Handler<AsyncResult<Void>> completionHandler) {
-    this.receiver.closeHandler(x -> completionHandler.handle(x.mapEmpty()));
-    return close();
   }
 }

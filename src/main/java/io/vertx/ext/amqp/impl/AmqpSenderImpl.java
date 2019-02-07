@@ -11,17 +11,17 @@ import io.vertx.proton.ProtonSender;
 public class AmqpSenderImpl implements AmqpSender {
   private final ProtonSender sender;
   private final Context context;
+  private final AmqpConnectionImpl connection;
 
-  public AmqpSenderImpl(ProtonSender sender, Context context) {
+  public AmqpSenderImpl(ProtonSender sender, AmqpConnectionImpl connection, Context context) {
     this.sender = sender;
     this.context = context;
+    this.connection = connection;
   }
 
   @Override
   public AmqpSender send(AmqpMessage message) {
-    context.runOnContext(x -> {
-      sender.send(message.unwrap());
-    });
+    context.runOnContext(x -> sender.send(message.unwrap()));
     return this;
   }
 
@@ -61,5 +61,16 @@ public class AmqpSenderImpl implements AmqpSender {
   public AmqpSender sendWithAck(String address, AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler) {
     AmqpMessage updated = AmqpMessage.create(message).address(address).build();
     return sendWithAck(updated, acknowledgementHandler);
+  }
+
+  @Override
+  public void close(Handler<AsyncResult<Void>> handler) {
+    if (handler == null) {
+      handler = x -> {};
+    }
+    connection.unregister(this);
+    Future<Void> future = Future.<Void>future().setHandler(handler);
+    sender.closeHandler(x -> future.handle(x.mapEmpty()));
+    sender.close();
   }
 }

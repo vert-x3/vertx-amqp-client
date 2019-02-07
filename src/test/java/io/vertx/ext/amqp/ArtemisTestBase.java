@@ -7,8 +7,11 @@ import org.junit.ClassRule;
 import org.testcontainers.containers.GenericContainer;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class ArtemisTestBase {
+
+  AmqpClient client;
 
   @ClassRule
   public static GenericContainer artemis = new GenericContainer("vromero/activemq-artemis:2.6.3-alpine")
@@ -39,15 +42,22 @@ public class ArtemisTestBase {
 
   @After
   public void tearDown() throws InterruptedException {
+    CountDownLatch latch1 = new CountDownLatch(1);
+    CountDownLatch latch2 = new CountDownLatch(1);
+
+    if (client != null) {
+      client.close(x -> latch1.countDown());
+      latch1.await(10, TimeUnit.SECONDS);
+    }
+
     System.clearProperty("amqp-host");
     System.clearProperty("amqp-port");
     System.clearProperty("amqp-user");
     System.clearProperty("amqp-pwd");
 
-    CountDownLatch latch = new CountDownLatch(1);
     usage.close();
-    vertx.close(x -> latch.countDown());
+    vertx.close(x -> latch2.countDown());
 
-    latch.await();
+    latch2.await(10, TimeUnit.SECONDS);
   }
 }

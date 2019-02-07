@@ -1,19 +1,22 @@
 package io.vertx.ext.amqp.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.*;
 import io.vertx.ext.amqp.*;
 import io.vertx.proton.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AmqpConnectionImpl implements AmqpConnection {
 
   private final AmqpClientOptions options;
   private final ProtonConnection connection;
   private final Context context;
+
+  private List<AmqpSender> senders = new CopyOnWriteArrayList<>();
+  private List<AmqpReceiver> receivers = new CopyOnWriteArrayList<>();
 
   AmqpConnectionImpl(AmqpClientOptions options, Context context, ProtonConnection connection) {
     this.options = options;
@@ -22,9 +25,46 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
-  public AmqpConnection close() {
-    connection.close();
+  public AmqpConnection close(Handler<AsyncResult<Void>> done) {
+    List<Future> futures = new ArrayList<>();
+    synchronized (this) {
+      senders.forEach(sender -> {
+        Future<Void> future = Future.future();
+        futures.add(future);
+        sender.close(future);
+      });
+      receivers.forEach(receiver -> {
+        Future<Void> future = Future.future();
+        futures.add(future);
+        receiver.close(future);
+      });
+    }
+
+    CompositeFuture.all(futures).setHandler(result -> {
+      Future<Void> future = Future.future();
+      connection
+        .closeHandler(closed ->
+          context.runOnContext(x -> future.handle(closed.mapEmpty())))
+        .close();
+      if (done != null) {
+        future.setHandler(done);
+      }
+    });
     return this;
+  }
+
+  void unregister(AmqpSender sender) {
+    synchronized (this) {
+      // Sender is close explicitly.
+      senders.remove(sender);
+    }
+  }
+
+  void unregister(AmqpReceiver receiver) {
+    synchronized (this) {
+      // Receiver is close explicitly.
+      receivers.remove(receiver);
+    }
   }
 
   @Override
@@ -59,7 +99,9 @@ public class AmqpConnectionImpl implements AmqpConnection {
           if (res.failed()) {
             completionHandler.handle(res.mapEmpty());
           } else {
-            completionHandler.handle(Future.succeededFuture(new AmqpReceiverImpl(address, res.result())));
+            AmqpReceiverImpl result = new AmqpReceiverImpl(address, this, res.result());
+            receivers.add(result);
+            completionHandler.handle(Future.succeededFuture(result));
           }
         })
         .open();
@@ -81,7 +123,9 @@ public class AmqpConnectionImpl implements AmqpConnection {
           if (done.failed()) {
             completionHandler.handle(done.mapEmpty());
           } else {
-            completionHandler.handle(Future.succeededFuture(new AmqpSenderImpl(done.result(), context)));
+            AmqpSenderImpl result = new AmqpSenderImpl(done.result(), this, context);
+            senders.add(result);
+            completionHandler.handle(Future.succeededFuture(result));
           }
         })
         .open();

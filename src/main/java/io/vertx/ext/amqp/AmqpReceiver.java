@@ -12,10 +12,6 @@ public interface AmqpReceiver {
   @CacheReturn
   String address();
 
-  @Fluent
-  AmqpReceiver close();
-
-  @Fluent
-  AmqpReceiver close(Handler<AsyncResult<Void>> completionHandler);
+  void close(Handler<AsyncResult<Void>> handler);
 
 }
