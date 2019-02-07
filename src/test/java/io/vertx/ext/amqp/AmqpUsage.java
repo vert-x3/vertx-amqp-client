@@ -238,11 +238,10 @@ public class AmqpUsage {
 
     if (connection != null && !connection.isDisconnected()) {
       CountDownLatch latch = new CountDownLatch(1);
-      connection
-        .closeHandler(x -> {
-          latch.countDown();
-        })
-        .close();
+      context.runOnContext(n ->
+        connection
+          .closeHandler(x -> latch.countDown())
+          .close());
       latch.await(10, TimeUnit.SECONDS);
     }
 
