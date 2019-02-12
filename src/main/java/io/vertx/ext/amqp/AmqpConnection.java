@@ -13,9 +13,6 @@ import org.apache.qpid.proton.amqp.Symbol;
 @VertxGen
 public interface AmqpConnection {
 
-  String PRODUCT = "vertx-amqp-client";
-  Symbol PRODUCT_KEY = Symbol.valueOf("product");
-
   /**
    * Closes the AMQP connection, i.e. allows the Close frame to be emitted.
    * <p>
@@ -27,6 +24,9 @@ public interface AmqpConnection {
    */
   @Fluent
   AmqpConnection close(Handler<AsyncResult<Void>> done);
+
+  @Fluent
+  AmqpConnection receiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
    * Creates a receiver used to consumer messages from the given node address.

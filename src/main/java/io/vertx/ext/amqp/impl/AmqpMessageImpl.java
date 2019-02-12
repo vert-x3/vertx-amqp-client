@@ -7,10 +7,7 @@ import io.vertx.ext.amqp.AmqpMessage;
 import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonHelper;
 import org.apache.qpid.proton.amqp.Symbol;
-import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
-import org.apache.qpid.proton.amqp.messaging.AmqpValue;
-import org.apache.qpid.proton.amqp.messaging.Data;
-import org.apache.qpid.proton.amqp.messaging.Section;
+import org.apache.qpid.proton.amqp.messaging.*;
 import org.apache.qpid.proton.message.Message;
 
 import java.time.Instant;
@@ -265,6 +262,15 @@ public class AmqpMessageImpl implements AmqpMessage {
   @Override
   public Message unwrap() {
     return message;
+  }
+
+  @Override
+  public JsonObject getApplicationProperties() {
+    ApplicationProperties properties = message.getApplicationProperties();
+    if (properties == null) {
+      return null;
+    }
+    return JsonObject.mapFrom(properties.getValue());
   }
 
   public void delivered() {

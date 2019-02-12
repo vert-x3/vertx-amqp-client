@@ -1,6 +1,7 @@
 package io.vertx.ext.amqp;
 
 import io.vertx.core.Vertx;
+import io.vertx.ext.amqp.impl.AmqpConnectionImpl;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -52,9 +53,9 @@ public class ConnectionMetadataTest {
 
         context.assertNotNull(properties, "connection properties not present");
 
-        context.assertTrue(properties.containsKey(AmqpConnection.PRODUCT_KEY),
+        context.assertTrue(properties.containsKey(AmqpConnectionImpl.PRODUCT_KEY),
           "product property key not present");
-        context.assertEquals(AmqpConnection.PRODUCT, properties.get(AmqpConnection.PRODUCT_KEY),
+        context.assertEquals(AmqpConnectionImpl.PRODUCT, properties.get(AmqpConnectionImpl.PRODUCT_KEY),
           "unexpected product property value");
 
         asyncMetaData.complete();
