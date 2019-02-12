@@ -5,6 +5,7 @@ import io.vertx.ext.amqp.AmqpClient;
 import io.vertx.ext.amqp.AmqpClientOptions;
 import io.vertx.ext.amqp.AmqpConnection;
 import io.vertx.proton.ProtonClient;
+import io.vertx.proton.ProtonConnection;
 import org.apache.qpid.proton.amqp.Symbol;
 
 import java.util.*;
@@ -74,13 +75,19 @@ public class AmqpClientImpl implements AmqpClient {
         if (connection.succeeded()) {
           Map<Symbol, Object> map = new HashMap<>();
           map.put(AmqpConnection.PRODUCT_KEY, AmqpConnection.PRODUCT);
-          connection.result()
+          ProtonConnection result = connection.result();
+          if (options.getContainerId() != null) {
+            result.setContainer(options.getContainerId());
+          }
+          if (options.getVirtualHost() != null) {
+            result.setHostname(options.getVirtualHost());
+          }
+          
+          result
             .setProperties(map)
             .openHandler(conn -> {
               if (conn.succeeded()) {
-                if (options.getContainerId() != null) {
-                  connection.result().setContainer(options.getContainerId());
-                }
+
                 AmqpConnection amqp = new AmqpConnectionImpl(options, context, conn.result());
                 connections.add(amqp);
                 context.runOnContext(x -> connectionHandler.handle(Future.succeededFuture(amqp)));
@@ -88,7 +95,7 @@ public class AmqpClientImpl implements AmqpClient {
                 context.runOnContext(x -> connectionHandler.handle(conn.mapEmpty()));
               }
             });
-          connection.result().open();
+          result.open();
         } else {
           context.runOnContext(x -> connectionHandler.handle(connection.mapEmpty()));
         }
