@@ -73,4 +73,9 @@ public class AmqpSenderImpl implements AmqpSender {
     sender.closeHandler(x -> future.handle(x.mapEmpty()));
     sender.close();
   }
+
+  @Override
+  public String address() {
+    return sender.getRemoteAddress();
+  }
 }
