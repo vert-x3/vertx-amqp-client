@@ -22,4 +22,6 @@ public interface AmqpSender {
   AmqpSender sendWithAck(String address, AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler);
 
   void close(Handler<AsyncResult<Void>> handler);
+
+  String address();
 }
