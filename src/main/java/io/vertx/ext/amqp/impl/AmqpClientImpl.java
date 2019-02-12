@@ -5,10 +5,9 @@ import io.vertx.ext.amqp.AmqpClient;
 import io.vertx.ext.amqp.AmqpClientOptions;
 import io.vertx.ext.amqp.AmqpConnection;
 import io.vertx.proton.ProtonClient;
+import org.apache.qpid.proton.amqp.Symbol;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AmqpClientImpl implements AmqpClient {
@@ -73,18 +72,22 @@ public class AmqpClientImpl implements AmqpClient {
     return () ->
       proton.connect(options, options.getHost(), options.getPort(), options.getUsername(), options.getPassword(), connection -> {
         if (connection.succeeded()) {
-          connection.result().openHandler(conn -> {
-            if (conn.succeeded()) {
-              if (options.getContainerId() != null) {
-                connection.result().setContainer(options.getContainerId());
+          Map<Symbol, Object> map = new HashMap<>();
+          map.put(AmqpConnection.PRODUCT_KEY, AmqpConnection.PRODUCT);
+          connection.result()
+            .setProperties(map)
+            .openHandler(conn -> {
+              if (conn.succeeded()) {
+                if (options.getContainerId() != null) {
+                  connection.result().setContainer(options.getContainerId());
+                }
+                AmqpConnection amqp = new AmqpConnectionImpl(options, context, conn.result());
+                connections.add(amqp);
+                context.runOnContext(x -> connectionHandler.handle(Future.succeededFuture(amqp)));
+              } else {
+                context.runOnContext(x -> connectionHandler.handle(conn.mapEmpty()));
               }
-              AmqpConnection amqp = new AmqpConnectionImpl(options, context, conn.result());
-              connections.add(amqp);
-              context.runOnContext(x -> connectionHandler.handle(Future.succeededFuture(amqp)));
-            } else {
-              context.runOnContext(x -> connectionHandler.handle(conn.mapEmpty()));
-            }
-          });
+            });
           connection.result().open();
         } else {
           context.runOnContext(x -> connectionHandler.handle(connection.mapEmpty()));

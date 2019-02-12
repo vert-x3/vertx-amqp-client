@@ -4,13 +4,17 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import org.apache.qpid.proton.amqp.Symbol;
 
 
 /**
- * Once connected to the borker or router, you get a connection. This connection is automatically opened.
+ * Once connected to the broker or router, you get a connection. This connection is automatically opened.
  */
 @VertxGen
 public interface AmqpConnection {
+
+  String PRODUCT = "vertx-amqp-client";
+  Symbol PRODUCT_KEY = Symbol.valueOf("product");
 
   /**
    * Closes the AMQP connection, i.e. allows the Close frame to be emitted.
