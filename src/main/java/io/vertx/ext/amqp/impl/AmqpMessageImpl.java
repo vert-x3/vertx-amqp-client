@@ -4,6 +4,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.amqp.AmqpMessage;
+import io.vertx.proton.ProtonDelivery;
+import io.vertx.proton.ProtonHelper;
 import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
@@ -19,9 +21,16 @@ import java.util.UUID;
 
 public class AmqpMessageImpl implements AmqpMessage {
   private final Message message;
+  private final ProtonDelivery delivery;
+
+  public AmqpMessageImpl(Message message, ProtonDelivery delivery) {
+    this.message = message;
+    this.delivery = delivery;
+  }
 
   public AmqpMessageImpl(Message message) {
     this.message = message;
+    this.delivery = null;
   }
 
   @Override
@@ -69,7 +78,7 @@ public class AmqpMessageImpl implements AmqpMessage {
 
   @Override
   public boolean isBodyNull() {
-    return  message.getBody() == null || getAmqpValue() == null;
+    return message.getBody() == null || getAmqpValue() == null;
   }
 
   private Object getAmqpValue() {
@@ -179,7 +188,7 @@ public class AmqpMessageImpl implements AmqpMessage {
    * @noinspection unchecked
    */
   @Override
-  public <K,V> Map<K, V> getBodyAsMap() {
+  public <K, V> Map<K, V> getBodyAsMap() {
     Object value = getAmqpValue();
     if (value instanceof Map) {
       return (Map<K, V>) value;
@@ -256,6 +265,12 @@ public class AmqpMessageImpl implements AmqpMessage {
   @Override
   public Message unwrap() {
     return message;
+  }
+
+  public void delivered() {
+    if (delivery != null) {
+      ProtonHelper.accepted(delivery, true);
+    }
   }
 
 
