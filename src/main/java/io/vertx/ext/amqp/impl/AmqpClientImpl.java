@@ -74,7 +74,7 @@ public class AmqpClientImpl implements AmqpClient {
       proton.connect(options, options.getHost(), options.getPort(), options.getUsername(), options.getPassword(), connection -> {
         if (connection.succeeded()) {
           Map<Symbol, Object> map = new HashMap<>();
-          map.put(AmqpConnection.PRODUCT_KEY, AmqpConnection.PRODUCT);
+          map.put(AmqpConnectionImpl.PRODUCT_KEY, AmqpConnectionImpl.PRODUCT);
           ProtonConnection result = connection.result();
           if (options.getContainerId() != null) {
             result.setContainer(options.getContainerId());
@@ -82,7 +82,7 @@ public class AmqpClientImpl implements AmqpClient {
           if (options.getVirtualHost() != null) {
             result.setHostname(options.getVirtualHost());
           }
-          
+
           result
             .setProperties(map)
             .openHandler(conn -> {

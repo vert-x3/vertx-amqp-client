@@ -3,6 +3,7 @@ package io.vertx.ext.amqp.impl;
 import io.vertx.core.*;
 import io.vertx.ext.amqp.*;
 import io.vertx.proton.*;
+import org.apache.qpid.proton.amqp.Symbol;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,9 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AmqpConnectionImpl implements AmqpConnection {
+
+  public static final String PRODUCT = "vertx-amqp-client";
+  public static final Symbol PRODUCT_KEY = Symbol.valueOf("product");
 
   private final AmqpClientOptions options;
   private final ProtonConnection connection;
@@ -84,14 +88,26 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return receiver(address, null, handler, completionHandler);
   }
 
+  @Override
+  public AmqpConnection receiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+    Objects.requireNonNull(address, "The address must not be `null`");
+    Objects.requireNonNull(completionHandler, "The completion handler must not be `null`");
+    ProtonLinkOptions opts = new ProtonLinkOptions();
+    ProtonReceiver receiver = connection.createReceiver(address, opts)
+      .setAutoAccept(true);
+
+    runWithTrampoline(x -> {
+      new AmqpReceiverImpl(address, this, receiver, null, completionHandler);
+    });
+    return this;
+  }
+
   // TODO Allow creating a receiver just passing the handler
 
   @Override
   public AmqpConnection receiver(String address, AmqpReceiverOptions receiverOptions, Handler<AmqpMessage> handler,
                                  Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     Objects.requireNonNull(address, "The address must not be `null`");
-    Objects.requireNonNull(handler, "The message handler must not be `null`");
-    Objects.requireNonNull(completionHandler, "The completion handler must not be `null`");
     ProtonLinkOptions opts = new ProtonLinkOptions();
     if (receiverOptions != null) {
       opts = new ProtonLinkOptions()

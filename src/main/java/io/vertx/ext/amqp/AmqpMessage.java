@@ -108,6 +108,8 @@ public interface AmqpMessage {
   @GenIgnore
   Message unwrap();
 
+  JsonObject getApplicationProperties();
+
   //TODO What type should we use for delivery annotations and message annotations
 
   // TODO Add header/ footer

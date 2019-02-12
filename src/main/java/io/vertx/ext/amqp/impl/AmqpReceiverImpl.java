@@ -49,7 +49,9 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     this.receiver.setPrefetch(0);
 
     this.receiver.handler((delivery, message) -> handleMessage(new AmqpMessageImpl(message, delivery)));
-    handler(this.handler);
+    if (this.handler != null) {
+      handler(this.handler);
+    }
 
     this.receiver.closeHandler(res -> {
       Handler<Void> endh = null;
