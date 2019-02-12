@@ -1,22 +1,238 @@
 package io.vertx.ext.amqp.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.codegen.annotations.Nullable;
+import io.vertx.core.*;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.ext.amqp.AmqpMessage;
 import io.vertx.ext.amqp.AmqpReceiver;
+import io.vertx.proton.ProtonDelivery;
+import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonReceiver;
 
+import java.util.ArrayDeque;
+import java.util.Queue;
+
 public class AmqpReceiverImpl implements AmqpReceiver {
+
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AmqpReceiverImpl.class);
 
 
   private final String address;
   private final ProtonReceiver receiver;
   private final AmqpConnectionImpl connection;
 
-  public AmqpReceiverImpl(String address, AmqpConnectionImpl connection, ProtonReceiver receiver) {
+  private final Queue<AmqpMessageImpl> buffered = new ArrayDeque<>();
+  private Handler<AmqpMessage> handler;
+  private long demand = Long.MAX_VALUE;
+  private boolean closed;
+  private Handler<Void> endHandler;
+  private Handler<Throwable> exceptionHandler;
+  private boolean initialCreditGiven;
+  private int initialCredit = 1000;
+
+  public AmqpReceiverImpl(
+    String address,
+    AmqpConnectionImpl connection,
+    ProtonReceiver receiver,
+    Handler<AmqpMessage> handler, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     this.address = address;
     this.receiver = receiver;
     this.connection = connection;
+    this.handler = handler;
+
+    // Disable auto-accept and automated prefetch, we will manage disposition and credit
+    // manually to allow for delayed handler registration and pause/resume functionality.
+    this.receiver.setAutoAccept(false);
+    this.receiver.setPrefetch(0);
+
+    this.receiver.handler((delivery, message) -> handleMessage(new AmqpMessageImpl(message, delivery)));
+    handler(this.handler);
+
+    this.receiver.closeHandler(res -> {
+      Handler<Void> endh = null;
+      Handler<Throwable> exh = null;
+      boolean closeReceiver = false;
+
+      synchronized (AmqpReceiverImpl.this) {
+        if (!closed && endHandler != null) {
+          endh = endHandler;
+        } else if (!closed && exceptionHandler != null) {
+          exh = exceptionHandler;
+        }
+
+        if (!closed) {
+          closed = true;
+          closeReceiver = true;
+        }
+      }
+
+      if (endh != null) {
+        endh.handle(null);
+      } else if (exh != null) {
+        if (res.succeeded()) {
+          exh.handle(new VertxException("Consumer closed remotely"));
+        } else {
+          exh.handle(new VertxException("Consumer closed remotely with error", res.cause()));
+        }
+      } else {
+        if (res.succeeded()) {
+          LOGGER.warn("Consumer for address " + address + " unexpectedly closed remotely");
+        } else {
+          LOGGER.warn("Consumer for address " + address + " unexpectedly closed remotely with error", res.cause());
+        }
+      }
+
+      if (closeReceiver) {
+        receiver.close();
+      }
+    });
+
+    this.receiver
+      .openHandler(res -> {
+        if (res.failed()) {
+          completionHandler.handle(res.mapEmpty());
+        } else {
+          completionHandler.handle(Future.succeededFuture(this));
+        }
+      });
+
+    this.receiver.open();
+  }
+
+  private void handleMessage(AmqpMessageImpl message) {
+    boolean schedule = false;
+
+    synchronized (this) {
+      if (handler != null && demand > 0L && buffered.isEmpty()) {
+        if (demand != Long.MAX_VALUE) {
+          demand--;
+        }
+      } else if (handler != null && demand > 0L) {
+        // Buffered messages present, deliver the oldest of those instead
+        buffered.add(message);
+        message = buffered.poll();
+        if (demand != Long.MAX_VALUE) {
+          demand--;
+        }
+
+        // Schedule a delivery for the next buffered message
+        schedule = true;
+      } else {
+        // Buffer message until we aren't paused
+        buffered.add(message);
+      }
+    }
+    deliverMessageToHandler(message);
+
+    // schedule next delivery if appropriate, after earlier delivery to allow chance to pause etc.
+    if (schedule) {
+      scheduleBufferedMessageDelivery();
+    }
+  }
+
+  @Override
+  public synchronized AmqpReceiverImpl exceptionHandler(Handler<Throwable> handler) {
+    exceptionHandler = handler;
+    return this;
+  }
+
+  @Override
+  public ReadStream<AmqpMessage> handler(@Nullable Handler<AmqpMessage> handler) {
+    int creditToFlow = 0;
+    boolean schedule = false;
+
+    synchronized (this) {
+      this.handler = handler;
+      if (handler != null) {
+        schedule = true;
+
+        // Flow initial credit if needed
+        if (!initialCreditGiven) {
+          initialCreditGiven = true;
+          creditToFlow = initialCredit;
+        }
+      }
+    }
+
+    if(creditToFlow > 0) {
+      final int c = creditToFlow;
+      connection.runWithTrampoline(v -> receiver.flow(c));
+    }
+
+    if(schedule) {
+      scheduleBufferedMessageDelivery();
+    }
+
+    return this;
+  }
+
+  @Override
+  public synchronized AmqpReceiverImpl pause() {
+    demand = 0L;
+    return this;
+  }
+
+  @Override
+  public synchronized AmqpReceiverImpl fetch(long amount) {
+    if (amount > 0) {
+      demand += amount;
+      if (demand < 0L) {
+        demand = Long.MAX_VALUE;
+      }
+      scheduleBufferedMessageDelivery();
+    }
+    return this;
+  }
+
+  @Override
+  public synchronized AmqpReceiverImpl resume() {
+    return fetch(Long.MAX_VALUE);
+  }
+
+  @Override
+  public synchronized AmqpReceiverImpl endHandler(Handler<Void> endHandler) {
+    this.endHandler = endHandler;
+    return this;
+  }
+
+  private void deliverMessageToHandler(AmqpMessageImpl message) {
+    handler.handle(message);
+    message.delivered();
+    this.receiver.flow(1);
+  }
+
+  private void scheduleBufferedMessageDelivery() {
+    boolean schedule;
+
+    synchronized (this) {
+      schedule = !buffered.isEmpty() && demand > 0L;
+    }
+
+    if (schedule) {
+      connection.runOnContext(v -> {
+        AmqpMessageImpl message = null;
+
+        synchronized (this) {
+          if (demand > 0L) {
+            if (demand != Long.MAX_VALUE) {
+              demand--;
+            }
+            message = buffered.poll();
+          }
+        }
+
+        if (message != null) {
+          // Delivering outside the synchronized block
+          deliverMessageToHandler(message);
+
+          // Schedule a delivery for a further buffered message if any
+          scheduleBufferedMessageDelivery();
+        }
+      });
+    }
   }
 
   @Override
@@ -31,10 +247,16 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       };
     }
     connection.unregister(this);
-    Future<Void> future = Future.<Void>future().setHandler(handler);
-    this.receiver
-      .closeHandler(x -> future.handle(x.mapEmpty()))
-      .close();
+    if (this.receiver.isOpen()) {
+      Future<Void> future = Future.<Void>future().setHandler(handler);
+      this.receiver
+        .closeHandler(x -> future.handle(x.mapEmpty()))
+        .close();
+    } else {
+      handler.handle(Future.succeededFuture());
+    }
 
   }
+
+
 }

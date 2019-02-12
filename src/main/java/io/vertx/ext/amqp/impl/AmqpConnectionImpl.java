@@ -24,6 +24,18 @@ public class AmqpConnectionImpl implements AmqpConnection {
     this.context = context;
   }
 
+  public void runOnContext(Handler<Void> action) {
+    context.runOnContext(action);
+  }
+
+  public void runWithTrampoline(Handler<Void> action) {
+    if (Vertx.currentContext() == context) {
+      action.handle(null);
+    } else {
+      runOnContext(action);
+    }
+  }
+
   @Override
   public AmqpConnection close(Handler<AsyncResult<Void>> done) {
     List<Future> futures = new ArrayList<>();
@@ -44,7 +56,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
       Future<Void> future = Future.future();
       connection
         .closeHandler(closed ->
-          context.runOnContext(x -> future.handle(closed.mapEmpty())))
+          runWithTrampoline(x -> future.handle(closed.mapEmpty())))
         .close();
       if (done != null) {
         future.setHandler(done);
@@ -92,19 +104,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
     if (receiverOptions != null) {
       receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
     }
-    context.runOnContext(x -> {
-      receiver
-        .handler((delivery, message) -> handler.handle(new AmqpMessageBuilder(message).build()))
-        .openHandler(res -> {
-          if (res.failed()) {
-            completionHandler.handle(res.mapEmpty());
-          } else {
-            AmqpReceiverImpl result = new AmqpReceiverImpl(address, this, res.result());
-            receivers.add(result);
-            completionHandler.handle(Future.succeededFuture(result));
-          }
-        })
-        .open();
+    runWithTrampoline(x -> {
+      new AmqpReceiverImpl(address, this, receiver, handler, completionHandler);
     });
     return this;
   }
