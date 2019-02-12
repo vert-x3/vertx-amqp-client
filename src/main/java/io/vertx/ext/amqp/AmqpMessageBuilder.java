@@ -7,7 +7,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.amqp.impl.AmqpMessageImpl;
 import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.Symbol;
-import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
 import org.apache.qpid.proton.amqp.messaging.Data;
@@ -35,6 +34,7 @@ public class AmqpMessageBuilder {
   public AmqpMessageBuilder(Message existing) {
     message = existing;
   }
+
 
   public AmqpMessage build() {
     return new AmqpMessageImpl(message);

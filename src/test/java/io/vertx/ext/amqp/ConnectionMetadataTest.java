@@ -12,6 +12,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RunWith(VertxUnitRunner.class)
 public class ConnectionMetadataTest {
@@ -73,6 +74,64 @@ public class ConnectionMetadataTest {
         });
       }
     });
+  }
+
+  @Test(timeout = 20000)
+  public void testConnectionHostnameAndContainerID(TestContext context) throws Exception {
+    doConnectionHostnameAndContainerIDTestImpl(context, true);
+    doConnectionHostnameAndContainerIDTestImpl(context, false);
+  }
+
+  private void doConnectionHostnameAndContainerIDTestImpl(TestContext context, boolean customValues) throws Exception {
+    String tcpConnectionHostname = "localhost";
+    String containerId = "myCustomContainer";
+    String vhost = "myCustomVhost";
+
+    Async asyncShutdown = context.async();
+    AtomicBoolean linkOpened = new AtomicBoolean();
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(x -> {
+        if(customValues){
+          context.assertEquals(vhost, serverConnection.getRemoteHostname());
+          context.assertFalse(tcpConnectionHostname.equals(serverConnection.getRemoteHostname()));
+
+          context.assertEquals(containerId, serverConnection.getRemoteContainer());
+        } else{
+          context.assertEquals(tcpConnectionHostname, serverConnection.getRemoteHostname());
+          context.assertNotNull(containerId, serverConnection.getRemoteContainer());
+        }
+        serverConnection.open();
+      });
+      serverConnection.closeHandler(x -> {
+        serverConnection.close();
+      });
+    });
+
+    AmqpClientOptions opts = new AmqpClientOptions()
+      .setHost(tcpConnectionHostname).setPort(server.actualPort());
+    if (customValues) {
+      opts.setContainerId(containerId).setVirtualHost(vhost);
+    }
+
+
+    AmqpClient client = AmqpClient.create(opts)
+      .connect(res -> {
+      context.assertTrue(res.succeeded(), "Expected connection to succeed");
+
+      res.result().close(shutdownRes -> {
+        context.assertTrue(shutdownRes.succeeded());
+        asyncShutdown.complete();
+      });
+    });
+
+    try {
+      asyncShutdown.awaitSuccess();
+    } finally {
+      server.close();
+    }
+
+    context.assertFalse(linkOpened.get());
   }
 
 }
