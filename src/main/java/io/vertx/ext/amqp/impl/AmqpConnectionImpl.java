@@ -149,12 +149,12 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   private void openSender(Handler<AsyncResult<AmqpSender>> completionHandler, ProtonSender sender) {
     context.runOnContext(x -> {
+      AmqpSenderImpl result = new AmqpSenderImpl(sender, this, context);
       sender
         .openHandler(done -> {
           if (done.failed()) {
             completionHandler.handle(done.mapEmpty());
           } else {
-            AmqpSenderImpl result = new AmqpSenderImpl(done.result(), this, context);
             senders.add(result);
             completionHandler.handle(Future.succeededFuture(result));
           }

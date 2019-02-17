@@ -4,10 +4,10 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.streams.WriteStream;
 
-// TODO Implement write stream.
 @VertxGen
-public interface AmqpSender {
+public interface AmqpSender extends WriteStream<AmqpMessage> {
 
   /**
    * Sends an AMQP message. The destination the configured sender address or the address configured in the message.
