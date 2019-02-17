@@ -21,6 +21,9 @@ import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(VertxUnitRunner.class)
 public class ReceptionTest extends ArtemisTestBase {
@@ -44,7 +47,7 @@ public class ReceptionTest extends ArtemisTestBase {
   }
 
   @Test(timeout = 20000)
-  public void testReceiveBasicMessage(TestContext context) throws Exception {
+  public void testReceiveBasicMessage(TestContext context) {
     String testName = name.getMethodName();
     String sentContent = "myMessageContent-" + testName;
     String propKey = "appPropKey";
@@ -99,7 +102,7 @@ public class ReceptionTest extends ArtemisTestBase {
   }
 
   @Test(timeout = 20000)
-  public void testReceiveBasicMessageAsStream(TestContext context) throws Exception {
+  public void testReceiveBasicMessageAsStream(TestContext context) {
     String testName = name.getMethodName();
     String sentContent = "myMessageContent-" + testName;
 
@@ -150,6 +153,139 @@ public class ReceptionTest extends ArtemisTestBase {
 
       });
 
+    });
+
+    asyncSendMsg.awaitSuccess();
+    asyncShutdown.awaitSuccess();
+  }
+
+  @Test(timeout = 20000)
+  public void testReceiveMultipleMessageAfterDelayedHandlerAddition(TestContext context) {
+    String testName = name.getMethodName();
+    String sentContent = "myMessageContent-" + testName;
+
+    Async asyncShutdown = context.async();
+    Async asyncSendMsg = context.async();
+
+    int msgCount = 5;
+
+    AmqpClient client = AmqpClient.create(vertx, new AmqpClientOptions()
+      .setHost(host).setPort(port).setPassword(password).setUsername(username));
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+      // Set up a consumer using the bridge but DONT register the handler
+      res.result().receiver(testName, done -> {
+        context.assertTrue(done.succeeded());
+
+        // Send some message from a regular AMQP client
+        sendAFewMessages(context, testName, sentContent, asyncSendMsg, msgCount);
+
+        // Add the handler after a delay
+        vertx.setTimer(500, x -> {
+          AtomicInteger received = new AtomicInteger();
+          done.result().handler(msg -> {
+            int msgNum = received.incrementAndGet();
+            String content = msg.getBodyAsString();
+            context.assertNotNull(content, "amqp message " + msgNum + " body content was null");
+            context.assertEquals(sentContent, content, "amqp message " + msgNum + " body not as expected");
+
+            if (msgNum == msgCount) {
+              client.close(shutdownRes -> {
+                context.assertTrue(shutdownRes.succeeded());
+                asyncShutdown.complete();
+              });
+            }
+          });
+        }); // timer
+      }); // receiver
+    }); // connect
+    asyncSendMsg.awaitSuccess();
+    asyncShutdown.awaitSuccess();
+  }
+
+  private void sendAFewMessages(TestContext context, String testName, String sentContent, Async asyncSendMsg, int msgCount) {
+    ProtonClient proton = ProtonClient.create(vertx);
+    proton.connect(host, port, username, password, res -> {
+      context.assertTrue(res.succeeded());
+
+      org.apache.qpid.proton.message.Message protonMsg = Proton.message();
+      protonMsg.setBody(new AmqpValue(sentContent));
+
+      ProtonConnection conn = res.result().open();
+      ProtonSender sender = conn.createSender(testName).open();
+      for (int i = 1; i <= msgCount; i++) {
+        final int msgNum = i;
+        sender.send(protonMsg, delivery -> {
+          context.assertNotNull(delivery.getRemoteState(), "message " + msgNum + " had no remote state");
+          context.assertTrue(delivery.getRemoteState() instanceof Accepted, "message " + msgNum + " was not accepted");
+          context.assertTrue(delivery.remotelySettled(), "message " + msgNum + " was not settled");
+
+          if (msgNum == msgCount) {
+            conn.closeHandler(closeResult -> conn.disconnect()).close();
+            asyncSendMsg.complete();
+          }
+        });
+      }
+    });
+  }
+
+  @Test(timeout = 20000)
+  public void testReceiveMultipleMessageAfterPause(TestContext context) {
+    String testName = name.getMethodName();
+    String sentContent = "myMessageContent-" + testName;
+
+    Async asyncShutdown = context.async();
+    Async asyncSendMsg = context.async();
+
+    final int pauseCount = 2;
+    final int totalMsgCount = 5;
+    final int delay = 500;
+
+    AmqpClient client = AmqpClient.create(vertx,
+      new AmqpClientOptions().setHost(host).setPort(port).setUsername(username).setPassword(password));
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+      final AtomicInteger received = new AtomicInteger();
+      final AtomicLong pauseStartTime = new AtomicLong();
+      final AtomicReference<AmqpReceiver> receiver = new AtomicReference<>();
+      // Set up a consumer using the bridge
+      res.result().receiver(testName,
+        msg -> {
+          int msgNum = received.incrementAndGet();
+          String amqpBodyContent = msg.getBodyAsString();
+          context.assertNotNull(amqpBodyContent, "message " + msgNum + " jsonObject body was null");
+          context.assertNotNull(amqpBodyContent, "amqp message " + msgNum + " body content was null");
+          context.assertEquals(sentContent, amqpBodyContent, "amqp message " + msgNum + " body not as expected");
+
+          // Pause once we get initial messages
+          if (msgNum == pauseCount) {
+            receiver.get().pause();
+            // Resume after a delay
+            pauseStartTime.set(System.currentTimeMillis());
+            vertx.setTimer(delay, x -> receiver.get().resume());
+          }
+
+          // Verify subsequent deliveries occur after the expected delay
+          if (msgNum > pauseCount) {
+            context.assertTrue(pauseStartTime.get() > 0, "pause start not initialised before receiving msg" + msgNum);
+            context.assertTrue(System.currentTimeMillis() + delay > pauseStartTime.get(),
+              "delivery occurred before expected");
+          }
+
+          if (msgNum == totalMsgCount) {
+            client.close(shutdownRes -> {
+              context.assertTrue(shutdownRes.succeeded());
+              asyncShutdown.complete();
+            });
+          }
+        },
+        done -> {
+          context.assertTrue(done.succeeded());
+          receiver.set(done.result());
+
+          // Send some message from a regular AMQP client
+          sendAFewMessages(context, testName, sentContent, asyncSendMsg, totalMsgCount);
+        });
     });
 
     asyncSendMsg.awaitSuccess();
