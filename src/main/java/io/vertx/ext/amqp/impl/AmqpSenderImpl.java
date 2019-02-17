@@ -127,6 +127,13 @@ public class AmqpSenderImpl implements AmqpSender {
       }
     };
 
+    synchronized (AmqpSenderImpl.this) {
+      // Update the credit tracking. We only need to adjust this here because the sends etc may not be on the context
+      // thread and if that is the case we can't use the ProtonSender sendQueueFull method to check that credit has been
+      // exhausted following this doSend call since we will have only scheduled the actual send for later.
+      remoteCredit--;
+    }
+
     context.runOnContext(x -> {
       if (reply != null) {
         try {
@@ -135,13 +142,6 @@ public class AmqpSenderImpl implements AmqpSender {
           reply.handle(Future.failedFuture(e));
           return;
         }
-      }
-
-      synchronized (AmqpSenderImpl.this) {
-        // Update the credit tracking. We only need to adjust this here because the sends etc may not be on the context
-        // thread and if that is the case we can't use the ProtonSender sendQueueFull method to check that credit has been
-        // exhausted following this doSend call since we will have only scheduled the actual send for later.
-        remoteCredit--;
       }
 
       if (reply != null) {
