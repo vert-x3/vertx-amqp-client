@@ -21,6 +21,8 @@ public class AmqpClientOptions extends ProtonClientOptions {
 
   private String username;
   private String password;
+  private boolean replyEnabled = true;
+  private long replyTimeout = 30_000;
 
   private String containerId = UUID.randomUUID().toString();
 
@@ -40,6 +42,8 @@ public class AmqpClientOptions extends ProtonClientOptions {
     this.username = other.username;
     this.port = other.port;
     this.containerId = other.containerId;
+    this.replyEnabled = other.replyEnabled;
+    this.replyTimeout = other.replyTimeout;
   }
 
   public JsonObject toJson() {
@@ -358,5 +362,23 @@ public class AmqpClientOptions extends ProtonClientOptions {
       }
     }
     return Integer.parseInt(sys);
+  }
+
+  public boolean isReplyEnabled() {
+    return replyEnabled;
+  }
+
+  public AmqpClientOptions setReplyEnabled(boolean replyEnabled) {
+    this.replyEnabled = replyEnabled;
+    return this;
+  }
+
+  public long getReplyTimeout() {
+    return replyTimeout;
+  }
+
+  public AmqpClientOptions setReplyTimeout(long replyTimeout) {
+    this.replyTimeout = replyTimeout;
+    return this;
   }
 }

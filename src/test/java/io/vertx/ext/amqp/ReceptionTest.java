@@ -31,7 +31,7 @@ public class ReceptionTest extends ArtemisTestBase {
   public TestName name = new TestName();
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     vertx = Vertx.vertx();
   }
 

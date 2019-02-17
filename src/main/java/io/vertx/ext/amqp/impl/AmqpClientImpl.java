@@ -70,35 +70,42 @@ public class AmqpClientImpl implements AmqpClient {
   }
 
   private Runnable connection(Handler<AsyncResult<AmqpConnection>> connectionHandler, Context context) {
-    return () ->
-      proton.connect(options, options.getHost(), options.getPort(), options.getUsername(), options.getPassword(), connection -> {
-        if (connection.succeeded()) {
-          Map<Symbol, Object> map = new HashMap<>();
-          map.put(AmqpConnectionImpl.PRODUCT_KEY, AmqpConnectionImpl.PRODUCT);
-          ProtonConnection result = connection.result();
-          if (options.getContainerId() != null) {
-            result.setContainer(options.getContainerId());
-          }
-          if (options.getVirtualHost() != null) {
-            result.setHostname(options.getVirtualHost());
-          }
+    return () -> {
+      proton
+        .connect(options, options.getHost(), options.getPort(), options.getUsername(), options.getPassword(), connection -> {
+          if (connection.succeeded()) {
+            Map<Symbol, Object> map = new HashMap<>();
+            map.put(AmqpConnectionImpl.PRODUCT_KEY, AmqpConnectionImpl.PRODUCT);
+            ProtonConnection result = connection.result();
+            if (options.getContainerId() != null) {
+              result.setContainer(options.getContainerId());
+            }
+            if (options.getVirtualHost() != null) {
+              result.setHostname(options.getVirtualHost());
+            }
 
-          result
-            .setProperties(map)
-            .openHandler(conn -> {
-              if (conn.succeeded()) {
-
-                AmqpConnection amqp = new AmqpConnectionImpl(options, context, conn.result());
-                connections.add(amqp);
-                context.runOnContext(x -> connectionHandler.handle(Future.succeededFuture(amqp)));
-              } else {
-                context.runOnContext(x -> connectionHandler.handle(conn.mapEmpty()));
-              }
-            });
-          result.open();
-        } else {
-          context.runOnContext(x -> connectionHandler.handle(connection.mapEmpty()));
-        }
-      });
+            result
+              .setProperties(map)
+              .openHandler(conn -> {
+                if (conn.succeeded()) {
+                  AmqpConnection amqp = new AmqpConnectionImpl(vertx, options, context, conn.result());
+                  connections.add(amqp);
+                  ((AmqpConnectionImpl) amqp).init().setHandler(res -> {
+                    if (res.failed()) {
+                      connectionHandler.handle(Future.failedFuture(res.cause()));
+                    } else {
+                      connectionHandler.handle(Future.succeededFuture(amqp));
+                    }
+                  });
+                } else {
+                  context.runOnContext(x -> connectionHandler.handle(conn.mapEmpty()));
+                }
+              });
+            result.open();
+          } else {
+            context.runOnContext(x -> connectionHandler.handle(connection.mapEmpty()));
+          }
+        });
+    };
   }
 }

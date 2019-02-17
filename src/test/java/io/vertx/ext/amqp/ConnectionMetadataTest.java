@@ -36,7 +36,7 @@ public class ConnectionMetadataTest {
     }
   }
 
-  @Test
+  @Test(timeout = 20000)
   public void testMetadata(TestContext context) throws ExecutionException, InterruptedException {
     Async asyncMetaData = context.async();
     Async asyncShutdown = context.async();
@@ -62,19 +62,20 @@ public class ConnectionMetadataTest {
       });
     });
 
-    AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort())).connect(ar -> {
-      if (ar.failed()) {
-        context.fail(ar.cause());
-      } else {
-        ar.result().close(x -> {
-          if (x.failed()) {
-            context.fail(x.cause());
-          } else {
-            asyncShutdown.complete();
-          }
-        });
-      }
-    });
+    AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()).setReplyEnabled(false))
+      .connect(ar -> {
+        if (ar.failed()) {
+          context.fail(ar.cause());
+        } else {
+          ar.result().close(x -> {
+            if (x.failed()) {
+              context.fail(x.cause());
+            } else {
+              asyncShutdown.complete();
+            }
+          });
+        }
+      });
   }
 
   @Test(timeout = 20000)
@@ -93,12 +94,12 @@ public class ConnectionMetadataTest {
 
     MockServer server = new MockServer(vertx, serverConnection -> {
       serverConnection.openHandler(x -> {
-        if(customValues){
+        if (customValues) {
           context.assertEquals(vhost, serverConnection.getRemoteHostname());
           context.assertFalse(tcpConnectionHostname.equals(serverConnection.getRemoteHostname()));
 
           context.assertEquals(containerId, serverConnection.getRemoteContainer());
-        } else{
+        } else {
           context.assertEquals(tcpConnectionHostname, serverConnection.getRemoteHostname());
           context.assertNotNull(containerId, serverConnection.getRemoteContainer());
         }
@@ -110,21 +111,21 @@ public class ConnectionMetadataTest {
     });
 
     AmqpClientOptions opts = new AmqpClientOptions()
-      .setHost(tcpConnectionHostname).setPort(server.actualPort());
+      .setHost(tcpConnectionHostname).setPort(server.actualPort()).setReplyEnabled(false);
     if (customValues) {
       opts.setContainerId(containerId).setVirtualHost(vhost);
     }
 
 
-    AmqpClient client = AmqpClient.create(opts)
+    AmqpClient.create(opts)
       .connect(res -> {
-      context.assertTrue(res.succeeded(), "Expected connection to succeed");
+        context.assertTrue(res.succeeded(), "Expected connection to succeed");
 
-      res.result().close(shutdownRes -> {
-        context.assertTrue(shutdownRes.succeeded());
-        asyncShutdown.complete();
+        res.result().close(shutdownRes -> {
+          context.assertTrue(shutdownRes.succeeded());
+          asyncShutdown.complete();
+        });
       });
-    });
 
     try {
       asyncShutdown.awaitSuccess();

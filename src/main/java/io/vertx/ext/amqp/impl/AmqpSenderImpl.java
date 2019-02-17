@@ -21,7 +21,37 @@ public class AmqpSenderImpl implements AmqpSender {
 
   @Override
   public AmqpSender send(AmqpMessage message) {
-    context.runOnContext(x -> sender.send(message.unwrap()));
+    return send(message, null);
+  }
+
+  @Override
+  public AmqpSender send(AmqpMessage message, Handler<AsyncResult<AmqpMessage>> reply) {
+    AmqpMessage updated;
+    if (message.address() == null) {
+      updated = AmqpMessage.create(message).address(address()).build();
+    } else {
+      updated = message;
+    }
+    context.runOnContext(x -> {
+      if (reply != null) {
+        try {
+          connection.replyManager().verify();
+        } catch (Exception e) {
+          reply.handle(Future.failedFuture(e));
+          return;
+        }
+      }
+
+      // TODO Update credit
+
+      if (reply != null) {
+        sender.send(connection.replyManager().registerReplyToHandler(updated, reply).unwrap());
+      } else {
+        sender.send(updated.unwrap());
+      }
+
+      // TODO Update credit
+    });
     return this;
   }
 
@@ -29,6 +59,12 @@ public class AmqpSenderImpl implements AmqpSender {
   public AmqpSender send(String address, AmqpMessage message) {
     AmqpMessage updated = AmqpMessage.create(message).address(address).build();
     return send(updated);
+  }
+
+  @Override
+  public AmqpSender send(String address, AmqpMessage message, Handler<AsyncResult<AmqpMessage>> reply) {
+    AmqpMessage updated = AmqpMessage.create(message).address(address).build();
+    return send(updated, reply);
   }
 
   @Override
@@ -69,9 +105,13 @@ public class AmqpSenderImpl implements AmqpSender {
       handler = x -> {};
     }
     connection.unregister(this);
-    Future<Void> future = Future.<Void>future().setHandler(handler);
-    sender.closeHandler(x -> future.handle(x.mapEmpty()));
-    sender.close();
+    if (sender.isOpen()) {
+      Future<Void> future = Future.<Void>future().setHandler(handler);
+      sender.closeHandler(x -> future.handle(x.mapEmpty()));
+      sender.close();
+    } else {
+      handler.handle(Future.succeededFuture());
+    }
   }
 
   @Override
