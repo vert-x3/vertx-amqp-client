@@ -8,10 +8,12 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonReceiver;
+import io.vertx.proton.ProtonSession;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
 import org.apache.qpid.proton.amqp.messaging.Section;
+import org.apache.qpid.proton.amqp.transport.Target;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -172,5 +175,107 @@ public class SenderTest extends ArtemisTestBase {
 
     asyncRecvMsg.awaitSuccess();
 
+  }
+
+  @Test(timeout = 20000)
+  public void testProducerClose(TestContext context) throws Exception {
+    doProducerCloseTestImpl(context, false);
+  }
+
+  @Test(timeout = 20000)
+  public void testProducerEnd(TestContext context) throws Exception {
+    doProducerCloseTestImpl(context, true);
+  }
+
+  private void doProducerCloseTestImpl(TestContext context, boolean callEnd) throws Exception {
+    artemis.stop();
+
+    final String testName = name.getMethodName();
+    final String sentContent = "myMessageContent-" + testName;
+
+    final Async asyncReceiveMsg = context.async();
+    final Async asyncClose = context.async();
+    final Async asyncShutdown = context.async();
+
+    final AtomicBoolean exceptionHandlerCalled = new AtomicBoolean();
+
+    // === Server handling ====
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      // Expect a connection
+      serverConnection.openHandler(serverSender -> {
+        // Add a close handler
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      // Expect a session to open, when the producer is created
+      serverConnection.sessionOpenHandler(ProtonSession::open);
+
+      // Expect a receiver link open for the producer
+      serverConnection.receiverOpenHandler(serverReceiver -> {
+        Target remoteTarget = serverReceiver.getRemoteTarget();
+        context.assertNotNull(remoteTarget, "target should not be null");
+        context.assertEquals(testName, remoteTarget.getAddress(), "expected given address");
+        // Naive test-only handling
+        serverReceiver.setTarget(remoteTarget.copy());
+
+        // Add the message handler
+        serverReceiver.handler((delivery, message) -> {
+          Section body = message.getBody();
+          context.assertNotNull(body, "received body was null");
+          context.assertTrue(body instanceof AmqpValue, "unexpected body section type: " + body.getClass());
+          context.assertEquals(sentContent, ((AmqpValue) body).getValue(), "Unexpected message body content");
+
+          asyncReceiveMsg.complete();
+        });
+
+        // Add a close handler
+        serverReceiver.closeHandler(x -> {
+          serverReceiver.close();
+          asyncClose.complete();
+        });
+
+        serverReceiver.open();
+      });
+    });
+
+    // === Bridge producer handling ====
+
+    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+      .setHost("localhost").setPort(server.actualPort()).setUsername(username).setUsername(password);
+    AmqpClient client = AmqpClient.create(vertx, options);
+    client.connect(res -> {
+      // Set up a producer using the bridge, use it, close it.
+      context.assertTrue(res.succeeded());
+
+      res.result().sender(testName, done -> {
+        AmqpSender sender = done.result();
+        sender.exceptionHandler(x -> exceptionHandlerCalled.set(true));
+        sender.sendWithAck(AmqpMessage.create().body(sentContent).build(), x -> {
+          context.assertTrue(x.succeeded());
+
+          if (callEnd) {
+            sender.end();
+          } else {
+            sender.close(null);
+          }
+
+          client.close(shutdownRes -> {
+            context.assertTrue(shutdownRes.succeeded());
+            asyncShutdown.complete();
+          });
+        });
+      });
+    });
+
+    try {
+      asyncReceiveMsg.awaitSuccess();
+      asyncClose.awaitSuccess();
+      asyncShutdown.awaitSuccess();
+      context.assertFalse(exceptionHandlerCalled.get(), "exception handler unexpectedly called");
+    } finally {
+      server.close();
+    }
   }
 }
