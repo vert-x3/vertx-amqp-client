@@ -37,6 +37,8 @@
 |[[receiveBufferSize]]`@receiveBufferSize`|`Number (int)`|-
 |[[reconnectAttempts]]`@reconnectAttempts`|`Number (int)`|-
 |[[reconnectInterval]]`@reconnectInterval`|`Number (long)`|-
+|[[replyEnabled]]`@replyEnabled`|`Boolean`|-
+|[[replyTimeout]]`@replyTimeout`|`Number (long)`|-
 |[[reuseAddress]]`@reuseAddress`|`Boolean`|-
 |[[reusePort]]`@reusePort`|`Boolean`|-
 |[[sendBufferSize]]`@sendBufferSize`|`Number (int)`|-

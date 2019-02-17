@@ -22,10 +22,19 @@ public class AmqpConnectionImpl implements AmqpConnection {
   private List<AmqpSender> senders = new CopyOnWriteArrayList<>();
   private List<AmqpReceiver> receivers = new CopyOnWriteArrayList<>();
 
-  AmqpConnectionImpl(AmqpClientOptions options, Context context, ProtonConnection connection) {
+  private final ReplyManager replyManager;
+
+  AmqpConnectionImpl(Vertx vertx, AmqpClientOptions options, Context context, ProtonConnection connection) {
     this.options = options;
     this.connection = Objects.requireNonNull(connection, "connection cannot be `null`");
     this.context = context;
+
+    this.replyManager = new ReplyManager(vertx, context, this,
+      options.isReplyEnabled(), options.getReplyTimeout());
+  }
+
+  public Future<Void> init() {
+    return this.replyManager.initialize();
   }
 
   public void runOnContext(Handler<Void> action) {
@@ -40,9 +49,14 @@ public class AmqpConnectionImpl implements AmqpConnection {
     }
   }
 
+  public ReplyManager replyManager() {
+    return replyManager;
+  }
+
   @Override
   public AmqpConnection close(Handler<AsyncResult<Void>> done) {
     List<Future> futures = new ArrayList<>();
+    futures.add(replyManager.close());
     synchronized (this) {
       senders.forEach(sender -> {
         Future<Void> future = Future.future();
@@ -56,7 +70,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
       });
     }
 
-    CompositeFuture.all(futures).setHandler(result -> {
+    CompositeFuture.join(futures).setHandler(result -> {
       Future<Void> future = Future.future();
       connection
         .closeHandler(closed ->
@@ -107,7 +121,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
   @Override
   public AmqpConnection receiver(String address, AmqpReceiverOptions receiverOptions, Handler<AmqpMessage> handler,
                                  Handler<AsyncResult<AmqpReceiver>> completionHandler) {
-    Objects.requireNonNull(address, "The address must not be `null`");
     ProtonLinkOptions opts = new ProtonLinkOptions();
     if (receiverOptions != null) {
       opts = new ProtonLinkOptions()
@@ -117,9 +130,10 @@ public class AmqpConnectionImpl implements AmqpConnection {
     ProtonReceiver receiver = connection.createReceiver(address, opts)
       .setAutoAccept(true);
 
-    if (receiverOptions != null) {
-      receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
+    if (receiverOptions != null  && receiverOptions.getQos() != null) {
+        receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
     }
+
     runWithTrampoline(x -> {
       new AmqpReceiverImpl(address, this, receiver, handler, completionHandler);
     });
@@ -175,4 +189,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return this;
   }
 
+  public ProtonConnection unwrap() {
+    return this.connection;
+  }
 }

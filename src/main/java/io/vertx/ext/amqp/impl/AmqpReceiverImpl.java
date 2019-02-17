@@ -107,6 +107,8 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   private void handleMessage(AmqpMessageImpl message) {
     boolean schedule = false;
 
+    message.setReplyManager(connection.replyManager());
+
     synchronized (this) {
       if (handler != null && demand > 0L && buffered.isEmpty()) {
         if (demand != Long.MAX_VALUE) {
@@ -261,4 +263,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   }
 
 
+  public ProtonReceiver unwrap() {
+    return receiver;
+  }
 }

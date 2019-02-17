@@ -1,0 +1,294 @@
+package io.vertx.ext.amqp;
+
+import io.vertx.core.Vertx;
+import io.vertx.ext.amqp.impl.AmqpConnectionImpl;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.proton.*;
+import io.vertx.proton.impl.ProtonServerImpl;
+import org.apache.qpid.proton.Proton;
+import org.apache.qpid.proton.amqp.messaging.Accepted;
+import org.apache.qpid.proton.amqp.messaging.AmqpValue;
+import org.apache.qpid.proton.amqp.transport.AmqpError;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+@RunWith(VertxUnitRunner.class)
+public class ReplyTest extends ArtemisTestBase {
+
+  private Vertx vertx;
+
+  @Rule
+  public TestName name = new TestName();
+
+  @Before
+  public void setUp() {
+    vertx = Vertx.vertx();
+  }
+
+  @After
+  public void tearDown() throws InterruptedException {
+    super.tearDown();
+    if (vertx != null) {
+      vertx.close();
+    }
+  }
+
+  @Test(timeout = 20000)
+  public void testReplyHandlingDisabledOnProducerSide(TestContext context) {
+    Async asyncSend = context.async();
+    Async asyncSendWithReply = context.async();
+    Async asyncShutdown = context.async();
+
+    String destinationName = name.getMethodName();
+    String content = "myStringContent" + destinationName;
+
+    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+      .setHost(host)
+      .setPort(port)
+      .setUsername(username)
+      .setPassword(password);
+    client = AmqpClient.create(vertx, options)
+      .connect(sr -> {
+        context.assertTrue(sr.succeeded());
+
+        sr.result().sender(destinationName, ms -> {
+          context.assertTrue(ms.succeeded());
+          // Try send with a reply handler, expect to fail.
+          ms.result().send(AmqpMessage.create().body(content).build(), reply -> {
+            context.assertTrue(reply.failed());
+            asyncSendWithReply.complete();
+          });
+
+          // Try send without reply handler.
+          ms.result().send(AmqpMessage.create().body(content).build(), ack -> asyncSend.complete());
+
+          sr.result().close(shutdownRes -> {
+            context.assertTrue(shutdownRes.succeeded());
+            asyncShutdown.complete();
+          });
+        });
+      });
+
+    asyncSend.awaitSuccess();
+    asyncSendWithReply.awaitSuccess();
+    asyncShutdown.awaitSuccess();
+  }
+
+  @Test(timeout = 20000)
+  public void testReplyHandlingDisabledOnConsumerSide(TestContext context) {
+    Async asyncSendMsg = context.async();
+    Async asyncRequest = context.async();
+    Async asyncShutdown = context.async();
+    String destinationName = name.getMethodName();
+    String content = "myStringContent" + destinationName;
+    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+      .setHost(host)
+      .setPort(port)
+      .setUsername(username)
+      .setPassword(password);
+    AmqpClient client = AmqpClient.create(vertx, options);
+    client.connect(startResult -> {
+      context.assertTrue(startResult.succeeded());
+      startResult.result().receiver(destinationName,
+        msg -> {
+          context.assertEquals(content, msg.getBodyAsString(), "unexpected msg content");
+          context.assertNotNull(msg.replyTo(), "reply address was not set on the request");
+
+          // Try to reply.
+          try {
+            msg.reply(AmqpMessage.create().body("my response").build());
+            context.fail("Expected exception to be thrown");
+          } catch (IllegalStateException e) {
+            // Expected reply disabled.
+          }
+          asyncRequest.complete();
+
+          startResult.result().close(shutdownRes -> {
+            context.assertTrue(shutdownRes.succeeded());
+            asyncShutdown.complete();
+          });
+        },
+        res -> {
+          context.assertTrue(res.succeeded());
+
+          // Send a message from a regular AMQP client, with reply-to set
+          ProtonClient protonClient = ProtonClient.create(vertx);
+          protonClient.connect(host, port, username, password, x -> {
+            context.assertTrue(x.succeeded());
+            org.apache.qpid.proton.message.Message protonMsg = Proton.message();
+            protonMsg.setBody(new AmqpValue(content));
+            protonMsg.setReplyTo(destinationName);
+
+            ProtonConnection conn = x.result().open();
+
+            ProtonSender sender = conn.createSender(destinationName).open();
+            sender.send(protonMsg, delivery -> {
+              context.assertNotNull(delivery.getRemoteState(), "message had no remote state");
+              context.assertTrue(delivery.getRemoteState() instanceof Accepted, "message was not accepted");
+              context.assertTrue(delivery.remotelySettled(), "message was not settled");
+              conn.closeHandler(closeResult -> conn.disconnect()).close();
+              asyncSendMsg.complete();
+            });
+          });
+        });
+    });
+
+    asyncSendMsg.awaitSuccess();
+    asyncRequest.awaitSuccess();
+    asyncShutdown.awaitSuccess();
+  }
+
+  @Test(timeout = 20000)
+  public void testConnectionToServerWithoutAnonymousSenderLinkSupport(TestContext context) throws Exception {
+    artemis.stop();
+
+    Async asyncShutdown = context.async();
+    AtomicBoolean linkOpened = new AtomicBoolean();
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(x -> serverConnection.open());
+      serverConnection.closeHandler(x -> serverConnection.close());
+      serverConnection.sessionOpenHandler(ProtonSession::open);
+      serverConnection.receiverOpenHandler(serverReceiver -> {
+        linkOpened.set(true);
+        serverReceiver.setCondition(ProtonHelper.condition(AmqpError.PRECONDITION_FAILED, "Expected no links"));
+        serverReceiver.close();
+      });
+      serverConnection.senderOpenHandler(serverSender -> {
+        linkOpened.set(true);
+        serverSender.setCondition(ProtonHelper.condition(AmqpError.PRECONDITION_FAILED, "Expected no links"));
+        serverSender.close();
+      });
+    });
+    ((ProtonServerImpl) server.getProtonServer()).setAdvertiseAnonymousRelayCapability(false);
+
+    AmqpClientOptions options = new AmqpClientOptions()
+      .setHost("localhost")
+      .setPort(server.actualPort())
+      .setReplyEnabled(true);
+
+    this.client = AmqpClient.create(vertx, options).connect(res -> {
+      context.assertTrue(res.succeeded(), "Expected start to succeed with not reply manager");
+      context.assertFalse(((AmqpConnectionImpl) res.result()).replyManager().isReplySupported());
+      res.result().close(shutdownRes -> {
+        context.assertTrue(shutdownRes.succeeded());
+        asyncShutdown.complete();
+      });
+    });
+
+    try {
+      asyncShutdown.awaitSuccess();
+    } finally {
+      server.close();
+    }
+
+    context.assertFalse(linkOpened.get());
+  }
+
+  @Test(timeout = 20000)
+  public void testReply(TestContext context) {
+    Async gotReplyAsync = context.async();
+    String destinationName = name.getMethodName();
+    String content = "myStringContent";
+    String replyContent = "myStringReply";
+
+    this.client = AmqpClient.create(vertx, new AmqpClientOptions()
+      .setHost(host).setPort(port).setUsername(username).setPassword(password));
+    client.connect(startResult -> {
+      context.assertTrue(startResult.succeeded());
+
+      startResult.result().receiver(destinationName,
+        msg -> {
+          context.assertNotNull(msg.getBodyAsString(), "expected msg body but none found");
+          context.assertEquals(content, msg.getBodyAsString(), "unexpected msg content");
+          context.assertNotNull(msg.replyTo(), "reply address was not set on the request");
+          AmqpMessage reply = AmqpMessage.create().body(replyContent).build();
+          msg.reply(reply);
+        },
+        done ->
+          startResult.result().sender(destinationName, sender -> {
+            context.assertTrue(sender.succeeded());
+            sender.result().send(
+              AmqpMessage.create().body(content).build(),
+              reply -> {
+                context.assertTrue(reply.succeeded());
+                AmqpMessage replyMessage = reply.result();
+                context.assertEquals(replyContent, replyMessage.getBodyAsString(), "unexpected reply msg content");
+                context.assertNotNull(replyMessage.address(), "address was not set on the reply");
+                context.assertNull(replyMessage.replyTo(), "reply address was set on the reply");
+                gotReplyAsync.complete();
+              }
+            );
+          })
+        );
+    });
+    gotReplyAsync.awaitSuccess();
+  }
+
+  @Test(timeout = 20000)
+  public void testReplyToOriginalReply(TestContext context) {
+    Async requestReceivedAsync = context.async();
+    Async replyReceivedAsync = context.async();
+    Async replyToReplyAsync = context.async();
+
+    String destinationName = name.getMethodName();
+    String content = "myStringContent";
+    String replyContent = "myStringReply";
+    String replyToReplyContent = "myStringReplyToReply";
+
+    this.client = AmqpClient.create(vertx, new AmqpClientOptions()
+    .setHost(host).setPort(port).setUsername(username).setPassword(password));
+    client.connect(startResult -> {
+      context.assertTrue(startResult.succeeded());
+
+      startResult.result().receiver(destinationName,
+        msg -> {
+          context.assertNotNull(msg.getBodyAsString(), "expected msg body but none found");
+          context.assertEquals(content, msg.getBodyAsString(), "unexpected msg content");
+          context.assertNotNull(msg.replyTo(), "reply address was not set on the request");
+
+          AmqpMessage reply = AmqpMessage.create().body(replyContent).build();
+          msg.reply(reply, replyToReply -> {
+            context.assertTrue(replyToReply.succeeded());
+            context.assertEquals(replyToReplyContent, replyToReply.result().getBodyAsString(),
+              "unexpected 2nd reply msg content");
+            context.assertNull(replyToReply.result().replyTo(), "reply address was unexpectedly set on 2nd reply");
+
+            replyToReplyAsync.complete();
+          });
+        },
+        done -> {
+          startResult.result().sender(destinationName, sender -> {
+            context.assertTrue(sender.succeeded());
+            sender.result().send(
+              AmqpMessage.create().body(content).build(),
+              reply -> {
+                context.assertTrue(reply.succeeded());
+                AmqpMessage replyMessage = reply.result();
+                context.assertEquals(replyContent, replyMessage.getBodyAsString(), "unexpected reply msg content");
+                context.assertNotNull(replyMessage.address(), "address was not set on the reply");
+                context.assertNotNull(replyMessage.replyTo(), "reply address was not set on the reply");
+                replyReceivedAsync.complete();
+
+                AmqpMessage response = AmqpMessage.create().body(replyToReplyContent).build();
+                replyMessage.reply(response);
+
+                requestReceivedAsync.complete();
+              }
+            );
+          });
+        });
+      });
+    requestReceivedAsync.awaitSuccess();
+    replyReceivedAsync.awaitSuccess();
+    replyToReplyAsync.awaitSuccess();
+  }
+}
