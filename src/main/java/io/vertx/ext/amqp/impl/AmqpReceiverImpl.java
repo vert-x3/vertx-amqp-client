@@ -1,14 +1,15 @@
 package io.vertx.ext.amqp.impl;
 
 import io.vertx.codegen.annotations.Nullable;
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.VertxException;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.ext.amqp.AmqpMessage;
 import io.vertx.ext.amqp.AmqpReceiver;
-import io.vertx.proton.ProtonDelivery;
-import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonReceiver;
 
 import java.util.ArrayDeque;
@@ -161,12 +162,12 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       }
     }
 
-    if(creditToFlow > 0) {
+    if (creditToFlow > 0) {
       final int c = creditToFlow;
       connection.runWithTrampoline(v -> receiver.flow(c));
     }
 
-    if(schedule) {
+    if (schedule) {
       scheduleBufferedMessageDelivery();
     }
 
@@ -260,9 +261,11 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     connection.unregister(this);
     if (this.receiver.isOpen()) {
       Future<Void> future = Future.<Void>future().setHandler(handler);
-      this.receiver
-        .closeHandler(x -> future.handle(x.mapEmpty()))
-        .close();
+      connection.runWithTrampoline(z ->
+        this.receiver
+          .closeHandler(x -> future.handle(x.mapEmpty()))
+          .close()
+      );
     } else {
       handler.handle(Future.succeededFuture());
     }
