@@ -25,6 +25,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
   private long replyTimeout = 30_000;
 
   private String containerId = UUID.randomUUID().toString();
+  private int maxBufferedMessages;
 
   public AmqpClientOptions() {
     super();
@@ -44,6 +45,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
     this.containerId = other.containerId;
     this.replyEnabled = other.replyEnabled;
     this.replyTimeout = other.replyTimeout;
+    this.maxBufferedMessages = other.maxBufferedMessages;
   }
 
   public JsonObject toJson() {
@@ -339,8 +341,8 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   public AmqpClientOptions setPassword(String password) {
-      this.password = password;
-      return this;
+    this.password = password;
+    return this;
   }
 
   private String getHostFromSysOrEnv() {
@@ -380,5 +382,14 @@ public class AmqpClientOptions extends ProtonClientOptions {
   public AmqpClientOptions setReplyTimeout(long replyTimeout) {
     this.replyTimeout = replyTimeout;
     return this;
+  }
+
+  public AmqpClientOptions setMaxBufferedMessages(int maxBufferSize) {
+    this.maxBufferedMessages = maxBufferSize;
+    return this;
+  }
+
+  public int getMaxBufferedMessages() {
+    return this.maxBufferedMessages;
   }
 }
