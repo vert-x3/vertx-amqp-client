@@ -83,7 +83,7 @@ public class SenderTest extends BareTestBase {
       .setHost("localhost").setPort(server.actualPort());
     AmqpClient client = AmqpClient.create(vertx, options);
     client.connect(res -> {
-      // Set up a producer using the bridge, use it, close it.
+      // Set up a producer using the client, use it, close it.
       context.assertTrue(res.succeeded());
 
       res.result().sender(testName, done -> {

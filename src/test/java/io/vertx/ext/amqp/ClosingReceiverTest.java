@@ -248,7 +248,7 @@ public class ClosingReceiverTest extends BareTestBase {
       });
     });
 
-    // === Bridge consumer handling ====
+    // === client consumer handling ====
 
     AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
       .setPort(server.actualPort()).setHost("localhost");
