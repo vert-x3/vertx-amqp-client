@@ -246,6 +246,13 @@ public class AmqpReceiverImpl implements AmqpReceiver {
 
   @Override
   public void close(Handler<AsyncResult<Void>> handler) {
+    synchronized (this) {
+      if (closed) {
+        handler.handle(Future.succeededFuture());
+        return;
+      }
+      closed = true;
+    }
     if (handler == null) {
       handler = x -> {
       };
@@ -261,7 +268,6 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     }
 
   }
-
 
   public ProtonReceiver unwrap() {
     return receiver;
