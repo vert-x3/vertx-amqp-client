@@ -291,4 +291,6 @@ public class ReceptionTest extends ArtemisTestBase {
     asyncSendMsg.awaitSuccess();
     asyncShutdown.awaitSuccess();
   }
+
+
 }

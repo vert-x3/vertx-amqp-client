@@ -43,6 +43,10 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     this.receiver = receiver;
     this.connection = connection;
     this.handler = handler;
+    int maxBufferedMessages = connection.options().getMaxBufferedMessages();
+    if (maxBufferedMessages > 0) {
+      this.initialCredit = maxBufferedMessages;
+    }
 
     // Disable auto-accept and automated prefetch, we will manage disposition and credit
     // manually to allow for delayed handler registration and pause/resume functionality.

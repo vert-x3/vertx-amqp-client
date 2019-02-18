@@ -195,4 +195,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
   public ProtonConnection unwrap() {
     return this.connection;
   }
+
+  public AmqpClientOptions options() {
+    return options;
+  }
 }
