@@ -112,7 +112,7 @@ public class ReceptionTest extends ArtemisTestBase {
     AmqpClient client = AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost(host).setPort(port).setUsername(username).setPassword(password));
     client.connect(res -> {
-      // Set up a read stream using the bridge
+      // Set up a read stream using the client
       res.result().receiver(testName, established -> {
         established.result().handler(msg -> {
           context.assertNotNull(msg, "message was null");
@@ -173,7 +173,7 @@ public class ReceptionTest extends ArtemisTestBase {
       .setHost(host).setPort(port).setPassword(password).setUsername(username));
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      // Set up a consumer using the bridge but DONT register the handler
+      // Set up a consumer using the client but DONT register the handler
       res.result().receiver(testName, done -> {
         context.assertTrue(done.succeeded());
 
@@ -248,7 +248,7 @@ public class ReceptionTest extends ArtemisTestBase {
       final AtomicInteger received = new AtomicInteger();
       final AtomicLong pauseStartTime = new AtomicLong();
       final AtomicReference<AmqpReceiver> receiver = new AtomicReference<>();
-      // Set up a consumer using the bridge
+      // Set up a consumer using the client
       res.result().receiver(testName,
         msg -> {
           int msgNum = received.incrementAndGet();
