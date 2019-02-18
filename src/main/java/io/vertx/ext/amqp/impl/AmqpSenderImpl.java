@@ -215,6 +215,10 @@ public class AmqpSenderImpl implements AmqpSender {
   @Override
   public void close(Handler<AsyncResult<Void>> handler) {
     synchronized (this) {
+      if (closed) {
+        handler.handle(Future.succeededFuture());
+        return;
+      }
       closed = true;
     }
     if (handler == null) {

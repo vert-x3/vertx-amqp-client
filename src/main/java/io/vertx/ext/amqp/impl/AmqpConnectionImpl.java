@@ -56,6 +56,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
   @Override
   public AmqpConnection close(Handler<AsyncResult<Void>> done) {
     List<Future> futures = new ArrayList<>();
+
+
     futures.add(replyManager.close());
     synchronized (this) {
       senders.forEach(sender -> {
@@ -69,6 +71,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
         receiver.close(future);
       });
     }
+
 
     CompositeFuture.join(futures).setHandler(result -> {
       Future<Void> future = Future.future();
