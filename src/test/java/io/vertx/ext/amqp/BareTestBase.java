@@ -5,6 +5,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
@@ -36,5 +37,10 @@ public class BareTestBase {
     }
     vertx.close(x -> latchForVertx.countDown());
     latchForVertx.await(10, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void justToAvoidTheIdeToFail() {
+
   }
 }

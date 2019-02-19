@@ -29,7 +29,7 @@ public class ReceiverCreditTest extends BareTestBase {
 
     final AtomicBoolean firstSendQDrainHandlerCall = new AtomicBoolean();
     final Async asyncInitialCredit = context.async();
-    final Async asyncShutdown = context.async();
+    final Async asyncCompletion = context.async();
 
     // === Server handling ====
 
@@ -72,7 +72,7 @@ public class ReceiverCreditTest extends BareTestBase {
       });
     });
 
-    // === Bridge consumer handling ====
+    // === Client consumer handling ====
 
     AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false).setHost("localhost")
       .setPort(server.actualPort());
@@ -88,17 +88,14 @@ public class ReceiverCreditTest extends BareTestBase {
         consumer.handler(msg -> {
           context.assertNotNull(msg.getBodyAsString(), "amqp message body content was null");
           context.assertEquals(sentContent, msg.getBodyAsString(), "amqp message body not as expected");
-          client.close(shutdownRes -> {
-            context.assertTrue(shutdownRes.succeeded());
-            asyncShutdown.complete();
-          });
+          asyncCompletion.complete();
         });
       });
     });
 
     try {
       asyncInitialCredit.awaitSuccess();
-      asyncShutdown.awaitSuccess();
+      asyncCompletion.awaitSuccess();
     } finally {
       server.close();
     }

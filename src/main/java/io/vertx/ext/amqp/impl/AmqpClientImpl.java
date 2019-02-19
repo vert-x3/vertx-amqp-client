@@ -5,10 +5,10 @@ import io.vertx.ext.amqp.AmqpClient;
 import io.vertx.ext.amqp.AmqpClientOptions;
 import io.vertx.ext.amqp.AmqpConnection;
 import io.vertx.proton.ProtonClient;
-import io.vertx.proton.ProtonConnection;
-import org.apache.qpid.proton.amqp.Symbol;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AmqpClientImpl implements AmqpClient {
@@ -19,7 +19,6 @@ public class AmqpClientImpl implements AmqpClient {
 
   private final List<AmqpConnection> connections = new CopyOnWriteArrayList<>();
   private final boolean mustCloseVertxOnClose;
-  private volatile Context context;
 
   public AmqpClientImpl(Vertx vertx, AmqpClientOptions options, boolean mustCloseVertxOnClose) {
     this.vertx = vertx;
@@ -32,22 +31,18 @@ public class AmqpClientImpl implements AmqpClient {
   public AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     Objects.requireNonNull(options.getHost(), "Host must be set");
     Objects.requireNonNull(connectionHandler, "Handler must not be null");
-    context = vertx.getOrCreateContext();
-    context.runOnContext(x -> connection(connectionHandler, context).run());
+    new AmqpConnectionImpl(vertx, vertx.getOrCreateContext(), this, options, proton, connectionHandler);
     return this;
   }
 
   @Override
   public void close(Handler<AsyncResult<Void>> handler) {
-
     List<Future> actions = new ArrayList<>();
-
     for (AmqpConnection connection : connections) {
       Future<Void> future = Future.future();
       connection.close(future);
       actions.add(future);
     }
-
 
     CompositeFuture.all(actions).setHandler(done -> {
       connections.clear();
@@ -70,43 +65,7 @@ public class AmqpClientImpl implements AmqpClient {
 
   }
 
-  private Runnable connection(Handler<AsyncResult<AmqpConnection>> connectionHandler, Context context) {
-    return () -> {
-      proton
-        .connect(options, options.getHost(), options.getPort(), options.getUsername(), options.getPassword(), connection -> {
-          if (connection.succeeded()) {
-            Map<Symbol, Object> map = new HashMap<>();
-            map.put(AmqpConnectionImpl.PRODUCT_KEY, AmqpConnectionImpl.PRODUCT);
-            ProtonConnection result = connection.result();
-            if (options.getContainerId() != null) {
-              result.setContainer(options.getContainerId());
-            }
-            if (options.getVirtualHost() != null) {
-              result.setHostname(options.getVirtualHost());
-            }
-
-            result
-              .setProperties(map)
-              .openHandler(conn -> {
-                if (conn.succeeded()) {
-                  AmqpConnection amqp = new AmqpConnectionImpl(vertx, options, context, conn.result());
-                  connections.add(amqp);
-                  ((AmqpConnectionImpl) amqp).init().setHandler(res -> {
-                    if (res.failed()) {
-                      connectionHandler.handle(Future.failedFuture(res.cause()));
-                    } else {
-                      connectionHandler.handle(Future.succeededFuture(amqp));
-                    }
-                  });
-                } else {
-                  context.runOnContext(x -> connectionHandler.handle(conn.mapEmpty()));
-                }
-              });
-            result.open();
-          } else {
-            context.runOnContext(x -> connectionHandler.handle(connection.mapEmpty()));
-          }
-        });
-    };
+  synchronized void register(AmqpConnectionImpl connection) {
+    connections.add(connection);
   }
 }
