@@ -102,6 +102,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
         if (res.failed()) {
           completionHandler.handle(res.mapEmpty());
         } else {
+          this.connection.register(this);
           completionHandler.handle(Future.succeededFuture(this));
         }
       });
@@ -251,6 +252,12 @@ public class AmqpReceiverImpl implements AmqpReceiver {
 
   @Override
   public void close(Handler<AsyncResult<Void>> handler) {
+    if (handler == null) {
+      handler = x -> {
+        // NOOP
+      };
+    }
+
     synchronized (this) {
       if (closed) {
         handler.handle(Future.succeededFuture());
@@ -258,25 +265,24 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       }
       closed = true;
     }
-    if (handler == null) {
-      handler = x -> {
-      };
-    }
+
     connection.unregister(this);
     if (this.receiver.isOpen()) {
-      Future<Void> future = Future.<Void>future().setHandler(handler);
-      connection.runWithTrampoline(z ->
-        this.receiver
-          .closeHandler(x -> future.handle(x.mapEmpty()))
-          .close()
-      );
+      try {
+        receiver.close();
+        handler.handle(Future.succeededFuture());
+      } catch (Exception e) {
+        // Somehow closed remotely
+        handler.handle(Future.failedFuture(e));
+      }
+
     } else {
       handler.handle(Future.succeededFuture());
     }
 
   }
 
-  public ProtonReceiver unwrap() {
+  ProtonReceiver unwrap() {
     return receiver;
   }
 }

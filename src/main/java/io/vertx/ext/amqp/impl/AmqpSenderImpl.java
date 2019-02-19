@@ -1,7 +1,6 @@
 package io.vertx.ext.amqp.impl;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
@@ -14,7 +13,6 @@ import io.vertx.proton.impl.ProtonSenderImpl;
 
 public class AmqpSenderImpl implements AmqpSender {
   private final ProtonSender sender;
-  private final Context context;
   private final AmqpConnectionImpl connection;
   private boolean closed;
   private Handler<Throwable> exceptionHandler;
@@ -23,9 +21,9 @@ public class AmqpSenderImpl implements AmqpSender {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AmqpSender.class);
 
-  public AmqpSenderImpl(ProtonSender sender, AmqpConnectionImpl connection, Context context) {
+  public AmqpSenderImpl(ProtonSender sender, AmqpConnectionImpl connection,
+                        Handler<AsyncResult<AmqpSender>> completionHandler) {
     this.sender = sender;
-    this.context = context;
     this.connection = connection;
 
     sender.closeHandler(res -> {
@@ -37,7 +35,7 @@ public class AmqpSenderImpl implements AmqpSender {
           eh = exceptionHandler;
         }
 
-        if(!closed) {
+        if (!closed) {
           closed = true;
           closeSender = true;
         }
@@ -51,10 +49,11 @@ public class AmqpSenderImpl implements AmqpSender {
         }
       }
 
-      if(closeSender) {
+      if (closeSender) {
         sender.close();
       }
     });
+
     sender.sendQueueDrainHandler(s -> {
       Handler<Void> dh = null;
       synchronized (AmqpSenderImpl.this) {
@@ -67,12 +66,27 @@ public class AmqpSenderImpl implements AmqpSender {
         }
       }
 
-      if(dh != null) {
+      if (dh != null) {
         dh.handle(null);
       }
     });
 
-    sender.open();
+    sender.openHandler(done -> {
+      if (done.failed()) {
+        completionHandler.handle(done.mapEmpty());
+      } else {
+        connection.register(this);
+        completionHandler.handle(Future.succeededFuture(this));
+      }
+    });
+
+    this.connection.runWithTrampoline(x -> sender.open());
+
+  }
+
+  public static void create(ProtonSender sender, AmqpConnectionImpl connection,
+                            Handler<AsyncResult<AmqpSender>> completionHandler) {
+    new AmqpSenderImpl(sender, connection, completionHandler);
   }
 
   @Override
@@ -134,7 +148,7 @@ public class AmqpSenderImpl implements AmqpSender {
       remoteCredit--;
     }
 
-    context.runOnContext(x -> {
+    connection.runWithTrampoline(x -> {
       if (reply != null) {
         try {
           connection.replyManager().verify();
@@ -152,7 +166,7 @@ public class AmqpSenderImpl implements AmqpSender {
 
       synchronized (AmqpSenderImpl.this) {
         // Update the credit tracking *again*. We need to reinitialise it here in case the doSend call was performed on
-        // a thread other than the bridge context, to ensure we didn't fall foul of a race between the above pre-send
+        // a thread other than the client context, to ensure we didn't fall foul of a race between the above pre-send
         // update on that thread, the above send on the context thread, and the sendQueueDrainHandler based updates on
         // the context thread.
         remoteCredit = ((ProtonSenderImpl) sender).getRemoteCredit();
@@ -222,7 +236,8 @@ public class AmqpSenderImpl implements AmqpSender {
       closed = true;
     }
     if (handler == null) {
-      handler = x -> {};
+      handler = x -> {
+      };
     }
     connection.unregister(this);
     if (sender.isOpen()) {

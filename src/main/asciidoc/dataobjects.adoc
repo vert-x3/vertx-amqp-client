@@ -24,6 +24,7 @@
 |[[keyStoreOptions]]`@keyStoreOptions`|`link:dataobjects.html#JksOptions[JksOptions]`|-
 |[[localAddress]]`@localAddress`|`String`|-
 |[[logActivity]]`@logActivity`|`Boolean`|-
+|[[maxBufferedMessages]]`@maxBufferedMessages`|`Number (int)`|-
 |[[maxFrameSize]]`@maxFrameSize`|`Number (int)`|-
 |[[metricsName]]`@metricsName`|`String`|-
 |[[openSslEngineOptions]]`@openSslEngineOptions`|`link:dataobjects.html#OpenSSLEngineOptions[OpenSSLEngineOptions]`|-

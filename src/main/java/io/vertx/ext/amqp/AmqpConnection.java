@@ -13,6 +13,8 @@ import org.apache.qpid.proton.amqp.Symbol;
 @VertxGen
 public interface AmqpConnection {
 
+  void endHandler(Handler<Void> endHandler);
+
   /**
    * Closes the AMQP connection, i.e. allows the Close frame to be emitted.
    * <p>
