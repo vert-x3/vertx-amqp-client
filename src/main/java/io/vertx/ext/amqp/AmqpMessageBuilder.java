@@ -12,13 +12,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Builder to create a new {@link AmqpMessage}.
+ *
+ * Reference about the different metadata can be found on
+ * <a href="http://docs.oasis-open.org/amqp/core/v1.0/amqp-core-messaging-v1.0.html#type-properties">AMQP message properties</a>.
+ *
+ * Note that the body is set using {@code withBodyAs*} method depending on the passed type.
+ */
 @VertxGen
 public interface AmqpMessageBuilder {
 
+  /**
+   * @return a new instance of {@link AmqpMessageBuilder}
+   */
   static AmqpMessageBuilder create() {
     return new AmqpMessageBuilderImpl();
   }
 
+  /**
+   * @return the message.
+   */
   AmqpMessage build();
 
   AmqpMessageBuilder priority(short priority);
