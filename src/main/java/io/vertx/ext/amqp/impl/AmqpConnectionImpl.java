@@ -183,13 +183,17 @@ public class AmqpConnectionImpl implements AmqpConnection {
       if (actualConnection.isDisconnected()) {
         future.handle(Future.succeededFuture());
       } else {
-        actualConnection
-          .closeHandler(cleanup ->
-            runWithTrampoline(x -> {
-              onDisconnect();
-              future.handle(cleanup.mapEmpty());
-            }))
-          .close();
+        try {
+          actualConnection
+            .closeHandler(cleanup ->
+              runWithTrampoline(x -> {
+                onDisconnect();
+                future.handle(cleanup.mapEmpty());
+              }))
+            .close();
+        } catch (Exception e) {
+          future.handle(Future.failedFuture(e));
+        }
       }
     });
     return this;
