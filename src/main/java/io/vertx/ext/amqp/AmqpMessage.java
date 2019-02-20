@@ -17,20 +17,39 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Represents a AMQP message.
+ * Represents an AMQP message.
+ *
+ * Reference about the different metadata can be found on
+ * <a href="http://docs.oasis-open.org/amqp/core/v1.0/amqp-core-messaging-v1.0.html#type-properties">AMQP message properties</a>.
+ *
+ * Note that the body is retrieved using {@code body*} method depending on the expected type.
  */
 @VertxGen
 public interface AmqpMessage {
 
-
+  /**
+   * @return a builder to create an {@link AmqpMessage}.
+   */
   static AmqpMessageBuilder create() {
     return new AmqpMessageBuilderImpl();
   }
 
+  /**
+   * Creates a builder to create a new {@link AmqpMessage} copying the metadata from the passed message.
+   *
+   * @param existing an existing message, must not be {@code null}.
+   * @return a builder to create an {@link AmqpMessage}.
+   */
   static AmqpMessageBuilder create(AmqpMessage existing) {
     return new AmqpMessageBuilderImpl(existing);
   }
 
+  /**
+   * Creates a builder to create a new {@link AmqpMessage} copying the metadata from the passed (Proton) message.
+   *
+   * @param existing an existing (Proton) message, must not be {@code null}.
+   * @return a builder to create an {@link AmqpMessage}.
+   */
   @GenIgnore
   static AmqpMessageBuilder create(Message existing) {
     return new AmqpMessageBuilderImpl(existing);
@@ -109,12 +128,13 @@ public interface AmqpMessage {
 
   long groupSequence();
 
+  /**
+   * @return the message properties as JSON object.
+   */
   JsonObject applicationProperties();
 
   @GenIgnore
   Message unwrap();
-
-  JsonObject getApplicationProperties();
 
   /**
    * Allows replying to an incoming message.
@@ -132,7 +152,7 @@ public interface AmqpMessage {
    * This method is only available is: 1) reply is enabled, 2) the message has been received. Otherwise a
    * {@link IllegalStateException} is thrown.
    *
-   * @param message the message
+   * @param message             the message
    * @param replyToReplyHandler a handler receiving the reply to this reply, must not be {@code null}
    * @return the current message.
    */

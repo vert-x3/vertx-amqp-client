@@ -66,8 +66,8 @@ public class ReceptionTest extends ArtemisTestBase {
         context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body was not as expected");
 
         // Check the application property was present
-        context.assertTrue(msg.getApplicationProperties() != null, "application properties element not present");
-        JsonObject appProps = msg.getApplicationProperties();
+        context.assertTrue(msg.applicationProperties() != null, "application properties element not present");
+        JsonObject appProps = msg.applicationProperties();
         context.assertTrue(appProps.containsKey(propKey), "expected property key element not present");
         context.assertEquals(propValue, appProps.getValue(propKey), "app property value not as expected");
         client.close(x -> asyncShutdown.complete());

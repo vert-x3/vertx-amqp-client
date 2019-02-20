@@ -258,21 +258,16 @@ public class AmqpMessageImpl implements AmqpMessage {
 
   @Override
   public JsonObject applicationProperties() {
-    return JsonObject.mapFrom(message.getApplicationProperties().getValue());
-  }
-
-  @Override
-  public Message unwrap() {
-    return message;
-  }
-
-  @Override
-  public JsonObject getApplicationProperties() {
     ApplicationProperties properties = message.getApplicationProperties();
     if (properties == null) {
       return null;
     }
     return JsonObject.mapFrom(properties.getValue());
+  }
+
+  @Override
+  public Message unwrap() {
+    return message;
   }
 
   public void delivered() {
