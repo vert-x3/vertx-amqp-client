@@ -149,8 +149,9 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
-  public synchronized void endHandler(Handler<Void> endHandler) {
+  public synchronized AmqpConnection endHandler(Handler<Void> endHandler) {
     this.endHandler = endHandler;
+    return this;
   }
 
   @Override
@@ -250,20 +251,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
   @Override
   public AmqpConnection sender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
     ProtonSender sender = connection.get().createSender(address);
-    AmqpSenderImpl.create(sender, this, completionHandler);
-    return this;
-  }
-
-  @Override
-  public AmqpConnection sender(String address, AmqpLinkOptions senderOptions, Handler<AsyncResult<AmqpSender>> completionHandler) {
-    ProtonLinkOptions linkOptions = new ProtonLinkOptions();
-    if (senderOptions != null) {
-      linkOptions = new ProtonLinkOptions()
-        .setDynamic(senderOptions.isDynamicAddress())
-        .setLinkName(senderOptions.getName());
-    }
-
-    ProtonSender sender = connection.get().createSender(address, linkOptions);
     AmqpSenderImpl.create(sender, this, completionHandler);
     return this;
   }
