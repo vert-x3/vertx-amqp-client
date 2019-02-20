@@ -426,4 +426,17 @@ public class CloseTest extends BareTestBase {
       server.close();
     }
   }
+
+  @Test(timeout = 20000)
+  public void testCloseBridgeThatWithoutConnection(TestContext context) {
+    Async async = context.async();
+
+    AmqpClient client = AmqpClient.create();
+    client.close(shutdownRes -> {
+      context.assertTrue(shutdownRes.succeeded());
+      async.complete();
+    });
+
+    async.awaitSuccess();
+  }
 }
