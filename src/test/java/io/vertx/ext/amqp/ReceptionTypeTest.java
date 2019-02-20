@@ -87,7 +87,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testBoolean() {
     List<Boolean> list = new CopyOnWriteArrayList<>();
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsBoolean());
+      list.add(message.bodyAsBoolean());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -112,7 +112,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     byte b = 1;
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsByte());
+      list.add(message.bodyAsByte());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -135,7 +135,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     short s = 2;
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsShort());
+      list.add(message.bodyAsShort());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -158,7 +158,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     int i = 3;
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsInteger());
+      list.add(message.bodyAsInteger());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -181,7 +181,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     long l = Long.MAX_VALUE - 1;
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsLong());
+      list.add(message.bodyAsLong());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -204,7 +204,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     float f = 12.34f;
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsFloat());
+      list.add(message.bodyAsFloat());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -227,7 +227,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     double d = 56.78;
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsDouble());
+      list.add(message.bodyAsDouble());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -250,7 +250,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     char c = 'c';
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsChar());
+      list.add(message.bodyAsChar());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -273,7 +273,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     Instant instant = Instant.now();
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsTimestamp());
+      list.add(message.bodyAsTimestamp());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -294,7 +294,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     UUID uuid = UUID.randomUUID();
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsUUID());
+      list.add(message.bodyAsUUID());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -316,7 +316,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     Buffer buffer = Buffer.buffer("hello !!!");
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsBinary());
+      list.add(message.bodyAsBinary());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -338,7 +338,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     String string = "hello !";
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsString());
+      list.add(message.bodyAsString());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -360,7 +360,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     String string = "my-symbol";
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsSymbol());
+      list.add(message.bodyAsSymbol());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -385,7 +385,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     l.add(1);
     l.add(true);
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsList());
+      list.add(message.bodyAsList());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -410,7 +410,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     l.add(1);
     l.add(true);
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsList());
+      list.add(message.bodyAsList());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -435,7 +435,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     map.put("1", "hello");
     map.put("2", "bonjour");
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsMap());
+      list.add(message.bodyAsMap());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -459,7 +459,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     JsonObject json = new JsonObject().put("data", "message").put("number", 1)
       .put("array", new JsonArray().add(1).add(2).add(3));
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsJsonObject());
+      list.add(message.bodyAsJsonObject());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -481,7 +481,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     JsonArray array = new JsonArray().add(1).add(2).add(3);
     connection.receiver(address, message -> {
-      list.add(message.getBodyAsJsonArray());
+      list.add(message.bodyAsJsonArray());
     }, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();

@@ -183,7 +183,7 @@ public class AmqpUsage {
   }
 
   public void consumeStrings(String topic, BooleanSupplier continuation, Runnable completion, Consumer<String> consumerFunction) {
-    this.consume(topic, continuation, completion, value -> consumerFunction.accept(value.getBodyAsString()));
+    this.consume(topic, continuation, completion, value -> consumerFunction.accept(value.bodyAsString()));
   }
 
   public void consumeStrings(String topicName, int count, long timeout, TimeUnit unit, Runnable completion, Consumer<String> consumer) {

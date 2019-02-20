@@ -86,8 +86,8 @@ public class ReceiverCreditTest extends BareTestBase {
         context.assertTrue(done.succeeded());
         AmqpReceiver consumer = done.result();
         consumer.handler(msg -> {
-          context.assertNotNull(msg.getBodyAsString(), "amqp message body content was null");
-          context.assertEquals(sentContent, msg.getBodyAsString(), "amqp message body not as expected");
+          context.assertNotNull(msg.bodyAsString(), "amqp message body content was null");
+          context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body not as expected");
           asyncCompletion.complete();
         });
       });

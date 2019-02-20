@@ -62,8 +62,8 @@ public class ReceptionTest extends ArtemisTestBase {
       context.assertTrue(res.succeeded());
       res.result().receiver(testName, msg -> {
         context.assertNotNull(msg, "message was null");
-        context.assertNotNull(msg.getBodyAsString(), "amqp message body content was null");
-        context.assertEquals(sentContent, msg.getBodyAsString(), "amqp message body was not as expected");
+        context.assertNotNull(msg.bodyAsString(), "amqp message body content was null");
+        context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body was not as expected");
 
         // Check the application property was present
         context.assertTrue(msg.getApplicationProperties() != null, "application properties element not present");
@@ -117,7 +117,7 @@ public class ReceptionTest extends ArtemisTestBase {
         established.result().handler(msg -> {
           context.assertNotNull(msg, "message was null");
 
-          String content = msg.getBodyAsString();
+          String content = msg.bodyAsString();
           context.assertNotNull(content, "amqp message body content was null");
 
           context.assertEquals(sentContent, content, "amqp message body was not as expected");
@@ -185,7 +185,7 @@ public class ReceptionTest extends ArtemisTestBase {
           AtomicInteger received = new AtomicInteger();
           done.result().handler(msg -> {
             int msgNum = received.incrementAndGet();
-            String content = msg.getBodyAsString();
+            String content = msg.bodyAsString();
             context.assertNotNull(content, "amqp message " + msgNum + " body content was null");
             context.assertEquals(sentContent, content, "amqp message " + msgNum + " body not as expected");
 
@@ -252,7 +252,7 @@ public class ReceptionTest extends ArtemisTestBase {
       res.result().receiver(testName,
         msg -> {
           int msgNum = received.incrementAndGet();
-          String amqpBodyContent = msg.getBodyAsString();
+          String amqpBodyContent = msg.bodyAsString();
           context.assertNotNull(amqpBodyContent, "message " + msgNum + " jsonObject body was null");
           context.assertNotNull(amqpBodyContent, "amqp message " + msgNum + " body content was null");
           context.assertEquals(sentContent, amqpBodyContent, "amqp message " + msgNum + " body not as expected");

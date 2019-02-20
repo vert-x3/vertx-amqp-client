@@ -49,42 +49,42 @@ public interface AmqpMessage {
 
   boolean isBodyNull();
 
-  boolean getBodyAsBoolean();
+  boolean bodyAsBoolean();
 
-  byte getBodyAsByte();
+  byte bodyAsByte();
 
-  short getBodyAsShort();
+  short bodyAsShort();
 
-  int getBodyAsInteger();
+  int bodyAsInteger();
 
-  long getBodyAsLong();
+  long bodyAsLong();
 
-  float getBodyAsFloat();
+  float bodyAsFloat();
 
-  double getBodyAsDouble();
+  double bodyAsDouble();
 
-  char getBodyAsChar();
-
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  Instant getBodyAsTimestamp();
+  char bodyAsChar();
 
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  UUID getBodyAsUUID();
+  Instant bodyAsTimestamp();
 
-  Buffer getBodyAsBinary();
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  UUID bodyAsUUID();
 
-  String getBodyAsString();
+  Buffer bodyAsBinary();
 
-  String getBodyAsSymbol();
+  String bodyAsString();
 
-  <T> List<T> getBodyAsList();
+  String bodyAsSymbol();
+
+  <T> List<T> bodyAsList();
 
   @GenIgnore
-  <K, V> Map<K, V> getBodyAsMap();
+  <K, V> Map<K, V> bodyAsMap();
 
-  JsonObject getBodyAsJsonObject();
+  JsonObject bodyAsJsonObject();
 
-  JsonArray getBodyAsJsonArray();
+  JsonArray bodyAsJsonArray();
 
   String subject();
 
