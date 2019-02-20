@@ -174,14 +174,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
         receiver.close(future);
       });
     }
-
     CompositeFuture.join(futures).setHandler(result -> {
       Future<Void> future = Future.future();
       if (done != null) {
         future.setHandler(done);
       }
       if (actualConnection.isDisconnected()) {
-        future.handle(Future.succeededFuture());
+        future.complete();
       } else {
         try {
           actualConnection
@@ -192,7 +191,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
               }))
             .close();
         } catch (Exception e) {
-          future.handle(Future.failedFuture(e));
+          future.fail(e);
         }
       }
     });

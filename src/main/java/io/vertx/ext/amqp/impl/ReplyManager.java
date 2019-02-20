@@ -167,16 +167,12 @@ public class ReplyManager {
     Future<Void> f1 = Future.future();
     Future<Void> f2 = Future.future();
     if (sender != null) {
-      sender.close(x -> {
-        f1.handle(x.mapEmpty());
-      });
+      sender.close(x -> f1.handle(x.mapEmpty()));
     } else {
       f1.complete();
     }
     if (receiver != null) {
-      receiver.close(x -> {
-        f2.handle(x.mapEmpty());
-      });
+      receiver.close(x -> f2.handle(x.mapEmpty()));
     } else {
       f2.complete();
     }
