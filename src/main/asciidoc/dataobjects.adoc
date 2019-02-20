@@ -3,6 +3,10 @@
 [[AmqpClientOptions]]
 == AmqpClientOptions
 
+++++
+ Configures the AMQP Client.
+++++
+'''
 
 [cols=">25%,25%,50%"]
 [frame="topbot"]
@@ -16,7 +20,9 @@
 |[[enabledSaslMechanisms]]`@enabledSaslMechanisms`|`Array of String`|-
 |[[enabledSecureTransportProtocols]]`@enabledSecureTransportProtocols`|`Array of String`|-
 |[[heartbeat]]`@heartbeat`|`Number (int)`|-
-|[[host]]`@host`|`String`|-
+|[[host]]`@host`|`String`|+++
+Sets the host.
++++
 |[[hostnameVerificationAlgorithm]]`@hostnameVerificationAlgorithm`|`String`|-
 |[[idleTimeout]]`@idleTimeout`|`Number (int)`|-
 |[[idleTimeoutUnit]]`@idleTimeoutUnit`|`link:enums.html#TimeUnit[TimeUnit]`|-
@@ -33,7 +39,9 @@
 |[[pemTrustOptions]]`@pemTrustOptions`|`link:dataobjects.html#PemTrustOptions[PemTrustOptions]`|-
 |[[pfxKeyCertOptions]]`@pfxKeyCertOptions`|`link:dataobjects.html#PfxOptions[PfxOptions]`|-
 |[[pfxTrustOptions]]`@pfxTrustOptions`|`link:dataobjects.html#PfxOptions[PfxOptions]`|-
-|[[port]]`@port`|`Number (int)`|-
+|[[port]]`@port`|`Number (int)`|+++
+Sets the port.
++++
 |[[proxyOptions]]`@proxyOptions`|`link:dataobjects.html#ProxyOptions[ProxyOptions]`|-
 |[[receiveBufferSize]]`@receiveBufferSize`|`Number (int)`|-
 |[[reconnectAttempts]]`@reconnectAttempts`|`Number (int)`|-
@@ -56,22 +64,10 @@
 |[[trustStoreOptions]]`@trustStoreOptions`|`link:dataobjects.html#JksOptions[JksOptions]`|-
 |[[useAlpn]]`@useAlpn`|`Boolean`|-
 |[[usePooledBuffers]]`@usePooledBuffers`|`Boolean`|-
-|[[username]]`@username`|`String`|-
+|[[username]]`@username`|`String`|+++
+Sets the username.
++++
 |[[virtualHost]]`@virtualHost`|`String`|-
-|===
-
-[[AmqpLinkOptions]]
-== AmqpLinkOptions
-
-
-[cols=">25%,25%,50%"]
-[frame="topbot"]
-|===
-^|Name | Type ^| Description
-|[[autoDrained]]`@autoDrained`|`Boolean`|-
-|[[autoSettle]]`@autoSettle`|`Boolean`|-
-|[[dynamicAddress]]`@dynamicAddress`|`Boolean`|-
-|[[name]]`@name`|`String`|-
 |===
 
 [[AmqpReceiverOptions]]
