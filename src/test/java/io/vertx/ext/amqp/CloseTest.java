@@ -431,7 +431,7 @@ public class CloseTest extends BareTestBase {
   public void testCloseBridgeThatWithoutConnection(TestContext context) {
     Async async = context.async();
 
-    AmqpClient client = AmqpClient.create();
+    AmqpClient client = AmqpClient.create(new AmqpClientOptions().setHost("unused"));
     client.close(shutdownRes -> {
       context.assertTrue(shutdownRes.succeeded());
       async.complete();
