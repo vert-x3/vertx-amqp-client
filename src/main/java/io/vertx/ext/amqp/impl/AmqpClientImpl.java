@@ -22,7 +22,11 @@ public class AmqpClientImpl implements AmqpClient {
 
   public AmqpClientImpl(Vertx vertx, AmqpClientOptions options, boolean mustCloseVertxOnClose) {
     this.vertx = vertx;
-    this.options = options;
+    if (options == null) {
+      this.options = new AmqpClientOptions();
+    } else {
+      this.options = options;
+    }
     this.proton = ProtonClient.create(vertx);
     this.mustCloseVertxOnClose = mustCloseVertxOnClose;
   }
