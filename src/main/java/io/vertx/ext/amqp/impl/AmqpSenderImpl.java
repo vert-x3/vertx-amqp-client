@@ -241,9 +241,13 @@ public class AmqpSenderImpl implements AmqpSender {
     }
     connection.unregister(this);
     if (sender.isOpen()) {
-      Future<Void> future = Future.<Void>future().setHandler(handler);
-      sender.closeHandler(x -> future.handle(x.mapEmpty()));
-      sender.close();
+      try {
+        sender.close();
+        handler.handle(Future.succeededFuture());
+      } catch (Exception e) {
+        // Somehow closed remotely
+        handler.handle(Future.failedFuture(e));
+      }
     } else {
       handler.handle(Future.succeededFuture());
     }

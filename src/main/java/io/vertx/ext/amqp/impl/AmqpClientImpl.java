@@ -44,7 +44,7 @@ public class AmqpClientImpl implements AmqpClient {
       actions.add(future);
     }
 
-    CompositeFuture.all(actions).setHandler(done -> {
+    CompositeFuture.join(actions).setHandler(done -> {
       connections.clear();
       if (mustCloseVertxOnClose) {
         vertx.close(x -> {
