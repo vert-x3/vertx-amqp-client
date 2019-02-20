@@ -6,6 +6,9 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.WriteStream;
 
+/**
+ * AMQP Sender interface used to send messages.
+ */
 @VertxGen
 public interface AmqpSender extends WriteStream<AmqpMessage> {
 
@@ -18,10 +21,10 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
   @Fluent
   AmqpSender send(AmqpMessage message);
 
-
   /**
-   * Sends an AMQP message and expect a reply.Sends an AMQP message. The destination the configured sender address or
+   * Sends an AMQP message and expects a reply. Sends an AMQP message. The destination the configured sender address or
    * the address configured in the message.
+   *
    * If the reply does not arrive before the timeout configured in the AMQP client options, the reply handler
    * is called with a failure. Otherwise the reply handler is called with the response message.
    *
