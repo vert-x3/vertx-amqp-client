@@ -9,14 +9,15 @@ import io.vertx.proton.ProtonClientOptions;
 import java.util.Set;
 import java.util.UUID;
 
-@DataObject(generateConverter = true, publicConverter = true, inheritConverter = true)
+/**
+ * Configures the AMQP Client.
+ */
+@DataObject(generateConverter = true, inheritConverter = true)
 public class AmqpClientOptions extends ProtonClientOptions {
 
   // TODO Capabilities and properties
-  // TODO default sender and receiver options
 
   private String host = getHostFromSysOrEnv();
-
   private int port = getPortFromSysOrEnv();
 
   private String username;
@@ -55,28 +56,54 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
 
+  /**
+   * @return the host.
+   */
   public String getHost() {
     return host;
   }
 
+  /**
+   * Sets the host.
+   *
+   * @param host the host, must not be {@code null} when the client attempt to connect.
+   * @return the current {@link AmqpClientOptions}
+   */
   public AmqpClientOptions setHost(String host) {
     this.host = host;
     return this;
   }
 
+  /**
+   * @return the port.
+   */
   public int getPort() {
     return port;
   }
 
+  /**
+   * Sets the port.
+   *
+   * @param port the port, defaults to 5672.
+   * @return the current {@link AmqpClientOptions}
+   */
   public AmqpClientOptions setPort(int port) {
     this.port = port;
     return this;
   }
 
+  /**
+   * @return the username
+   */
   public String getUsername() {
     return username;
   }
 
+  /**
+   * Sets the username.
+   * @param username the username
+   * @return the current {@link AmqpClientOptions}
+   */
   public AmqpClientOptions setUsername(String username) {
     this.username = username;
     return this;
