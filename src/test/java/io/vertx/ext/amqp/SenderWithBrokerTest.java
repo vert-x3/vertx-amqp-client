@@ -67,8 +67,8 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
             done.cause().printStackTrace();
           } else {
             // Sending a few messages
-            done.result().send(AmqpMessage.create().body("hello").address(queue).build());
-            done.result().send(AmqpMessage.create().body("world").address(queue).build());
+            done.result().send(AmqpMessage.create().withBody("hello").address(queue).build());
+            done.result().send(AmqpMessage.create().withBody("world").address(queue).build());
           }
         });
       }
@@ -95,10 +95,10 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
             done.cause().printStackTrace();
           } else {
             // Sending a few messages
-            done.result().sendWithAck(AmqpMessage.create().body("hello").address(queue).build(), x -> {
+            done.result().sendWithAck(AmqpMessage.create().withBody("hello").address(queue).build(), x -> {
               if (x.succeeded()) {
                 acks.incrementAndGet();
-                done.result().sendWithAck(AmqpMessage.create().body("world").address(queue).build(), y -> {
+                done.result().sendWithAck(AmqpMessage.create().withBody("world").address(queue).build(), y -> {
                   if (y.succeeded()) {
                     acks.incrementAndGet();
                   }
@@ -136,7 +136,7 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
         JsonObject applicationProperties = new JsonObject();
         applicationProperties.put(propKey, propValue);
 
-        AmqpMessage message = AmqpMessage.create().body(sentContent).applicationProperties(applicationProperties).build();
+        AmqpMessage message = AmqpMessage.create().withBody(sentContent).applicationProperties(applicationProperties).build();
         sender.result().send(message);
         context.assertEquals(testName, sender.result().address(), "address was not as expected");
       });

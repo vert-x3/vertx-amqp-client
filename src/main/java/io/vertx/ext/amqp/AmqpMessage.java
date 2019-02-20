@@ -8,6 +8,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.amqp.impl.AmqpMessageBuilderImpl;
 import org.apache.qpid.proton.message.Message;
 
 import java.time.Instant;
@@ -15,22 +16,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Represents a AMQP message.
+ */
 @VertxGen
 public interface AmqpMessage {
 
-  @GenIgnore
+
   static AmqpMessageBuilder create() {
-    return new AmqpMessageBuilder();
+    return new AmqpMessageBuilderImpl();
   }
 
-  @GenIgnore
   static AmqpMessageBuilder create(AmqpMessage existing) {
-    return new AmqpMessageBuilder(existing);
+    return new AmqpMessageBuilderImpl(existing);
   }
 
   @GenIgnore
   static AmqpMessageBuilder create(Message existing) {
-    return new AmqpMessageBuilder(existing);
+    return new AmqpMessageBuilderImpl(existing);
   }
 
   boolean isDurable();

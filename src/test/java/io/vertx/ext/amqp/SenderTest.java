@@ -2,7 +2,6 @@ package io.vertx.ext.amqp;
 
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonSession;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
@@ -10,7 +9,6 @@ import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.amqp.transport.AmqpError;
 import org.apache.qpid.proton.amqp.transport.Target;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -89,7 +87,7 @@ public class SenderTest extends BareTestBase {
       res.result().sender(testName, done -> {
         AmqpSender sender = done.result();
         sender.exceptionHandler(x -> exceptionHandlerCalled.set(true));
-        sender.sendWithAck(AmqpMessage.create().body(sentContent).build(), x -> {
+        sender.sendWithAck(AmqpMessage.create().withBody(sentContent).build(), x -> {
           context.assertTrue(x.succeeded());
 
           if (callEnd) {
@@ -194,7 +192,7 @@ public class SenderTest extends BareTestBase {
           context.assertFalse(sender.writeQueueFull(), "expected write queue not to be full, we just granted credit");
 
           // Send message using the credit
-          sender.send(AmqpMessage.create().body(sentContent).build());
+          sender.send(AmqpMessage.create().withBody(sentContent).build());
           context.assertTrue(sender.writeQueueFull(), "expected write queue to be full, we just used all the credit");
 
           // Now replace the drain handler, have it act on subsequent credit arriving
@@ -310,7 +308,7 @@ public class SenderTest extends BareTestBase {
             asyncShutdown.complete();
           });
         });
-        sender.send(AmqpMessage.create().body(sentContent).build());
+        sender.send(AmqpMessage.create().withBody(sentContent).build());
       });
     });
 
