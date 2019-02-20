@@ -4,7 +4,6 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import org.apache.qpid.proton.amqp.Symbol;
 
 
 /**
@@ -13,7 +12,13 @@ import org.apache.qpid.proton.amqp.Symbol;
 @VertxGen
 public interface AmqpConnection {
 
-  void endHandler(Handler<Void> endHandler);
+  /**
+   * Registers a handler called on disconnection.
+   *
+   * @param endHandler the end handler.
+   */
+  @Fluent
+  AmqpConnection endHandler(Handler<Void> endHandler);
 
   /**
    * Closes the AMQP connection, i.e. allows the Close frame to be emitted.
@@ -27,27 +32,38 @@ public interface AmqpConnection {
   @Fluent
   AmqpConnection close(Handler<AsyncResult<Void>> done);
 
+  /**
+   * Creates a receiver used to consume messages from the given address. The receiver has no handler and won't
+   * start receiving messages until a handler is explicitly configured.
+   *
+   * @param address           The source address to attach the consumer to, must not be {@code null}
+   * @param completionHandler the handler called with the receiver. The receiver has been opened.
+   * @return the connection.
+   */
   @Fluent
   AmqpConnection receiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
-   * Creates a receiver used to consumer messages from the given node address.
+   * Creates a receiver used to consume messages from the given address.
    *
    * @param address           The source address to attach the consumer to, must not be {@code null}
    * @param messageHandler    The message handler, must not be {@code null}
-   * @param completionHandler the handler called with the receiver has been opened
+   * @param completionHandler the handler called with the receiver that has been opened. Note that the
+   *                          {@code messageHandler} can be called before the {@code completionHandler} if messages
+   *                          are awaiting delivery.
    * @return the connection.
    */
   @Fluent
   AmqpConnection receiver(String address, Handler<AmqpMessage> messageHandler, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
-   * Creates a receiver used to consumer messages from the given node address.
+   * Creates a receiver used to consumer messages from the given address.
    *
    * @param address           The source address to attach the consumer to.
    * @param receiverOptions   The options for this receiver.
    * @param messageHandler    The message handler, must not be {@code null}
-   * @param completionHandler The handler called with the receiver, once opened
+   * @param completionHandler The handler called with the receiver, once opened. Note that the {@code messageHandler}
+   *                          can be called before the {@code completionHandler} if messages are awaiting delivery.
    * @return the connection.
    */
   @Fluent
@@ -55,10 +71,10 @@ public interface AmqpConnection {
                           Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
-   * Creates a sender used to send messages to the given node address. If no address (i.e null) is specified then a
+   * Creates a sender used to send messages to the given address. If no address (i.e null) is specified then a
    * sender will be established to the 'anonymous relay' and each message must specify its destination address.
    *
-   * @param address           The target address to attach to, or null to attach to the anonymous relay.
+   * @param address           The target address to attach to, or {@code null} to attach to the anonymous relay.
    * @param completionHandler The handler called with the sender, once opened
    * @return the connection.
    */
@@ -66,19 +82,7 @@ public interface AmqpConnection {
   AmqpConnection sender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
 
   /**
-   * Creates a sender used to send messages to the given node address. If no address (i.e null) is specified then a
-   * sender will be established to the 'anonymous relay' and each message must specify its destination address.
-   *
-   * @param address           The target address to attach to, or null to attach to the anonymous relay.
-   * @param senderOptions     The options for this sender.
-   * @param completionHandler The handler called with the sender, once opened
-   * @return the connection.
-   */
-  @Fluent
-  AmqpConnection sender(String address, AmqpLinkOptions senderOptions, Handler<AsyncResult<AmqpSender>> completionHandler);
-
-  /**
-   * Sets a handler for when an AMQP Close frame is received from the remote peer.
+   * Sets a handler for when an AMQP {@code Close} frame is received from the remote peer.
    *
    * @param remoteCloseHandler the handler
    * @return the connection
