@@ -64,10 +64,10 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(true).build());
-        sender.send(AmqpMessage.create().body(false).build());
-        sender.send(AmqpMessage.create().body(Boolean.TRUE).build());
-        sender.send(AmqpMessage.create().body(Boolean.FALSE).build());
+        sender.send(AmqpMessage.create().withBooleanAsBody(true).build());
+        sender.send(AmqpMessage.create().withBooleanAsBody(false).build());
+        sender.send(AmqpMessage.create().withBooleanAsBody(Boolean.TRUE).build());
+        sender.send(AmqpMessage.create().withBooleanAsBody(Boolean.FALSE).build());
       }
     });
 
@@ -90,8 +90,8 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
-        sender.send(AmqpMessage.create().body(Byte.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withByteAsBody(value).build());
+        sender.send(AmqpMessage.create().withByteAsBody(Byte.valueOf(value)).build());
       }
     });
 
@@ -112,8 +112,8 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
-        sender.send(AmqpMessage.create().body(Short.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withShortAsBody(value).build());
+        sender.send(AmqpMessage.create().withShortAsBody(Short.valueOf(value)).build());
       }
     });
 
@@ -137,8 +137,8 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
-        sender.send(AmqpMessage.create().body(Integer.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withIntegerAsBody(value).build());
+        sender.send(AmqpMessage.create().withIntegerAsBody(Integer.valueOf(value)).build());
       }
     });
 
@@ -161,8 +161,8 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
-        sender.send(AmqpMessage.create().body(Long.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withLongAsBody(value).build());
+        sender.send(AmqpMessage.create().withLongAsBody(Long.valueOf(value)).build());
       }
     });
 
@@ -185,8 +185,8 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
-        sender.send(AmqpMessage.create().body(Float.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withFloatAsBody(value).build());
+        sender.send(AmqpMessage.create().withFloatAsBody(Float.valueOf(value)).build());
       }
     });
 
@@ -209,8 +209,8 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
-        sender.send(AmqpMessage.create().body(Double.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withDoubleAsBody(value).build());
+        sender.send(AmqpMessage.create().withDoubleAsBody(Double.valueOf(value)).build());
       }
     });
 
@@ -233,8 +233,8 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
-        sender.send(AmqpMessage.create().body(Character.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withCharAsBody(value).build());
+        sender.send(AmqpMessage.create().withCharAsBody(Character.valueOf(value)).build());
       }
     });
 
@@ -257,7 +257,7 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
+        sender.send(AmqpMessage.create().withInstantAsBody(value).build());
       }
     });
 
@@ -275,7 +275,7 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
+        sender.send(AmqpMessage.create().withUuidAsBody(value).build());
       }
     });
 
@@ -297,7 +297,7 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
+        sender.send(AmqpMessage.create().withBufferAsBody(value).build());
       }
     });
 
@@ -318,7 +318,7 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
+        sender.send(AmqpMessage.create().withBody(value).build());
       }
     });
 
@@ -341,7 +341,7 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().bodyAsSymbol(value).build());
+        sender.send(AmqpMessage.create().withSymbolAsBody(value).build());
       }
     });
 
@@ -367,7 +367,7 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
+        sender.send(AmqpMessage.create().withListAsBody(value).build());
       }
     });
 
@@ -393,7 +393,7 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
+        sender.send(AmqpMessage.create().withMapAsBody(value).build());
       }
     });
 
@@ -416,7 +416,7 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
+        sender.send(AmqpMessage.create().withJsonObjectAsBody(value).build());
       }
     });
 
@@ -437,7 +437,7 @@ public class SenderTypeTest extends ArtemisTestBase {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().body(value).build());
+        sender.send(AmqpMessage.create().withJsonArrayAsBody(value).build());
       }
     });
 

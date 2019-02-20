@@ -57,13 +57,13 @@ public class ReplyTest extends ArtemisTestBase {
         sr.result().sender(destinationName, ms -> {
           context.assertTrue(ms.succeeded());
           // Try send with a reply handler, expect to fail.
-          ms.result().send(AmqpMessage.create().body(content).build(), reply -> {
+          ms.result().send(AmqpMessage.create().withBody(content).build(), reply -> {
             context.assertTrue(reply.failed());
             asyncSendWithReply.complete();
           });
 
           // Try send without reply handler.
-          ms.result().send(AmqpMessage.create().body(content).build(), ack -> asyncSend.complete());
+          ms.result().send(AmqpMessage.create().withBody(content).build(), ack -> asyncSend.complete());
 
           sr.result().close(shutdownRes -> {
             context.assertTrue(shutdownRes.succeeded());
@@ -99,7 +99,7 @@ public class ReplyTest extends ArtemisTestBase {
 
           // Try to reply.
           try {
-            msg.reply(AmqpMessage.create().body("my response").build());
+            msg.reply(AmqpMessage.create().withBody("my response").build());
             context.fail("Expected exception to be thrown");
           } catch (IllegalStateException e) {
             // Expected reply disabled.
@@ -158,14 +158,14 @@ public class ReplyTest extends ArtemisTestBase {
           context.assertNotNull(msg.bodyAsString(), "expected msg body but none found");
           context.assertEquals(content, msg.bodyAsString(), "unexpected msg content");
           context.assertNotNull(msg.replyTo(), "reply address was not set on the request");
-          AmqpMessage reply = AmqpMessage.create().body(replyContent).build();
+          AmqpMessage reply = AmqpMessage.create().withBody(replyContent).build();
           msg.reply(reply);
         },
         done ->
           startResult.result().sender(destinationName, sender -> {
             context.assertTrue(sender.succeeded());
             sender.result().send(
-              AmqpMessage.create().body(content).build(),
+              AmqpMessage.create().withBody(content).build(),
               reply -> {
                 context.assertTrue(reply.succeeded());
                 AmqpMessage replyMessage = reply.result();
@@ -203,7 +203,7 @@ public class ReplyTest extends ArtemisTestBase {
           context.assertEquals(content, msg.bodyAsString(), "unexpected msg content");
           context.assertNotNull(msg.replyTo(), "reply address was not set on the request");
 
-          AmqpMessage reply = AmqpMessage.create().body(replyContent).build();
+          AmqpMessage reply = AmqpMessage.create().withBody(replyContent).build();
           msg.reply(reply, replyToReply -> {
             context.assertTrue(replyToReply.succeeded());
             context.assertEquals(replyToReplyContent, replyToReply.result().bodyAsString(),
@@ -217,7 +217,7 @@ public class ReplyTest extends ArtemisTestBase {
           startResult.result().sender(destinationName, sender -> {
             context.assertTrue(sender.succeeded());
             sender.result().send(
-              AmqpMessage.create().body(content).build(),
+              AmqpMessage.create().withBody(content).build(),
               reply -> {
                 context.assertTrue(reply.succeeded());
                 AmqpMessage replyMessage = reply.result();
@@ -226,7 +226,7 @@ public class ReplyTest extends ArtemisTestBase {
                 context.assertNotNull(replyMessage.replyTo(), "reply address was not set on the reply");
                 replyReceivedAsync.complete();
 
-                AmqpMessage response = AmqpMessage.create().body(replyToReplyContent).build();
+                AmqpMessage response = AmqpMessage.create().withBody(replyToReplyContent).build();
                 replyMessage.reply(response);
 
                 requestReceivedAsync.complete();

@@ -1,202 +1,89 @@
 package io.vertx.ext.amqp;
 
 import io.vertx.codegen.annotations.GenIgnore;
+import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.amqp.impl.AmqpMessageImpl;
-import org.apache.qpid.proton.amqp.Binary;
-import org.apache.qpid.proton.amqp.Symbol;
-import org.apache.qpid.proton.amqp.messaging.AmqpValue;
-import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
-import org.apache.qpid.proton.amqp.messaging.Data;
-import org.apache.qpid.proton.message.Message;
+import io.vertx.ext.amqp.impl.AmqpMessageBuilderImpl;
 
-import java.sql.Date;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@GenIgnore(GenIgnore.PERMITTED_TYPE)
-public class AmqpMessageBuilder {
+@VertxGen
+public interface AmqpMessageBuilder {
 
-  private Message message;
-
-  public AmqpMessageBuilder() {
-    message = Message.Factory.create();
+  static AmqpMessageBuilder create() {
+    return new AmqpMessageBuilderImpl();
   }
 
-  public AmqpMessageBuilder(AmqpMessage existing) {
-    message = existing.unwrap();
-  }
+  AmqpMessage build();
 
-  public AmqpMessageBuilder(Message existing) {
-    message = existing;
-  }
+  AmqpMessageBuilder priority(short priority);
 
+  AmqpMessageBuilder id(String id);
 
-  public AmqpMessage build() {
-    return new AmqpMessageImpl(message);
-  }
+  AmqpMessageBuilder address(String address);
 
+  AmqpMessageBuilder replyTo(String replyTo);
 
-  public AmqpMessageBuilder priority(short priority) {
-    message.setPriority(priority);
-    return this;
-  }
+  AmqpMessageBuilder correlationId(String correlationId);
 
-  public AmqpMessageBuilder id(String id) {
-    message.setMessageId(id);
-    return this;
-  }
+  AmqpMessageBuilder withBody(String value);
 
-  public AmqpMessageBuilder address(String address) {
-    message.setAddress(address);
-    return this;
-  }
+  AmqpMessageBuilder withSymbolAsBody(String value);
 
-  public AmqpMessageBuilder replyTo(String replyTo) {
-    message.setReplyTo(replyTo);
-    return this;
-  }
+  AmqpMessageBuilder subject(String subject);
 
-  public AmqpMessageBuilder correlationId(String correlationId) {
-    message.setCorrelationId(correlationId);
-    return this;
-  }
+  AmqpMessageBuilder contentType(String ct);
 
-  public AmqpMessageBuilder body(String value) {
-    message.setBody(new AmqpValue(value));
-    return this;
-  }
+  AmqpMessageBuilder contentEncoding(String ct);
 
-  public AmqpMessageBuilder bodyAsSymbol(String value) {
-    message.setBody(new AmqpValue(Symbol.valueOf(value)));
-    return this;
-  }
+  AmqpMessageBuilder expiryTime(long expiry);
 
-  public AmqpMessageBuilder subject(String subject) {
-    message.setSubject(subject);
-    return this;
-  }
+  AmqpMessageBuilder creationTime(long ct);
 
-  public AmqpMessageBuilder contentType(String ct) {
-    message.setContentType(ct);
-    return this;
-  }
+  AmqpMessageBuilder ttl(long ttl);
 
-  public AmqpMessageBuilder contentEncoding(String ct) {
-    message.setContentEncoding(ct);
-    return this;
-  }
+  AmqpMessageBuilder groupId(String gi);
 
-  public AmqpMessageBuilder expiryTime(long expiry) {
-    message.setExpiryTime(expiry);
-    return this;
-  }
+  AmqpMessageBuilder replyToGroupId(String rt);
 
-  public AmqpMessageBuilder creationTime(long ct) {
-    message.setCreationTime(ct);
-    return this;
-  }
+  AmqpMessageBuilder applicationProperties(JsonObject props);
 
-  public AmqpMessageBuilder ttl(long ttl) {
-    message.setTtl(ttl);
-    return this;
-  }
+  AmqpMessageBuilder withBooleanAsBody(boolean v);
 
-  public AmqpMessageBuilder groupId(String gi) {
-    message.setGroupId(gi);
-    return this;
-  }
+  AmqpMessageBuilder withByteAsBody(byte v);
 
-  public AmqpMessageBuilder replyToGroupId(String rt) {
-    message.setReplyToGroupId(rt);
-    return this;
-  }
+  AmqpMessageBuilder withShortAsBody(short v);
 
-  public AmqpMessageBuilder applicationProperties(JsonObject props) {
-    ApplicationProperties properties = new ApplicationProperties(props.getMap());
-    message.setApplicationProperties(properties);
-    return this;
-  }
+  AmqpMessageBuilder withIntegerAsBody(int v);
 
-  public AmqpMessageBuilder body(boolean v) {
-    message.setBody(new AmqpValue(v));
-    return this;
-  }
+  AmqpMessageBuilder withLongAsBody(long v);
 
-  public AmqpMessageBuilder body(byte v) {
-    message.setBody(new AmqpValue(v));
-    return this;
-  }
+  AmqpMessageBuilder withFloatAsBody(float v);
 
-  public AmqpMessageBuilder body(short v) {
-    message.setBody(new AmqpValue(v));
-    return this;
-  }
+  AmqpMessageBuilder withDoubleAsBody(double v);
 
-  public AmqpMessageBuilder body(int v) {
-    message.setBody(new AmqpValue(v));
-    return this;
-  }
-
-  public AmqpMessageBuilder body(long v) {
-    message.setBody(new AmqpValue(v));
-    return this;
-  }
-
-  public AmqpMessageBuilder body(float v) {
-    message.setBody(new AmqpValue(v));
-    return this;
-  }
-
-  public AmqpMessageBuilder body(double v) {
-    message.setBody(new AmqpValue(v));
-    return this;
-  }
-
-  public AmqpMessageBuilder body(char c) {
-    message.setBody(new AmqpValue(c));
-    return this;
-  }
+  AmqpMessageBuilder withCharAsBody(char c);
 
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  public AmqpMessageBuilder body(Instant v) {
-    message.setBody(new AmqpValue(Date.from(v)));
-    return this;
-  }
+  AmqpMessageBuilder withInstantAsBody(Instant v);
 
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  public AmqpMessageBuilder body(UUID v) {
-    message.setBody(new AmqpValue(v));
-    return this;
-  }
+  AmqpMessageBuilder withUuidAsBody(UUID v);
 
-  public AmqpMessageBuilder body(List list) {
-    message.setBody(new AmqpValue(list));
-    return this;
-  }
+  @GenIgnore
+  AmqpMessageBuilder withListAsBody(List list);
 
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  public AmqpMessageBuilder body(Map map) {
-    message.setBody(new AmqpValue(map));
-    return this;
-  }
+  @GenIgnore
+  AmqpMessageBuilder withMapAsBody(Map map);
 
-  public AmqpMessageBuilder body(Buffer buffer) {
-    message.setBody(new Data(new Binary(buffer.getBytes())));
-    return this;
-  }
+  AmqpMessageBuilder withBufferAsBody(Buffer buffer);
 
-  public AmqpMessageBuilder body(JsonObject json) {
-    return contentType("application/json")
-      .body(json.toBuffer());
-  }
+  AmqpMessageBuilder withJsonObjectAsBody(JsonObject json);
 
-  public AmqpMessageBuilder body(JsonArray json) {
-    return contentType("application/json")
-      .body(json.toBuffer());
-  }
+  AmqpMessageBuilder withJsonArrayAsBody(JsonArray json);
 }
