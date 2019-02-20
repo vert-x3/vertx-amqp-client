@@ -1,24 +1,19 @@
 package io.vertx.ext.amqp;
 
 import io.vertx.core.Vertx;
-import io.vertx.ext.amqp.impl.AmqpConnectionImpl;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.proton.*;
-import io.vertx.proton.impl.ProtonServerImpl;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
-import org.apache.qpid.proton.amqp.transport.AmqpError;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @RunWith(VertxUnitRunner.class)
 public class ReplyTest extends ArtemisTestBase {
@@ -99,7 +94,7 @@ public class ReplyTest extends ArtemisTestBase {
       context.assertTrue(startResult.succeeded());
       startResult.result().receiver(destinationName,
         msg -> {
-          context.assertEquals(content, msg.getBodyAsString(), "unexpected msg content");
+          context.assertEquals(content, msg.bodyAsString(), "unexpected msg content");
           context.assertNotNull(msg.replyTo(), "reply address was not set on the request");
 
           // Try to reply.
@@ -160,8 +155,8 @@ public class ReplyTest extends ArtemisTestBase {
 
       startResult.result().receiver(destinationName,
         msg -> {
-          context.assertNotNull(msg.getBodyAsString(), "expected msg body but none found");
-          context.assertEquals(content, msg.getBodyAsString(), "unexpected msg content");
+          context.assertNotNull(msg.bodyAsString(), "expected msg body but none found");
+          context.assertEquals(content, msg.bodyAsString(), "unexpected msg content");
           context.assertNotNull(msg.replyTo(), "reply address was not set on the request");
           AmqpMessage reply = AmqpMessage.create().body(replyContent).build();
           msg.reply(reply);
@@ -174,7 +169,7 @@ public class ReplyTest extends ArtemisTestBase {
               reply -> {
                 context.assertTrue(reply.succeeded());
                 AmqpMessage replyMessage = reply.result();
-                context.assertEquals(replyContent, replyMessage.getBodyAsString(), "unexpected reply msg content");
+                context.assertEquals(replyContent, replyMessage.bodyAsString(), "unexpected reply msg content");
                 context.assertNotNull(replyMessage.address(), "address was not set on the reply");
                 context.assertNull(replyMessage.replyTo(), "reply address was set on the reply");
                 gotReplyAsync.complete();
@@ -204,14 +199,14 @@ public class ReplyTest extends ArtemisTestBase {
 
       startResult.result().receiver(destinationName,
         msg -> {
-          context.assertNotNull(msg.getBodyAsString(), "expected msg body but none found");
-          context.assertEquals(content, msg.getBodyAsString(), "unexpected msg content");
+          context.assertNotNull(msg.bodyAsString(), "expected msg body but none found");
+          context.assertEquals(content, msg.bodyAsString(), "unexpected msg content");
           context.assertNotNull(msg.replyTo(), "reply address was not set on the request");
 
           AmqpMessage reply = AmqpMessage.create().body(replyContent).build();
           msg.reply(reply, replyToReply -> {
             context.assertTrue(replyToReply.succeeded());
-            context.assertEquals(replyToReplyContent, replyToReply.result().getBodyAsString(),
+            context.assertEquals(replyToReplyContent, replyToReply.result().bodyAsString(),
               "unexpected 2nd reply msg content");
             context.assertNull(replyToReply.result().replyTo(), "reply address was unexpectedly set on 2nd reply");
 
@@ -226,7 +221,7 @@ public class ReplyTest extends ArtemisTestBase {
               reply -> {
                 context.assertTrue(reply.succeeded());
                 AmqpMessage replyMessage = reply.result();
-                context.assertEquals(replyContent, replyMessage.getBodyAsString(), "unexpected reply msg content");
+                context.assertEquals(replyContent, replyMessage.bodyAsString(), "unexpected reply msg content");
                 context.assertNotNull(replyMessage.address(), "address was not set on the reply");
                 context.assertNotNull(replyMessage.replyTo(), "reply address was not set on the reply");
                 replyReceivedAsync.complete();

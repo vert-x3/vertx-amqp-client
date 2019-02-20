@@ -89,47 +89,47 @@ public class AmqpMessageImpl implements AmqpMessage {
   }
 
   @Override
-  public boolean getBodyAsBoolean() {
+  public boolean bodyAsBoolean() {
     return (boolean) getAmqpValue();
   }
 
   @Override
-  public byte getBodyAsByte() {
+  public byte bodyAsByte() {
     return (byte) getAmqpValue();
   }
 
   @Override
-  public short getBodyAsShort() {
+  public short bodyAsShort() {
     return (short) getAmqpValue();
   }
 
   @Override
-  public int getBodyAsInteger() {
+  public int bodyAsInteger() {
     return (int) getAmqpValue();
   }
 
   @Override
-  public long getBodyAsLong() {
+  public long bodyAsLong() {
     return (long) getAmqpValue();
   }
 
   @Override
-  public float getBodyAsFloat() {
+  public float bodyAsFloat() {
     return (float) getAmqpValue();
   }
 
   @Override
-  public double getBodyAsDouble() {
+  public double bodyAsDouble() {
     return (double) getAmqpValue();
   }
 
   @Override
-  public char getBodyAsChar() {
+  public char bodyAsChar() {
     return (char) getAmqpValue();
   }
 
   @Override
-  public Instant getBodyAsTimestamp() {
+  public Instant bodyAsTimestamp() {
     Object value = getAmqpValue();
     if (!(value instanceof Date)) {
       throw new IllegalStateException("Expecting a Date object, got a " + value);
@@ -138,12 +138,12 @@ public class AmqpMessageImpl implements AmqpMessage {
   }
 
   @Override
-  public UUID getBodyAsUUID() {
+  public UUID bodyAsUUID() {
     return (UUID) getAmqpValue();
   }
 
   @Override
-  public Buffer getBodyAsBinary() {
+  public Buffer bodyAsBinary() {
     Section body = message.getBody();
     if (body.getType() != Section.SectionType.Data) {
       throw new IllegalStateException("The body is not of type 'data'");
@@ -153,13 +153,12 @@ public class AmqpMessageImpl implements AmqpMessage {
   }
 
   @Override
-  public String getBodyAsString() {
+  public String bodyAsString() {
     return (String) getAmqpValue();
   }
 
   @Override
-  public String getBodyAsSymbol() {
-    // TODO To be checked
+  public String bodyAsSymbol() {
     Object value = getAmqpValue();
     if (value instanceof Symbol) {
       return ((Symbol) value).toString();
@@ -171,7 +170,7 @@ public class AmqpMessageImpl implements AmqpMessage {
    * @noinspection unchecked
    */
   @Override
-  public <T> List<T> getBodyAsList() {
+  public <T> List<T> bodyAsList() {
     Section body = message.getBody();
     if (body.getType() == Section.SectionType.AmqpSequence) {
       return (List<T>) ((AmqpSequence) message.getBody()).getValue();
@@ -188,7 +187,7 @@ public class AmqpMessageImpl implements AmqpMessage {
    * @noinspection unchecked
    */
   @Override
-  public <K, V> Map<K, V> getBodyAsMap() {
+  public <K, V> Map<K, V> bodyAsMap() {
     Object value = getAmqpValue();
     if (value instanceof Map) {
       return (Map<K, V>) value;
@@ -198,13 +197,13 @@ public class AmqpMessageImpl implements AmqpMessage {
 
 
   @Override
-  public JsonObject getBodyAsJsonObject() {
-    return getBodyAsBinary().toJsonObject();
+  public JsonObject bodyAsJsonObject() {
+    return bodyAsBinary().toJsonObject();
   }
 
   @Override
-  public JsonArray getBodyAsJsonArray() {
-    return getBodyAsBinary().toJsonArray();
+  public JsonArray bodyAsJsonArray() {
+    return bodyAsBinary().toJsonArray();
   }
 
   @Override

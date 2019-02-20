@@ -38,7 +38,7 @@ public class CloseTest extends BareTestBase {
         AmqpReceiver receiver = done.result();
         receiver.exceptionHandler(x -> exceptionHandlerCalled.set(true));
         receiver.handler(msg -> {
-          String amqpBodyContent = msg.getBodyAsString();
+          String amqpBodyContent = msg.bodyAsString();
           context.assertNotNull(amqpBodyContent, "amqp message body content was null");
           context.assertEquals(sentContent, amqpBodyContent, "amqp message body not as expected");
 
@@ -166,7 +166,7 @@ public class CloseTest extends BareTestBase {
       context.assertTrue(res.succeeded());
       res.result().receiver(testName,
         msg -> {
-          String content = msg.getBodyAsString();
+          String content = msg.bodyAsString();
           context.assertNotNull(content, "amqp message body content was null");
           context.assertEquals(sentContent, content, "amqp message body not as expected");
           msgReceived.set(true);
@@ -262,8 +262,8 @@ public class CloseTest extends BareTestBase {
       context.assertTrue(res.succeeded());
       res.result().receiver(testName,
         msg -> {
-          context.assertNotNull(msg.getBodyAsString(), "message body was null");
-          String amqpBodyContent = msg.getBodyAsString();
+          context.assertNotNull(msg.bodyAsString(), "message body was null");
+          String amqpBodyContent = msg.bodyAsString();
           context.assertNotNull(amqpBodyContent, "amqp message body content was null");
           context.assertEquals(sentContent, amqpBodyContent, "amqp message body not as expected");
 
@@ -345,8 +345,8 @@ public class CloseTest extends BareTestBase {
           consumer.endHandler(x -> context.fail("should not call end handler"));
           // Attach handler.
           consumer.handler(msg -> {
-            context.assertNotNull(msg.getBodyAsString(), "message body was null");
-            context.assertEquals(sentContent, msg.getBodyAsString(), "amqp message body not as expected");
+            context.assertNotNull(msg.bodyAsString(), "message body was null");
+            context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body not as expected");
 
             consumer.close(x -> {
               context.assertTrue(x.succeeded());

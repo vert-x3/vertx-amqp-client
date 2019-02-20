@@ -4,19 +4,12 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import org.apache.qpid.proton.amqp.*;
-import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
-import org.apache.qpid.proton.amqp.messaging.Data;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.math.BigDecimal;
-import java.sql.Date;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -82,7 +75,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 4);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsBoolean).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsBoolean).collect(Collectors.toList()))
       .containsExactly(true, false, true, false);
   }
 
@@ -104,7 +97,7 @@ public class SenderTypeTest extends ArtemisTestBase {
 
     await().until(() -> list.size() == 2);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsByte).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsByte).collect(Collectors.toList()))
       .containsExactly(value, value);
   }
 
@@ -128,7 +121,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 2);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsShort).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsShort).collect(Collectors.toList()))
       .containsExactly(value, value);
   }
 
@@ -153,7 +146,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 2);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsInteger).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsInteger).collect(Collectors.toList()))
       .containsExactly(value, value);
   }
 
@@ -177,7 +170,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 2);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsLong).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsLong).collect(Collectors.toList()))
       .containsExactly(value, value);
   }
 
@@ -201,7 +194,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 2);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsFloat).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsFloat).collect(Collectors.toList()))
       .containsExactly(value, value);
   }
 
@@ -225,7 +218,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 2);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsDouble).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsDouble).collect(Collectors.toList()))
       .containsExactly(value, value);
   }
 
@@ -249,7 +242,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 2);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsChar).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsChar).collect(Collectors.toList()))
       .containsExactly(value, value);
   }
 
@@ -288,7 +281,7 @@ public class SenderTypeTest extends ArtemisTestBase {
 
     await().until(() -> list.size() == 1);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsUUID).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsUUID).collect(Collectors.toList()))
       .containsExactly(value);
   }
 
@@ -310,7 +303,7 @@ public class SenderTypeTest extends ArtemisTestBase {
 
     await().until(() -> list.size() == 1);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsBinary).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsBinary).collect(Collectors.toList()))
       .containsExactly(value);
   }
 
@@ -333,7 +326,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 1);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsString).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsString).collect(Collectors.toList()))
       .containsExactly(value);
   }
 
@@ -356,7 +349,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 1);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsSymbol).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsSymbol).collect(Collectors.toList()))
       .containsExactly(value);
   }
 
@@ -382,7 +375,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 1);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsList).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsList).collect(Collectors.toList()))
       .containsExactly(value);
   }
 
@@ -408,7 +401,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .pollInterval(2, TimeUnit.SECONDS)
       .until(() -> list.size() == 1);
 
-    assertThat(list.get(0).getBodyAsMap()).containsAllEntriesOf(value);
+    assertThat(list.get(0).bodyAsMap()).containsAllEntriesOf(value);
   }
 
   @Test
@@ -429,7 +422,7 @@ public class SenderTypeTest extends ArtemisTestBase {
 
     await().until(() -> list.size() == 1);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsJsonObject).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsJsonObject).collect(Collectors.toList()))
       .containsExactly(value);
   }
 
@@ -450,7 +443,7 @@ public class SenderTypeTest extends ArtemisTestBase {
 
     await().until(() -> list.size() == 1);
 
-    assertThat(list.stream().map(AmqpMessage::getBodyAsJsonArray).collect(Collectors.toList()))
+    assertThat(list.stream().map(AmqpMessage::bodyAsJsonArray).collect(Collectors.toList()))
       .containsExactly(value);
   }
 }
