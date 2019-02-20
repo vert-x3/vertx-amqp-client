@@ -10,6 +10,7 @@ import org.apache.qpid.proton.engine.EndpointState;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class AmqpConnectionImpl implements AmqpConnection {
 
@@ -17,26 +18,31 @@ public class AmqpConnectionImpl implements AmqpConnection {
   public static final Symbol PRODUCT_KEY = Symbol.valueOf("product");
 
   private final AmqpClientOptions options;
-  private AtomicBoolean closed = new AtomicBoolean();
-  private ProtonConnection connection;
+  private final AtomicBoolean closed = new AtomicBoolean();
+  private final AtomicReference<ProtonConnection> connection = new AtomicReference<>();
   private final Context context;
 
-  private List<AmqpSender> senders = new CopyOnWriteArrayList<>();
-  private List<AmqpReceiver> receivers = new CopyOnWriteArrayList<>();
+  private final List<AmqpSender> senders = new CopyOnWriteArrayList<>();
+  private final List<AmqpReceiver> receivers = new CopyOnWriteArrayList<>();
 
   private final ReplyManager replyManager;
+
+  /**
+   * Access protected by monitor lock.
+   */
   private Handler<Void> endHandler;
 
   AmqpConnectionImpl(Vertx vertx, Context context, AmqpClientImpl client, AmqpClientOptions options,
                      ProtonClient proton, Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     this.options = options;
-    Objects.requireNonNull(connectionHandler, "connection handler cannot be `null`");
-    Objects.requireNonNull(proton, "proton cannot be `null`");
     this.context = context;
     this.replyManager = new ReplyManager(vertx, context, this,
       options.isReplyEnabled(), options.getReplyTimeout());
 
-    runOnContext(x -> connect(client, proton, connectionHandler));
+    runOnContext(x -> connect(client,
+      Objects.requireNonNull(proton, "proton cannot be `null`"),
+      Objects.requireNonNull(connectionHandler, "connection handler cannot be `null`"))
+    );
   }
 
   private void connect(AmqpClientImpl client, ProtonClient proton, Handler<AsyncResult<AmqpConnection>> connectionHandler) {
@@ -44,22 +50,25 @@ public class AmqpConnectionImpl implements AmqpConnection {
       .connect(options, options.getHost(), options.getPort(), options.getUsername(), options.getPassword(),
         ar -> {
           if (ar.succeeded()) {
-            this.connection = ar.result();
+            if (!this.connection.compareAndSet(null, ar.result())) {
+              connectionHandler.handle(Future.failedFuture("Unable to connect - already holding a connection"));
+              return;
+            }
 
             Map<Symbol, Object> map = new HashMap<>();
             map.put(AmqpConnectionImpl.PRODUCT_KEY, AmqpConnectionImpl.PRODUCT);
             if (options.getContainerId() != null) {
-              this.connection.setContainer(options.getContainerId());
+              this.connection.get().setContainer(options.getContainerId());
             }
 
             if (options.getVirtualHost() != null) {
-              this.connection.setHostname(options.getVirtualHost());
+              this.connection.get().setHostname(options.getVirtualHost());
             }
 
-            this.connection
+            this.connection.get()
               .setProperties(map)
-              .disconnectHandler(closeResult -> onEnd())
-              .closeHandler(closeResult -> {
+              .disconnectHandler(ignored -> onEnd())
+              .closeHandler(ignored -> {
                 try {
                   onDisconnect();
                 } finally {
@@ -82,19 +91,17 @@ public class AmqpConnectionImpl implements AmqpConnection {
                 }
               });
 
-            this.connection.open();
+            this.connection.get().open();
           } else {
             runWithTrampoline(x -> connectionHandler.handle(ar.mapEmpty()));
           }
         });
   }
 
-  private synchronized void onDisconnect() {
-    ProtonConnection conn = connection;
-    connection = null;
+  private void onDisconnect() {
+    ProtonConnection conn = connection.getAndSet(null);
     if (conn != null) {
       try {
-        // Does nothing if already closed
         conn.close();
       } finally {
         conn.disconnect();
@@ -129,18 +136,20 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return replyManager;
   }
 
-  private boolean isLocalOpen(ProtonConnection connection) {
-    return connection != null
-      && ((ProtonConnectionImpl) connection).getLocalState() == EndpointState.ACTIVE;
+  private boolean isLocalOpen() {
+    ProtonConnection conn = this.connection.get();
+    return conn != null
+      && ((ProtonConnectionImpl) conn).getLocalState() == EndpointState.ACTIVE;
   }
 
-  private boolean isRemoteOpen(ProtonConnection connection) {
-    return connection != null
-      && ((ProtonConnectionImpl) connection).getRemoteState() == EndpointState.ACTIVE;
+  private boolean isRemoteOpen() {
+    ProtonConnection conn = this.connection.get();
+    return conn != null
+      && ((ProtonConnectionImpl) conn).getRemoteState() == EndpointState.ACTIVE;
   }
 
   @Override
-  public void endHandler(Handler<Void> endHandler) {
+  public synchronized void endHandler(Handler<Void> endHandler) {
     this.endHandler = endHandler;
   }
 
@@ -148,12 +157,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
   public AmqpConnection close(Handler<AsyncResult<Void>> done) {
     List<Future> futures = new ArrayList<>();
 
-    ProtonConnection actualConnection;
-    synchronized (this) {
-      actualConnection = connection;
-    }
-
-    if (actualConnection == null || (closed.get() && (!isLocalOpen(actualConnection) && !isRemoteOpen(actualConnection)))) {
+    ProtonConnection actualConnection = connection.get();
+    if (actualConnection == null || (closed.get() && (!isLocalOpen() && !isRemoteOpen()))) {
       if (done != null) {
         done.handle(Future.succeededFuture());
       }
@@ -199,17 +204,11 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   void unregister(AmqpSender sender) {
-    synchronized (this) {
-      // Sender is close explicitly.
-      senders.remove(sender);
-    }
+    senders.remove(sender);
   }
 
   void unregister(AmqpReceiver receiver) {
-    synchronized (this) {
-      // Receiver is close explicitly.
-      receivers.remove(receiver);
-    }
+    receivers.remove(receiver);
   }
 
   @Override
@@ -219,12 +218,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   @Override
   public AmqpConnection receiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
-    Objects.requireNonNull(address, "The address must not be `null`");
-    Objects.requireNonNull(completionHandler, "The completion handler must not be `null`");
     ProtonLinkOptions opts = new ProtonLinkOptions();
-    ProtonReceiver receiver = connection.createReceiver(address, opts);
+    ProtonReceiver receiver = connection.get().createReceiver(address, opts);
 
-    runWithTrampoline(x -> new AmqpReceiverImpl(address, this, receiver, null, completionHandler));
+    runWithTrampoline(x -> new AmqpReceiverImpl(
+      Objects.requireNonNull(address, "The address must not be `null`"),
+      this, receiver, null,
+      Objects.requireNonNull(completionHandler, "The completion handler must not be `null`")));
     return this;
   }
 
@@ -237,8 +237,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
         .setDynamic(receiverOptions.isDynamic())
         .setLinkName(receiverOptions.getLinkName());
     }
-    ProtonReceiver receiver = connection.createReceiver(address, opts)
-      .setAutoAccept(true);
+    ProtonReceiver receiver = connection.get().createReceiver(address, opts);
 
     if (receiverOptions != null && receiverOptions.getQos() != null) {
       receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
@@ -250,7 +249,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   @Override
   public AmqpConnection sender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
-    ProtonSender sender = connection.createSender(address);
+    ProtonSender sender = connection.get().createSender(address);
     AmqpSenderImpl.create(sender, this, completionHandler);
     return this;
   }
@@ -264,14 +263,14 @@ public class AmqpConnectionImpl implements AmqpConnection {
         .setLinkName(senderOptions.getName());
     }
 
-    ProtonSender sender = connection.createSender(address, linkOptions);
+    ProtonSender sender = connection.get().createSender(address, linkOptions);
     AmqpSenderImpl.create(sender, this, completionHandler);
     return this;
   }
 
   @Override
   public AmqpConnection closeHandler(Handler<AmqpConnection> remoteCloseHandler) {
-    this.connection.closeHandler(pc -> {
+    this.connection.get().closeHandler(pc -> {
       if (remoteCloseHandler != null) {
         runWithTrampoline(x -> remoteCloseHandler.handle(this));
       }
@@ -279,19 +278,19 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return this;
   }
 
-  public ProtonConnection unwrap() {
-    return this.connection;
+  ProtonConnection unwrap() {
+    return this.connection.get();
   }
 
   public AmqpClientOptions options() {
     return options;
   }
 
-  public synchronized void register(AmqpSenderImpl sender) {
+  void register(AmqpSenderImpl sender) {
     senders.add(sender);
   }
 
-  public void register(AmqpReceiverImpl receiver) {
+  void register(AmqpReceiverImpl receiver) {
     receivers.add(receiver);
   }
 }

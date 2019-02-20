@@ -24,8 +24,8 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   private final String address;
   private final ProtonReceiver receiver;
   private final AmqpConnectionImpl connection;
-
   private final Queue<AmqpMessageImpl> buffered = new ArrayDeque<>();
+
   private Handler<AmqpMessage> handler;
   private long demand = Long.MAX_VALUE;
   private boolean closed;
@@ -48,10 +48,11 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       this.initialCredit = maxBufferedMessages;
     }
 
-    // Disable auto-accept and automated prefetch, we will manage disposition and credit
+    // Disable auto-accept and automated prefetch, we manage disposition and credit
     // manually to allow for delayed handler registration and pause/resume functionality.
-    this.receiver.setAutoAccept(false);
-    this.receiver.setPrefetch(0);
+    this.receiver
+      .setAutoAccept(false)
+      .setPrefetch(0);
 
     this.receiver.handler((delivery, message) -> handleMessage(new AmqpMessageImpl(message, delivery)));
     if (this.handler != null) {
@@ -150,7 +151,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   }
 
   @Override
-  public ReadStream<AmqpMessage> handler(@Nullable Handler<AmqpMessage> handler) {
+  public AmqpReceiver handler(@Nullable Handler<AmqpMessage> handler) {
     int creditToFlow = 0;
     boolean schedule = false;
 
@@ -209,7 +210,12 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   }
 
   private void deliverMessageToHandler(AmqpMessageImpl message) {
-    handler.handle(message);
+    Handler<AmqpMessage> h;
+    synchronized (this) {
+     h = handler;
+    }
+
+    h.handle(message);
     message.delivered();
     this.receiver.flow(1);
   }
