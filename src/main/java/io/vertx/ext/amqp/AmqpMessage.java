@@ -84,43 +84,98 @@ public interface AmqpMessage {
 
   String correlationId();
 
+  /**
+   * @return whether the body is {@code null}. This method returns {@code true} is the message does not contain a body or
+   * if the message contain a {@code null} AMQP value as body.
+   */
   boolean isBodyNull();
 
+  /**
+   * @return the boolean value contained in the body. The value must be passed as AMQP value.
+   */
   boolean bodyAsBoolean();
 
+  /**
+   * @return the byte value contained in the body. The value must be passed as AMQP value.
+   */
   byte bodyAsByte();
 
+  /**
+   * @return the short value contained in the body. The value must be passed as AMQP value.
+   */
   short bodyAsShort();
 
+  /**
+   * @return the integer value contained in the body. The value must be passed as AMQP value.
+   */
   int bodyAsInteger();
 
+  /**
+   * @return the long value contained in the body. The value must be passed as AMQP value.
+   */
   long bodyAsLong();
 
+  /**
+   * @return the float value contained in the body. The value must be passed as AMQP value.
+   */
   float bodyAsFloat();
 
+  /**
+   * @return the double value contained in the body. The value must be passed as AMQP value.
+   */
   double bodyAsDouble();
 
+  /**
+   * @return the character value contained in the body. The value must be passed as AMQP value.
+   */
   char bodyAsChar();
 
+  /**
+   * @return the timestamp value contained in the body. The value must be passed as AMQP value.
+   */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Instant bodyAsTimestamp();
 
+  /**
+   * @return the UUID value contained in the body. The value must be passed as AMQP value.
+   */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   UUID bodyAsUUID();
 
+  /**
+   * @return the bytes contained in the body. The value must be passed as AMQP data.
+   */
   Buffer bodyAsBinary();
 
+  /**
+   * @return the string value contained in the body. The value must be passed as AMQP value.
+   */
   String bodyAsString();
 
+  /**
+   * @return the symbol value contained in the body. The value must be passed as AMQP value.
+   */
   String bodyAsSymbol();
 
+  /**
+   * @return the list of values contained in the body. The value must be passed as AMQP value.
+   */
   <T> List<T> bodyAsList();
 
+  /**
+   * @return the map contained in the body. The value must be passed as AMQP value.
+   */
   @GenIgnore
   <K, V> Map<K, V> bodyAsMap();
 
+  /**
+   * @return the JSON object contained in the body. The value must be passed as AMQP data.
+   */
   JsonObject bodyAsJsonObject();
 
+  /**
+   * @return the JSON array contained in the body. The value must be passed as AMQP data.
+   */
   JsonArray bodyAsJsonArray();
 
   String subject();
