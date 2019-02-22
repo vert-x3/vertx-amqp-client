@@ -33,11 +33,11 @@ public class AmqpClientOptions extends ProtonClientOptions {
 
   // TODO Capabilities and properties
 
-  private String host = getHostFromSysOrEnv();
+  private String host = getFromSysOrEnv("amqp-client-host");
   private int port = getPortFromSysOrEnv();
 
-  private String username = getUsernameFromSysOrEnv();
-  private String password = getPasswordFromSysOrEnv();
+  private String username = getFromSysOrEnv("amqp-client-username");
+  private String password = getFromSysOrEnv("amqp-client-password");
   private boolean replyEnabled = true;
   private long replyTimeout = 30_000;
 
@@ -526,41 +526,21 @@ public class AmqpClientOptions extends ProtonClientOptions {
     return this;
   }
 
-  private String getHostFromSysOrEnv() {
-    String sys = System.getProperty("amqp-client-host");
+  private String getFromSysOrEnv(String key) {
+    String sys = System.getProperty(key);
     if (sys == null) {
-      return System.getenv("AMQP_CLIENT_HOST");
-    }
-    return sys;
-  }
-
-  private String getUsernameFromSysOrEnv() {
-    String sys = System.getProperty("amqp-client-username");
-    if (sys == null) {
-      return System.getenv("AMQP_CLIENT_USERNAME");
-    }
-    return sys;
-  }
-
-  private String getPasswordFromSysOrEnv() {
-    String sys = System.getProperty("amqp-client-password");
-    if (sys == null) {
-      return System.getenv("AMQP_CLIENT_PASSWORD");
+      return System.getenv(key.toUpperCase().replace("-", "_"));
     }
     return sys;
   }
 
   private int getPortFromSysOrEnv() {
-    String sys = System.getProperty("amqp-client-port");
-    if (sys == null) {
-      String env = System.getenv("AMQP_CLIENT_PORT");
-      if (env == null) {
-        return 5672;
-      } else {
-        return Integer.parseInt(env);
-      }
+    String s = getFromSysOrEnv("amqp-client-port");
+    if (s == null) {
+      return 5672;
+    } else {
+      return Integer.parseInt(s);
     }
-    return Integer.parseInt(sys);
   }
 
   /**
