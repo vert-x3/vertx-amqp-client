@@ -195,8 +195,11 @@ public class ReplyManager {
   }
 
   private void handleIncomingMessageReply(AmqpMessage response) {
-    // Check if we have the reply-to-message app properties
-    String correlationId = response.applicationProperties().getString(REPLY_TO_MESSAGE_PROPERTY, response.correlationId());
+    String correlationId = response.correlationId();
+    if (response.applicationProperties() != null) {
+      // Check if we have the reply-to-message app properties
+      correlationId = response.applicationProperties().getString(REPLY_TO_MESSAGE_PROPERTY, correlationId);
+    }
     if (correlationId != null) {
       // Remove the associated handler from the map (only 1 reply permitted).
       Handler<AsyncResult<AmqpMessage>> handler = replyToHandler.remove(correlationId);
