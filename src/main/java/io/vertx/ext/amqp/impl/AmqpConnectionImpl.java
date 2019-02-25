@@ -102,13 +102,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
                     }
                   });
                 } else {
-                  runWithTrampoline(x -> connectionHandler.handle(conn.mapEmpty()));
+                  connectionHandler.handle(conn.mapEmpty());
                 }
               });
 
             this.connection.get().open();
           } else {
-            runWithTrampoline(x -> connectionHandler.handle(ar.mapEmpty()));
+            connectionHandler.handle(ar.mapEmpty());
           }
         });
   }
@@ -206,11 +206,10 @@ public class AmqpConnectionImpl implements AmqpConnection {
         } else {
           try {
             actualConnection
-              .closeHandler(cleanup ->
-                runWithTrampoline(x -> {
-                  onDisconnect();
-                  future.handle(cleanup.mapEmpty());
-                }))
+              .closeHandler(cleanup -> {
+                onDisconnect();
+                future.handle(cleanup.mapEmpty());
+              })
               .close();
           } catch (Exception e) {
             future.fail(e);
