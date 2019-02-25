@@ -32,10 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ReplyManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReplyManager.class.getName());
-  public static final String REPLY_TO_MESSAGE_PROPERTY = "reply-to-message";
+  public static final String REPLY_TO_MESSAGE_PROPERTY = "correlation_id";
 
   private final AmqpConnectionImpl connection;
-  private final Context context;
   private final Vertx vertx;
   private final boolean enabled;
   private final long timeout;
@@ -46,9 +45,8 @@ public class ReplyManager {
 
   private Map<String, Handler<AsyncResult<AmqpMessage>>> replyToHandler = new ConcurrentHashMap<>();
 
-  public ReplyManager(Vertx vertx, Context context, AmqpConnectionImpl connection, boolean replyEnabled, long replyTimeout) {
+  public ReplyManager(Vertx vertx, AmqpConnectionImpl connection, boolean replyEnabled, long replyTimeout) {
     this.vertx = vertx;
-    this.context = context;
     this.connection = connection;
     this.enabled = replyEnabled;
     this.timeout = replyTimeout;

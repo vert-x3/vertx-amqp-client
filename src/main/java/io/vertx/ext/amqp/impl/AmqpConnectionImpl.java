@@ -51,7 +51,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
                      ProtonClient proton, Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     this.options = options;
     this.context = context;
-    this.replyManager = new ReplyManager(vertx, context, this,
+    this.replyManager = new ReplyManager(vertx, this,
       options.isReplyEnabled(), options.getReplyTimeout());
 
     runOnContext(x -> connect(client,
