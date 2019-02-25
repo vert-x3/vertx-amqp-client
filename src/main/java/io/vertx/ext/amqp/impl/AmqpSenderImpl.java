@@ -269,8 +269,9 @@ public class AmqpSenderImpl implements AmqpSender {
     connection.runWithTrampoline(x -> {
       if (sender.isOpen()) {
         try {
-          sender.close();
-          actualHandler.handle(Future.succeededFuture());
+          sender
+            .closeHandler(v -> actualHandler.handle(v.mapEmpty()))
+            .close();
         } catch (Exception e) {
           // Somehow closed remotely
           actualHandler.handle(Future.failedFuture(e));
