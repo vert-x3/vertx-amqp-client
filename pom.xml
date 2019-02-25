@@ -154,6 +154,8 @@
           <header>src/license/license.txt</header>
           <mapping>
             <asciidoc>DOUBLESLASH_STYLE</asciidoc>
+            <!-- Avoid dangling comment issue -->
+            <java>SLASHSTAR_STYLE</java>
           </mapping>
           <excludes>
             <exclude>LICENSE.txt</exclude>

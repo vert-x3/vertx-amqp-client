@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2018-2019 The original author or authors
  *
  * All rights reserved. This program and the accompanying materials
