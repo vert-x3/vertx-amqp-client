@@ -43,7 +43,7 @@ public class CloseTest extends BareTestBase {
     MockServer server = new MockServer(vertx,
       serverConnection -> handleReceiverOpenSendMessageThenClose(serverConnection, testName, sentContent, context));
 
-    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+    AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     AmqpClient client = AmqpClient.create(vertx, options);
     client.connect(res -> {
@@ -175,7 +175,7 @@ public class CloseTest extends BareTestBase {
 
     // === Client consumer handling ====
 
-    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false).setHost("localhost").setPort(server.actualPort());
+    AmqpClientOptions options = new AmqpClientOptions().setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
     this.client.connect(res -> {
       context.assertTrue(res.succeeded());
@@ -270,7 +270,7 @@ public class CloseTest extends BareTestBase {
 
     // === Client consumer handling ====
 
-    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+    AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
@@ -348,7 +348,7 @@ public class CloseTest extends BareTestBase {
 
     // === client consumer handling ====
 
-    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+    AmqpClientOptions options = new AmqpClientOptions()
       .setPort(server.actualPort()).setHost("localhost");
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
@@ -418,7 +418,7 @@ public class CloseTest extends BareTestBase {
 
     // === Client handling ====
 
-    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+    AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
@@ -443,7 +443,7 @@ public class CloseTest extends BareTestBase {
   }
 
   @Test(timeout = 20000)
-  public void testCloseBridgeThatWithoutConnection(TestContext context) {
+  public void testCloseClientThatWithoutConnection(TestContext context) {
     Async async = context.async();
 
     AmqpClient client = AmqpClient.create(new AmqpClientOptions().setHost("unused"));

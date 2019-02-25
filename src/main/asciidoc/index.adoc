@@ -8,7 +8,6 @@ The Vert.x AMQP Client allows interacting with https://en.wikipedia.org/wiki/Adv
 * Consuming message from a queue or a topic
 * Sending messages to a queue or a topic
 * Checking acknowledgement for sent messages
-* Replying to received messages
 
 The AMQP 1.0 protocol support durable subscriptions, persistence, security, conversations, sophisticated routing... More
  details on the protocol can be found on the https://www.amqp.org/[AMQP homepage].
@@ -124,8 +123,6 @@ provides a few examples:
 Once you have the sender and created the message, you can send it using:
 
 * {@link io.vertx.ext.amqp.AmqpSender#send(io.vertx.ext.amqp.AmqpMessage)} - send the message
-* {@link io.vertx.ext.amqp.AmqpSender#send(io.vertx.ext.amqp.AmqpMessage, io.vertx.core.Handler))}
-- send the message and expect a reply
 * {@link io.vertx.ext.amqp.AmqpSender#send(java.lang.String, io.vertx.ext.amqp.AmqpMessage)} - send the message to a different address
 * {@link io.vertx.ext.amqp.AmqpSender#sendWithAck(io.vertx.ext.amqp.AmqpMessage, io.vertx.core.Handler)} - send the message and monitor its acknowledgment
 
@@ -152,22 +149,6 @@ It can also monitor the acknowledgement of the message:
 
 Note that message is considered as acknowledged if the delivery is set fo `ACCEPTED`. Other delivery values are considered
 as non-acknowledged (details can be found in the passed cause).
-
-A sender can also expect a reply:
-
-[source,$lang]
-----
-{@link examples.AmqpClientExamples#sendWithReply(io.vertx.ext.amqp.AmqpSender)}
-{@link examples.AmqpClientExamples#receiveAndReply(io.vertx.ext.amqp.AmqpConnection)}
-----
-
-The reply mechanism is based on the `reply-to` header. However, if the exchange contains a reply of reply, the mechanism
-is specific to the Vert.x AMQP client (a correlation id is set in the application properties of the message). Also,
-replies are only supported if the broker can act as anonymous relay. Reply support can be explicitly disabled from
-{@link io.vertx.ext.amqp.AmqpClientOptions}.
-
-If the response does not arrive before a time out set in the {@link io.vertx.ext.amqp.AmqpClientOptions}, the reply handler
-is called with a failure.
 
 The {@link io.vertx.ext.amqp.AmqpSender} can be used as a write stream. The flow control is implemented using AMQP credits.
 

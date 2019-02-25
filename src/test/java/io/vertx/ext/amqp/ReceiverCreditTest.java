@@ -89,7 +89,7 @@ public class ReceiverCreditTest extends BareTestBase {
 
     // === Client consumer handling ====
 
-    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false).setHost("localhost")
+    AmqpClientOptions options = new AmqpClientOptions().setHost("localhost")
       .setPort(server.actualPort());
     if (setMaxBuffered) {
       options.setMaxBufferedMessages(initialCredit);

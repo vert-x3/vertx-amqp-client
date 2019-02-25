@@ -118,7 +118,7 @@ public class AmqpClientExamples {
   }
 
   public void sendWithAck(AmqpSender sender) {
-    sender.send(AmqpMessage.create().withBody("hello").build(), acked -> {
+    sender.sendWithAck(AmqpMessage.create().withBody("hello").build(), acked -> {
       if (acked.succeeded()) {
         System.out.println("Message accepted");
       } else {
@@ -126,26 +126,4 @@ public class AmqpClientExamples {
       }
     });
   }
-
-  public void sendWithReply(AmqpSender sender) {
-    sender.send(AmqpMessage.create().withBody("Hello, how you you?").build(), reply -> {
-      if (reply.succeeded()) {
-        AmqpMessage response = reply.result();
-      } else {
-        System.out.println("No response before timeout");
-      }
-    });
-  }
-
-  public void receiveAndReply(AmqpConnection connection) {
-    connection.receiver("my-queue",
-      msg -> {
-        msg.reply(AmqpMessage.create().withBody("I'm doing great, thanks!").build());
-      }, done -> {
-
-      });
-  }
-
-
-
 }

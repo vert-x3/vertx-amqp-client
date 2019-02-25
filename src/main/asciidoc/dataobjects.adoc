@@ -95,12 +95,6 @@ Sets the port.
 |[[reconnectInterval]]`@reconnectInterval`|`Number (long)`|+++
 
 +++
-|[[replyEnabled]]`@replyEnabled`|`Boolean`|+++
-Enables or disables reply support.
-+++
-|[[replyTimeout]]`@replyTimeout`|`Number (long)`|+++
-Sets the reply timeout.
-+++
 |[[reuseAddress]]`@reuseAddress`|`Boolean`|+++
 
 +++

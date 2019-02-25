@@ -38,8 +38,6 @@ public class AmqpClientOptions extends ProtonClientOptions {
 
   private String username = getFromSysOrEnv("amqp-client-username");
   private String password = getFromSysOrEnv("amqp-client-password");
-  private boolean replyEnabled = true;
-  private long replyTimeout = 30_000;
 
   private String containerId = UUID.randomUUID().toString();
   private int maxBufferedMessages;
@@ -60,8 +58,6 @@ public class AmqpClientOptions extends ProtonClientOptions {
     this.username = other.username;
     this.port = other.port;
     this.containerId = other.containerId;
-    this.replyEnabled = other.replyEnabled;
-    this.replyTimeout = other.replyTimeout;
     this.maxBufferedMessages = other.maxBufferedMessages;
   }
 
@@ -541,42 +537,6 @@ public class AmqpClientOptions extends ProtonClientOptions {
     } else {
       return Integer.parseInt(s);
     }
-  }
-
-  /**
-   * @return whether reply support is enabled.
-   */
-  public boolean isReplyEnabled() {
-    return replyEnabled;
-  }
-
-  /**
-   * Enables or disables reply support.
-   *
-   * @param replyEnabled whether or not reply support is enabled.
-   * @return the current {@link AmqpClientOptions} instance.
-   */
-  public AmqpClientOptions setReplyEnabled(boolean replyEnabled) {
-    this.replyEnabled = replyEnabled;
-    return this;
-  }
-
-  /**
-   * @return the reply timeout. 30s by default.
-   */
-  public long getReplyTimeout() {
-    return replyTimeout;
-  }
-
-  /**
-   * Sets the reply timeout.
-   *
-   * @param replyTimeout the reply timeout in ms.
-   * @return the current {@link AmqpClientOptions} instance.
-   */
-  public AmqpClientOptions setReplyTimeout(long replyTimeout) {
-    this.replyTimeout = replyTimeout;
-    return this;
   }
 
   /**

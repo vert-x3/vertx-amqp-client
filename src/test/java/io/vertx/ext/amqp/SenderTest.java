@@ -92,7 +92,7 @@ public class SenderTest extends BareTestBase {
 
     // === Client producer handling ====
 
-    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+    AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     AmqpClient client = AmqpClient.create(vertx, options);
     client.connect(res -> {
@@ -192,7 +192,7 @@ public class SenderTest extends BareTestBase {
 
     // === Client producer handling ====
 
-    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+    AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost")
       .setPort(server.actualPort());
     AmqpClient client = AmqpClient.create(vertx, options);
@@ -297,7 +297,7 @@ public class SenderTest extends BareTestBase {
 
     // === Client producer handling ====
 
-    AmqpClientOptions options = new AmqpClientOptions().setReplyEnabled(false)
+    AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {

@@ -15,8 +15,6 @@
  */
 package io.vertx.ext.amqp.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -36,7 +34,6 @@ import java.util.UUID;
 public class AmqpMessageImpl implements AmqpMessage {
   private final Message message;
   private final ProtonDelivery delivery;
-  private ReplyManager replySender;
 
   public AmqpMessageImpl(Message message, ProtonDelivery delivery) {
     this.message = message;
@@ -289,29 +286,5 @@ public class AmqpMessageImpl implements AmqpMessage {
     if (delivery != null) {
       ProtonHelper.accepted(delivery, true);
     }
-  }
-
-  @Override
-  public synchronized AmqpMessage reply(AmqpMessage message) {
-    if (replySender != null) {
-      replySender.sendReply(this, message);
-    } else {
-      throw new IllegalStateException("Cannot reply to message, no reply sender");
-    }
-    return this;
-  }
-
-  @Override
-  public AmqpMessage reply(AmqpMessage message, Handler<AsyncResult<AmqpMessage>> replyToReplyHandler) {
-    if (replySender != null) {
-      replySender.sendReply(this, message, replyToReplyHandler);
-    } else {
-      throw new IllegalStateException("Cannot reply to message, no reply sender");
-    }
-    return this;
-  }
-
-  public synchronized void setReplyManager(ReplyManager sender) {
-    this.replySender = sender;
   }
 }

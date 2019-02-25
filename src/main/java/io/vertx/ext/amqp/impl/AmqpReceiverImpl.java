@@ -58,7 +58,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
    * @param handler           the handler
    * @param completionHandler called when the receiver is opened
    */
-  public AmqpReceiverImpl(
+  AmqpReceiverImpl(
     String address,
     AmqpConnectionImpl connection,
     ProtonReceiver receiver,
@@ -137,8 +137,6 @@ public class AmqpReceiverImpl implements AmqpReceiver {
 
   private void handleMessage(AmqpMessageImpl message) {
     boolean schedule = false;
-
-    message.setReplyManager(connection.replyManager());
 
     synchronized (this) {
       if (handler != null && demand > 0L && buffered.isEmpty()) {
@@ -313,9 +311,5 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       }
     });
 
-  }
-
-  ProtonReceiver unwrap() {
-    return receiver;
   }
 }

@@ -40,8 +40,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
   private final List<AmqpSender> senders = new CopyOnWriteArrayList<>();
   private final List<AmqpReceiver> receivers = new CopyOnWriteArrayList<>();
 
-  private final ReplyManager replyManager;
-
   /**
    * Access protected by monitor lock.
    */
@@ -51,8 +49,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
                      ProtonClient proton, Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     this.options = options;
     this.context = context;
-    this.replyManager = new ReplyManager(vertx, this,
-      options.isReplyEnabled(), options.getReplyTimeout());
 
     runOnContext(x -> connect(client,
       Objects.requireNonNull(proton, "proton cannot be `null`"),
@@ -95,15 +91,10 @@ public class AmqpConnectionImpl implements AmqpConnection {
               .openHandler(conn -> {
                 if (conn.succeeded()) {
                   client.register(this);
-                  this.replyManager.initialize().setHandler(res -> {
-                    if (res.failed()) {
-                      connectionHandler.handle(Future.failedFuture(res.cause()));
-                    } else {
-                      closed.set(false);
-                      connectionHandler.handle(Future.succeededFuture(this));
-                    }
-                  });
+                  closed.set(false);
+                  connectionHandler.handle(Future.succeededFuture(this));
                 } else {
+                  closed.set(true);
                   connectionHandler.handle(conn.mapEmpty());
                 }
               });
@@ -138,7 +129,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
       handler = endHandler;
       endHandler = null;
     }
-    if (handler != null && !closed.get()) {
+    if (handler != null  && ! closed.get()) {
       handler.handle(null);
     }
   }
@@ -153,10 +144,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     } else {
       runOnContext(action);
     }
-  }
-
-  public ReplyManager replyManager() {
-    return replyManager;
   }
 
   /**
@@ -196,7 +183,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
       } else {
         closed.set(true);
       }
-      futures.add(replyManager.close());
       synchronized (this) {
         senders.forEach(sender -> {
           Future<Void> future = Future.future();

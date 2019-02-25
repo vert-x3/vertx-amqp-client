@@ -37,7 +37,7 @@ public class AmqpSenderImpl implements AmqpSender {
   private static final Logger LOGGER = LoggerFactory.getLogger(AmqpSender.class);
 
   private AmqpSenderImpl(ProtonSender sender, AmqpConnectionImpl connection,
-                        Handler<AsyncResult<AmqpSender>> completionHandler) {
+                         Handler<AsyncResult<AmqpSender>> completionHandler) {
     this.sender = sender;
     this.connection = connection;
 
@@ -118,16 +118,10 @@ public class AmqpSenderImpl implements AmqpSender {
 
   @Override
   public AmqpSender send(AmqpMessage message) {
-    return send(message, null);
+    return doSend(message, null);
   }
 
-  @Override
-  public AmqpSender send(AmqpMessage message, Handler<AsyncResult<AmqpMessage>> reply) {
-    return doSend(message, reply, null);
-  }
-
-  private AmqpSender doSend(AmqpMessage message, Handler<AsyncResult<AmqpMessage>> reply,
-                            Handler<AsyncResult<Void>> acknowledgmentHandler) {
+  private AmqpSender doSend(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgmentHandler) {
     AmqpMessage updated;
     if (message.address() == null) {
       updated = AmqpMessage.create(message).address(address()).build();
@@ -171,20 +165,7 @@ public class AmqpSenderImpl implements AmqpSender {
     }
 
     connection.runWithTrampoline(x -> {
-      if (reply != null) {
-        try {
-          connection.replyManager().verify();
-        } catch (Exception e) {
-          reply.handle(Future.failedFuture(e));
-          return;
-        }
-      }
-
-      if (reply != null) {
-        sender.send(connection.replyManager().registerReplyToHandler(updated, reply).unwrap(), ack);
-      } else {
-        sender.send(updated.unwrap(), ack);
-      }
+      sender.send(updated.unwrap(), ack);
 
       synchronized (AmqpSenderImpl.this) {
         // Update the credit tracking *again*. We need to reinitialise it here in case the doSend call was performed on
@@ -205,7 +186,7 @@ public class AmqpSenderImpl implements AmqpSender {
 
   @Override
   public AmqpSender write(AmqpMessage data) {
-    return send(data, null);
+    return doSend(data, null);
   }
 
   @Override
@@ -232,14 +213,8 @@ public class AmqpSenderImpl implements AmqpSender {
   }
 
   @Override
-  public AmqpSender send(String address, AmqpMessage message, Handler<AsyncResult<AmqpMessage>> reply) {
-    AmqpMessage updated = AmqpMessage.create(message).address(address).build();
-    return send(updated, reply);
-  }
-
-  @Override
   public AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler) {
-    return doSend(message, null, acknowledgementHandler);
+    return doSend(message, acknowledgementHandler);
   }
 
   @Override

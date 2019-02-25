@@ -37,12 +37,12 @@ public class ConnectionMetadataTest {
   private MockServer server;
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     vertx = Vertx.vertx();
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() {
     if (server != null) {
       server.close();
     }
@@ -77,7 +77,7 @@ public class ConnectionMetadataTest {
       });
     });
 
-    AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()).setReplyEnabled(false))
+    AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()))
       .connect(ar -> {
         if (ar.failed()) {
           context.fail(ar.cause());
@@ -126,7 +126,7 @@ public class ConnectionMetadataTest {
     });
 
     AmqpClientOptions opts = new AmqpClientOptions()
-      .setHost(tcpConnectionHostname).setPort(server.actualPort()).setReplyEnabled(false);
+      .setHost(tcpConnectionHostname).setPort(server.actualPort());
     if (customValues) {
       opts.setContainerId(containerId).setVirtualHost(vhost);
     }

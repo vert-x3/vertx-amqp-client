@@ -49,7 +49,7 @@ public class ConnectionTest extends ArtemisTestBase {
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost(host)
       .setPort(port)
-      .setReplyEnabled(false)
+
     ).connect(
       ar -> done.set(ar.succeeded())
     );
@@ -62,7 +62,7 @@ public class ConnectionTest extends ArtemisTestBase {
     System.setProperty("amqp-client-host", host);
     System.setProperty("amqp-client-port", Integer.toString(port));
     AtomicBoolean done = new AtomicBoolean();
-    client = AmqpClient.create(new AmqpClientOptions().setReplyEnabled(false)).connect(
+    client = AmqpClient.create(new AmqpClientOptions()).connect(
       ar -> {
         if (ar.failed()) {
           ar.cause().printStackTrace();
@@ -83,7 +83,6 @@ public class ConnectionTest extends ArtemisTestBase {
     AtomicReference<Throwable> failure = new AtomicReference<>();
     client = AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost("org.acme")
-      .setReplyEnabled(false)
       .setPort(port)
     ).connect(
       ar -> {

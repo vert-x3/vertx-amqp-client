@@ -52,12 +52,10 @@ public class DisabledAnonymousLinkTest extends BareTestBase {
 
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort())
-      .setReplyEnabled(true);
+      .setPort(server.actualPort());
 
     this.client = AmqpClient.create(vertx, options).connect(res -> {
-      context.assertTrue(res.succeeded(), "Expected start to succeed with not reply manager");
-      context.assertFalse(((AmqpConnectionImpl) res.result()).replyManager().isReplySupported());
+      context.assertTrue(res.succeeded(), "Expected start to succeed");
       res.result().close(shutdownRes -> {
         context.assertTrue(shutdownRes.succeeded());
         asyncShutdown.complete();

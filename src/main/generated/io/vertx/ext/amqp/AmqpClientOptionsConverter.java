@@ -196,16 +196,6 @@ public class AmqpClientOptionsConverter {
             obj.setReconnectInterval(((Number)member.getValue()).longValue());
           }
           break;
-        case "replyEnabled":
-          if (member.getValue() instanceof Boolean) {
-            obj.setReplyEnabled((Boolean)member.getValue());
-          }
-          break;
-        case "replyTimeout":
-          if (member.getValue() instanceof Number) {
-            obj.setReplyTimeout(((Number)member.getValue()).longValue());
-          }
-          break;
         case "reuseAddress":
           if (member.getValue() instanceof Boolean) {
             obj.setReuseAddress((Boolean)member.getValue());
@@ -385,8 +375,6 @@ public class AmqpClientOptionsConverter {
     json.put("receiveBufferSize", obj.getReceiveBufferSize());
     json.put("reconnectAttempts", obj.getReconnectAttempts());
     json.put("reconnectInterval", obj.getReconnectInterval());
-    json.put("replyEnabled", obj.isReplyEnabled());
-    json.put("replyTimeout", obj.getReplyTimeout());
     json.put("reuseAddress", obj.isReuseAddress());
     json.put("reusePort", obj.isReusePort());
     json.put("sendBufferSize", obj.getSendBufferSize());
