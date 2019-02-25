@@ -48,6 +48,16 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   private boolean initialCreditGiven;
   private int initialCredit = 1000;
 
+  /**
+   * Creates a new instance of {@link AmqpReceiverImpl}.
+   * This method must be called on the connection context.
+   *
+   * @param address           the address
+   * @param connection        the connection
+   * @param receiver          the underlying proton receiver
+   * @param handler           the handler
+   * @param completionHandler called when the receiver is opened
+   */
   public AmqpReceiverImpl(
     String address,
     AmqpConnectionImpl connection,
@@ -291,8 +301,9 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     connection.runWithTrampoline(x -> {
       if (this.receiver.isOpen()) {
         try {
-          receiver.close();
-          actualHandler.handle(Future.succeededFuture());
+          receiver
+            .closeHandler(done -> actualHandler.handle(done.mapEmpty()))
+            .close();
         } catch (Exception e) {
           // Somehow closed remotely
           actualHandler.handle(Future.failedFuture(e));

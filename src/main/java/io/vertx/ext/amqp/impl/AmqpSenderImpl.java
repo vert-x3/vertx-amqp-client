@@ -36,7 +36,7 @@ public class AmqpSenderImpl implements AmqpSender {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AmqpSender.class);
 
-  public AmqpSenderImpl(ProtonSender sender, AmqpConnectionImpl connection,
+  private AmqpSenderImpl(ProtonSender sender, AmqpConnectionImpl connection,
                         Handler<AsyncResult<AmqpSender>> completionHandler) {
     this.sender = sender;
     this.connection = connection;
@@ -95,12 +95,19 @@ public class AmqpSenderImpl implements AmqpSender {
       }
     });
 
-    this.connection.runWithTrampoline(x -> sender.open());
-
+    sender.open();
   }
 
-  public static void create(ProtonSender sender, AmqpConnectionImpl connection,
-                            Handler<AsyncResult<AmqpSender>> completionHandler) {
+  /**
+   * Creates a new instance of {@link AmqpSenderImpl}. The created sender is passed into the {@code completionHandler}
+   * once opened. This method must be called on the connection context.
+   *
+   * @param sender            the underlying proton sender
+   * @param connection        the connection
+   * @param completionHandler the completion handler
+   */
+  static void create(ProtonSender sender, AmqpConnectionImpl connection,
+                     Handler<AsyncResult<AmqpSender>> completionHandler) {
     new AmqpSenderImpl(sender, connection, completionHandler);
   }
 
