@@ -19,6 +19,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Repeat;
+import io.vertx.ext.unit.junit.RepeatRule;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
@@ -38,6 +40,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +56,9 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
   @Rule
   public TestName name = new TestName();
 
+  @Rule
+  public RepeatRule repeat = new RepeatRule();
+
   @Before
   public void setUp() {
     vertx = Vertx.vertx();
@@ -67,6 +73,7 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
   }
 
   @Test
+  @Repeat(10)
   public void testThatMessagedAreSent() {
     String queue = UUID.randomUUID().toString();
     List<String> list = new CopyOnWriteArrayList<>();
@@ -94,6 +101,7 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
   }
 
   @Test
+  @Repeat(10)
   public void testThatMessagedAreAcknowledged() {
     String queue = UUID.randomUUID().toString();
     List<String> list = new CopyOnWriteArrayList<>();
@@ -131,31 +139,18 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
   }
 
   @Test(timeout = 20000)
+  @Repeat(10)
   public void testSendBasicMessage(TestContext context) {
-    String testName = name.getMethodName();
-    String sentContent = "myMessageContent-" + testName;
+    String address = UUID.randomUUID().toString();
+    String sentContent = "myMessageContent-" + address;
     String propKey = "appPropKey";
     String propValue = "appPropValue";
 
     Async asyncRecvMsg = context.async();
-
+    AtomicBoolean opened = new AtomicBoolean();
 
     AmqpClient client = AmqpClient.create(vertx,
       new AmqpClientOptions().setHost(host).setPort(port).setUsername(username).setPassword(password));
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-
-      res.result().sender(testName, sender -> {
-        context.assertTrue(sender.succeeded());
-
-        JsonObject applicationProperties = new JsonObject();
-        applicationProperties.put(propKey, propValue);
-
-        AmqpMessage message = AmqpMessage.create().withBody(sentContent).applicationProperties(applicationProperties).build();
-        sender.result().send(message);
-        context.assertEquals(testName, sender.result().address(), "address was not as expected");
-      });
-    });
 
     ProtonClient proton = ProtonClient.create(vertx);
     proton.connect(host, port, username, password, res -> {
@@ -165,25 +160,47 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
       protonMsg.setBody(new AmqpValue(sentContent));
 
       ProtonConnection conn = res.result().open();
+      ProtonReceiver receiver = conn.createReceiver(address);
+      receiver
+        .openHandler(x -> opened.set(x.succeeded()))
+        .handler((d, m) -> {
+          Section body = m.getBody();
+          context.assertNotNull(body);
+          context.assertTrue(body instanceof AmqpValue);
+          Object actual = ((AmqpValue) body).getValue();
 
-      ProtonReceiver receiver = conn.createReceiver(testName);
-      receiver.handler((d, m) -> {
-        Section body = m.getBody();
-        context.assertNotNull(body);
-        context.assertTrue(body instanceof AmqpValue);
-        Object actual = ((AmqpValue) body).getValue();
+          context.assertEquals(sentContent, actual, "Unexpected message body");
 
-        context.assertEquals(sentContent, actual, "Unexpected message body");
+          ApplicationProperties applicationProperties = m.getApplicationProperties();
+          context.assertNotNull(applicationProperties, "application properties section not present");
+          context.assertTrue(applicationProperties.getValue().containsKey(propKey), "property key not present");
+          context.assertEquals(propValue, applicationProperties.getValue().get(propKey), "Unexpected property value");
 
-        ApplicationProperties applicationProperties = m.getApplicationProperties();
-        context.assertNotNull(applicationProperties, "application properties section not present");
-        context.assertTrue(applicationProperties.getValue().containsKey(propKey), "property key not present");
-        context.assertEquals(propValue, applicationProperties.getValue().get(propKey), "Unexpected property value");
+          client.close(x -> {
+            conn.closeHandler(closeResult -> conn.disconnect()).close();
+            asyncRecvMsg.complete();
+          });
 
-        client.close(x -> asyncRecvMsg.complete());
-        conn.closeHandler(closeResult -> conn.disconnect()).close();
-      }).open();
+        }).open();
     });
+
+    await().until(opened::get);
+
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+
+      res.result().sender(address, sender -> {
+        context.assertTrue(sender.succeeded());
+
+        JsonObject applicationProperties = new JsonObject();
+        applicationProperties.put(propKey, propValue);
+
+        AmqpMessage message = AmqpMessage.create().withBody(sentContent).applicationProperties(applicationProperties).build();
+        sender.result().send(message);
+        context.assertEquals(address, sender.result().address(), "address was not as expected");
+      });
+    });
+
 
     asyncRecvMsg.awaitSuccess();
 
