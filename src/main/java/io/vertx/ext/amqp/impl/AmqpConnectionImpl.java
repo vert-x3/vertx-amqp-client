@@ -171,51 +171,54 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   @Override
   public AmqpConnection close(Handler<AsyncResult<Void>> done) {
-    List<Future> futures = new ArrayList<>();
-
-    ProtonConnection actualConnection = connection.get();
-    if (actualConnection == null || (closed.get() && (!isLocalOpen() && !isRemoteOpen()))) {
-      if (done != null) {
-        done.handle(Future.succeededFuture());
-      }
-      return this;
-    } else {
-      closed.set(true);
-    }
-    futures.add(replyManager.close());
-    synchronized (this) {
-      senders.forEach(sender -> {
-        Future<Void> future = Future.future();
-        futures.add(future);
-        sender.close(future);
-      });
-      receivers.forEach(receiver -> {
-        Future<Void> future = Future.future();
-        futures.add(future);
-        receiver.close(future);
-      });
-    }
-    CompositeFuture.join(futures).setHandler(result -> {
-      Future<Void> future = Future.future();
-      if (done != null) {
-        future.setHandler(done);
-      }
-      if (actualConnection.isDisconnected()) {
-        future.complete();
-      } else {
-        try {
-          actualConnection
-            .closeHandler(cleanup ->
-              runWithTrampoline(x -> {
-                onDisconnect();
-                future.handle(cleanup.mapEmpty());
-              }))
-            .close();
-        } catch (Exception e) {
-          future.fail(e);
+    context.runOnContext(ignored -> {
+      List<Future> futures = new ArrayList<>();
+      ProtonConnection actualConnection = connection.get();
+      if (actualConnection == null || (closed.get() && (!isLocalOpen() && !isRemoteOpen()))) {
+        if (done != null) {
+          done.handle(Future.succeededFuture());
         }
+        return;
+      } else {
+        closed.set(true);
       }
+      futures.add(replyManager.close());
+      synchronized (this) {
+        senders.forEach(sender -> {
+          Future<Void> future = Future.future();
+          futures.add(future);
+          sender.close(future);
+        });
+        receivers.forEach(receiver -> {
+          Future<Void> future = Future.future();
+          futures.add(future);
+          receiver.close(future);
+        });
+      }
+
+      CompositeFuture.join(futures).setHandler(result -> {
+        Future<Void> future = Future.future();
+        if (done != null) {
+          future.setHandler(done);
+        }
+        if (actualConnection.isDisconnected()) {
+          future.complete();
+        } else {
+          try {
+            actualConnection
+              .closeHandler(cleanup ->
+                runWithTrampoline(x -> {
+                  onDisconnect();
+                  future.handle(cleanup.mapEmpty());
+                }))
+              .close();
+          } catch (Exception e) {
+            future.fail(e);
+          }
+        }
+      });
     });
+
     return this;
   }
 
