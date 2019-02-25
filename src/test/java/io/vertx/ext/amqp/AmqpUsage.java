@@ -32,6 +32,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -86,9 +87,11 @@ public class AmqpUsage {
    */
   public void produce(String topic, int messageCount, Runnable completionCallback, Supplier<Object> messageSupplier) {
     CountDownLatch ready = new CountDownLatch(1);
-    ProtonSender sender = connection.createSender(topic);
-    senders.add(sender);
+    AtomicReference<ProtonSender> reference = new AtomicReference<>();
     context.runOnContext(x -> {
+      ProtonSender sender = connection.createSender(topic);
+      reference.set(sender);
+      senders.add(sender);
       sender
         .openHandler(s -> ready.countDown())
         .open();
@@ -117,7 +120,7 @@ public class AmqpUsage {
           message.setTtl(10000);
           CountDownLatch latch = new CountDownLatch(1);
           context.runOnContext((y) ->
-            sender.send(message, x ->
+            reference.get().send(message, x ->
               latch.countDown()
             )
           );
@@ -130,7 +133,7 @@ public class AmqpUsage {
         if (completionCallback != null) {
           completionCallback.run();
         }
-        context.runOnContext(x -> sender.close());
+        context.runOnContext(x -> reference.get().close());
       }
     });
     t.setName(topic + "-thread");
@@ -147,10 +150,6 @@ public class AmqpUsage {
     this.produce(topic, messageCount, completionCallback, messageSupplier::get);
   }
 
-  public void produceIntegers(String topic, int messageCount, Runnable completionCallback, Supplier<Integer> messageSupplier) {
-    this.produce(topic, messageCount, completionCallback, messageSupplier::get);
-  }
-
   /**
    * Use the supplied function to asynchronously consume messages from the cluster.
    *
@@ -162,11 +161,12 @@ public class AmqpUsage {
   public void consume(String topic, BooleanSupplier continuation, Runnable completion,
                       Consumer<AmqpMessage> consumerFunction) {
     CountDownLatch latch = new CountDownLatch(1);
-    ProtonReceiver receiver = connection.createReceiver(topic);
-    receivers.add(receiver);
     Thread t = new Thread(() -> {
       try {
         context.runOnContext(x -> {
+          ProtonReceiver receiver = connection.createReceiver(topic);
+          receivers.add(receiver);
+
           receiver.handler((delivery, message) -> {
             LOGGER.info("Consumer {}: consuming message {}", topic, message.getBody());
             consumerFunction.accept(AmqpMessage.create(message).build());
@@ -234,22 +234,24 @@ public class AmqpUsage {
 
   public void close() throws InterruptedException {
     CountDownLatch entities = new CountDownLatch(senders.size() + receivers.size());
-    senders.forEach(sender -> {
-      if (sender.isOpen()) {
-        sender.closeHandler(x -> entities.countDown()).close();
-      } else {
-        entities.countDown();
-      }
+    context.runOnContext(ignored -> {
+      senders.forEach(sender -> {
+        if (sender.isOpen()) {
+          sender.closeHandler(x -> entities.countDown()).close();
+        } else {
+          entities.countDown();
+        }
+      });
+      receivers.forEach(receiver -> {
+        if (receiver.isOpen()) {
+          receiver.closeHandler(x -> entities.countDown()).close();
+        } else {
+          entities.countDown();
+        }
+      });
     });
-    receivers.forEach(receiver -> {
-      if (receiver.isOpen()) {
-        receiver.closeHandler(x -> entities.countDown()).close();
-      } else {
-        entities.countDown();
-      }
-    });
-    entities.await(30, TimeUnit.SECONDS);
 
+    entities.await(30, TimeUnit.SECONDS);
 
     if (connection != null && !connection.isDisconnected()) {
       CountDownLatch latch = new CountDownLatch(1);
