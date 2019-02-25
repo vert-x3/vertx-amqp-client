@@ -243,29 +243,35 @@ public class AmqpSenderImpl implements AmqpSender {
 
   @Override
   public void close(Handler<AsyncResult<Void>> handler) {
+    Handler<AsyncResult<Void>> actualHandler;
+    if (handler == null) {
+      actualHandler = x -> { /* NOOP */ };
+    } else {
+      actualHandler = handler;
+    }
+
     synchronized (this) {
       if (closed) {
-        handler.handle(Future.succeededFuture());
+        actualHandler.handle(Future.succeededFuture());
         return;
       }
       closed = true;
     }
-    if (handler == null) {
-      handler = x -> {
-      };
-    }
+
     connection.unregister(this);
-    if (sender.isOpen()) {
-      try {
-        sender.close();
-        handler.handle(Future.succeededFuture());
-      } catch (Exception e) {
-        // Somehow closed remotely
-        handler.handle(Future.failedFuture(e));
+    connection.runWithTrampoline(x -> {
+      if (sender.isOpen()) {
+        try {
+          sender.close();
+          actualHandler.handle(Future.succeededFuture());
+        } catch (Exception e) {
+          // Somehow closed remotely
+          actualHandler.handle(Future.failedFuture(e));
+        }
+      } else {
+        actualHandler.handle(Future.succeededFuture());
       }
-    } else {
-      handler.handle(Future.succeededFuture());
-    }
+    });
   }
 
   @Override

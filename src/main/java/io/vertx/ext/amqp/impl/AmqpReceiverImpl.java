@@ -22,7 +22,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.VertxException;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import io.vertx.core.streams.ReadStream;
 import io.vertx.ext.amqp.AmqpMessage;
 import io.vertx.ext.amqp.AmqpReceiver;
 import io.vertx.proton.ProtonReceiver;
@@ -227,7 +226,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   private void deliverMessageToHandler(AmqpMessageImpl message) {
     Handler<AmqpMessage> h;
     synchronized (this) {
-     h = handler;
+      h = handler;
     }
 
     h.handle(message);
@@ -273,33 +272,35 @@ public class AmqpReceiverImpl implements AmqpReceiver {
 
   @Override
   public void close(Handler<AsyncResult<Void>> handler) {
+    Handler<AsyncResult<Void>> actualHandler;
     if (handler == null) {
-      handler = x -> {
-        // NOOP
-      };
+      actualHandler = x -> { /* NOOP */ };
+    } else {
+      actualHandler = handler;
     }
 
     synchronized (this) {
       if (closed) {
-        handler.handle(Future.succeededFuture());
+        actualHandler.handle(Future.succeededFuture());
         return;
       }
       closed = true;
     }
 
     connection.unregister(this);
-    if (this.receiver.isOpen()) {
-      try {
-        receiver.close();
-        handler.handle(Future.succeededFuture());
-      } catch (Exception e) {
-        // Somehow closed remotely
-        handler.handle(Future.failedFuture(e));
+    connection.runWithTrampoline(x -> {
+      if (this.receiver.isOpen()) {
+        try {
+          receiver.close();
+          actualHandler.handle(Future.succeededFuture());
+        } catch (Exception e) {
+          // Somehow closed remotely
+          actualHandler.handle(Future.failedFuture(e));
+        }
+      } else {
+        actualHandler.handle(Future.succeededFuture());
       }
-
-    } else {
-      handler.handle(Future.succeededFuture());
-    }
+    });
 
   }
 
