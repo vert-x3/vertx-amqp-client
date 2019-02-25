@@ -68,9 +68,9 @@ public class ReplyManager {
       builder.address(replyAddress);
     }
 
-    String origMessageId = origin.correlationId();
-    if (origMessageId != null) {
-      builder.applicationProperties(new JsonObject().put(REPLY_TO_MESSAGE_PROPERTY, origMessageId));
+    String origCorrelationId = origin.correlationId();
+    if (origCorrelationId != null) {
+      builder.applicationProperties(new JsonObject().put(REPLY_TO_MESSAGE_PROPERTY, origCorrelationId));
     }
 
     if (replyToReply != null) {
