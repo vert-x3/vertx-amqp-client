@@ -37,9 +37,6 @@ public interface AmqpConnection {
 
   /**
    * Closes the AMQP connection, i.e. allows the Close frame to be emitted.
-   * <p>
-   * For locally initiated connections, the {@link #closeHandler(Handler)} may be used to handle the peer sending their
-   * Close frame (if they haven't already).
    *
    * @param done the close handler notified when the connection is closed. May be {@code null}.
    * @return the connection
