@@ -15,11 +15,8 @@
  */
 package io.vertx.ext.amqp;
 
-import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -33,10 +30,10 @@ import java.util.UUID;
 
 /**
  * Represents an AMQP message.
- *
+ * <p>
  * Reference about the different metadata can be found on
  * <a href="http://docs.oasis-open.org/amqp/core/v1.0/amqp-core-messaging-v1.0.html#type-properties">AMQP message properties</a>.
- *
+ * <p>
  * Note that the body is retrieved using {@code body*} method depending on the expected type.
  */
 @VertxGen
@@ -165,8 +162,7 @@ public interface AmqpMessage {
   /**
    * @return the map contained in the body. The value must be passed as AMQP value.
    */
-  @GenIgnore
-  <K, V> Map<K, V> bodyAsMap();
+  @GenIgnore <K, V> Map<K, V> bodyAsMap();
 
   /**
    * @return the JSON object contained in the body. The value must be passed as AMQP data.
@@ -206,10 +202,8 @@ public interface AmqpMessage {
   @GenIgnore
   Message unwrap();
 
-
   //TODO What type should we use for delivery annotations and message annotations
 
   // TODO Add header/ footer
-
 
 }
