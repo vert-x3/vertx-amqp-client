@@ -37,16 +37,6 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
   AmqpSender send(AmqpMessage message);
 
   /**
-   * Sends an AMQP message to the given address. This address overrides the address specified in the message if any.
-   *
-   * @param address the address, must not be {@code null}
-   * @param message the message, must not be {@code null}
-   * @return the current sender
-   */
-  @Fluent
-  AmqpSender send(String address, AmqpMessage message);
-
-  /**
    * Sends an AMQP message and waits for an acknowledgement. The acknowledgement handler is called with an
    * {@link AsyncResult} marked as failed if the message has been rejected or re-routed. If the message has been accepted,
    * the handler is called with a success.
@@ -57,21 +47,6 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
    */
   @Fluent
   AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler);
-
-  /**
-   * Sends an AMQP message and waits for an acknowledgement. The acknowledgement handler is called with an
-   * {@link AsyncResult} marked as failed if the message has been rejected or re-routed. If the message has been accepted,
-   * the handler is called with a success.
-   * <p>
-   * The message is sent to the given address.
-   *
-   * @param address                the address, must not be {@code null}
-   * @param message                the message, must not be {@code null}
-   * @param acknowledgementHandler the acknowledgement handler, must not be {@code null}
-   * @return the current sender
-   */
-  @Fluent
-  AmqpSender sendWithAck(String address, AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler);
 
   /**
    * Closes the sender.

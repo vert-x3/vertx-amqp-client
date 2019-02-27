@@ -113,10 +113,6 @@ public class AmqpClientExamples {
     sender.send(AmqpMessage.create().withBody("hello").build());
   }
 
-  public void sendWithAddress(AmqpSender sender) {
-    sender.send("another-queue", AmqpMessage.create().withBody("hello").build());
-  }
-
   public void sendWithAck(AmqpSender sender) {
     sender.sendWithAck(AmqpMessage.create().withBody("hello").build(), acked -> {
       if (acked.succeeded()) {

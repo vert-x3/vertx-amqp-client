@@ -108,9 +108,6 @@ Senders allows publishing messages to queues and topics. You retrieve a sender a
 {@link examples.AmqpClientExamples#sender(io.vertx.ext.amqp.AmqpConnection)}
 ----
 
-When you create a sender, you can pass the default targeted address. However, note that passing `null` is allowed as well
-as overriding the address in the AMQP message.
-
 Once you have retrieved an AMQP sender, you can create messages. Because {@link io.vertx.ext.amqp.AmqpMessage} are
 immutable, the creation uses the {@link io.vertx.ext.amqp.AmqpMessageBuilder} builder class. The following snippet
 provides a few examples:
@@ -123,7 +120,6 @@ provides a few examples:
 Once you have the sender and created the message, you can send it using:
 
 * {@link io.vertx.ext.amqp.AmqpSender#send(io.vertx.ext.amqp.AmqpMessage)} - send the message
-* {@link io.vertx.ext.amqp.AmqpSender#send(java.lang.String, io.vertx.ext.amqp.AmqpMessage)} - send the message to a different address
 * {@link io.vertx.ext.amqp.AmqpSender#sendWithAck(io.vertx.ext.amqp.AmqpMessage, io.vertx.core.Handler)} - send the message and monitor its acknowledgment
 
 The simplest way to send a message is the following:
@@ -133,14 +129,7 @@ The simplest way to send a message is the following:
 {@link examples.AmqpClientExamples#send(io.vertx.ext.amqp.AmqpSender)}
 ----
 
-The sender can also override the destination:
-
-[source,$lang]
-----
-{@link examples.AmqpClientExamples#sendWithAddress(io.vertx.ext.amqp.AmqpSender)}
-----
-
-It can also monitor the acknowledgement of the message:
+When sending a message, you can monitor the acknowledgment:
 
 [source,$lang]
 ----

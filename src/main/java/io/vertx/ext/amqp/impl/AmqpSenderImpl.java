@@ -207,20 +207,8 @@ public class AmqpSenderImpl implements AmqpSender {
   }
 
   @Override
-  public AmqpSender send(String address, AmqpMessage message) {
-    AmqpMessage updated = AmqpMessage.create(message).address(address).build();
-    return send(updated);
-  }
-
-  @Override
   public AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler) {
     return doSend(message, acknowledgementHandler);
-  }
-
-  @Override
-  public AmqpSender sendWithAck(String address, AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler) {
-    AmqpMessage updated = AmqpMessage.create(message).address(address).build();
-    return sendWithAck(updated, acknowledgementHandler);
   }
 
   @Override
