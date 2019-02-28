@@ -84,7 +84,7 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
       .setUsername(username)
       .setPassword(password)
     ).connect(connection -> {
-        connection.result().sender(queue, done -> {
+        connection.result().createSender(queue, done -> {
           if (done.failed()) {
             done.cause().printStackTrace();
           } else {
@@ -113,7 +113,7 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
       .setUsername(username)
       .setPassword(password)
     ).connect(connection -> {
-        connection.result().sender(queue, done -> {
+        connection.result().createSender(queue, done -> {
           if (done.failed()) {
             done.cause().printStackTrace();
           } else {
@@ -189,7 +189,7 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
     client.connect(res -> {
       context.assertTrue(res.succeeded());
 
-      res.result().sender(address, sender -> {
+      res.result().createSender(address, sender -> {
         context.assertTrue(sender.succeeded());
 
         JsonObject applicationProperties = new JsonObject();

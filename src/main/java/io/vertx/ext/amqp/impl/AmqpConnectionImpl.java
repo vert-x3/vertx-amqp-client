@@ -45,8 +45,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
    */
   private Handler<Void> endHandler;
 
-  AmqpConnectionImpl(Vertx vertx, Context context, AmqpClientImpl client, AmqpClientOptions options,
-                     ProtonClient proton, Handler<AsyncResult<AmqpConnection>> connectionHandler) {
+  AmqpConnectionImpl(Context context, AmqpClientImpl client, AmqpClientOptions options,
+    ProtonClient proton, Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     this.options = options;
     this.context = context;
 
@@ -56,7 +56,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
     );
   }
 
-  private void connect(AmqpClientImpl client, ProtonClient proton, Handler<AsyncResult<AmqpConnection>> connectionHandler) {
+  private void connect(AmqpClientImpl client, ProtonClient proton,
+    Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     proton
       .connect(options, options.getHost(), options.getPort(), options.getUsername(), options.getPassword(),
         ar -> {
@@ -129,7 +130,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
       handler = endHandler;
       endHandler = null;
     }
-    if (handler != null  && ! closed.get()) {
+    if (handler != null && !closed.get()) {
       handler.handle(null);
     }
   }
@@ -230,12 +231,18 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
-  public AmqpConnection receiver(String address, Handler<AmqpMessage> handler, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
-    return receiver(address, null, handler, completionHandler);
+  public AmqpConnection createReceiver(String address, Handler<AmqpMessage> handler,
+    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+    return createReceiver(address, null, handler, completionHandler);
   }
 
   @Override
-  public AmqpConnection receiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+  public AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+    return createReceiver(null, new AmqpReceiverOptions().setDynamic(true), null, completionHandler);
+  }
+
+  @Override
+  public AmqpConnection createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
 
     runWithTrampoline(x -> {
@@ -249,8 +256,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
-  public AmqpConnection receiver(String address, AmqpReceiverOptions receiverOptions, Handler<AmqpMessage> handler,
-                                 Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+  public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions, Handler<AmqpMessage> handler,
+    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
     if (receiverOptions != null) {
       opts
@@ -265,15 +272,29 @@ public class AmqpConnectionImpl implements AmqpConnection {
         receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
       }
 
-      runWithTrampoline(x -> new AmqpReceiverImpl(address, this, receiver, handler, completionHandler));
+      runWithTrampoline(x -> {
+        new AmqpReceiverImpl(address, this, receiver, handler, completionHandler);
+      });
     });
     return this;
   }
 
   @Override
-  public AmqpConnection sender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
+  public AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
+    Objects.requireNonNull(address, "The address must be set");
+    Objects.requireNonNull(completionHandler, "The completion handler must be set");
     runWithTrampoline(x -> {
       ProtonSender sender = connection.get().createSender(address);
+      AmqpSenderImpl.create(sender, this, completionHandler);
+    });
+    return this;
+  }
+
+  @Override
+  public AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler) {
+    Objects.requireNonNull(completionHandler, "The completion handler must be set");
+    runWithTrampoline(x -> {
+      ProtonSender sender = connection.get().createSender(null);
       AmqpSenderImpl.create(sender, this, completionHandler);
     });
     return this;

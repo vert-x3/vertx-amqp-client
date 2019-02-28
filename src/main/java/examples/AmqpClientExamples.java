@@ -46,7 +46,7 @@ public class AmqpClientExamples {
   }
 
   public void receiver1(AmqpConnection connection) {
-    connection.receiver("my-queue",
+    connection.createReceiver("my-queue",
       msg -> {
         // called on every received messages
         System.out.println("Received " + msg.bodyAsString());
@@ -62,7 +62,7 @@ public class AmqpClientExamples {
   }
 
   public void receiver2(AmqpConnection connection) {
-    connection.receiver("my-queue",
+    connection.createReceiver("my-queue",
       done -> {
         if (done.failed()) {
           System.out.println("Unable to create receiver");
@@ -81,7 +81,7 @@ public class AmqpClientExamples {
   }
 
   public void sender(AmqpConnection connection) {
-    connection.sender("my-queue", done -> {
+    connection.createSender("my-queue", done -> {
       if (done.failed()) {
         System.out.println("Unable to create a sender");
       } else {
@@ -120,6 +120,44 @@ public class AmqpClientExamples {
       } else {
         System.out.println("Message not accepted");
       }
+    });
+  }
+
+  public void requestReply(AmqpConnection connection) {
+    // On the receiver side (receiving the initial request and replying)
+    connection.createAnonymousSender(responseSender -> {
+      // You got an anonymous sender, used to send the reply
+      // Now register the main receiver:
+      connection.createReceiver("my-queue", msg -> {
+        // You got the message, let's reply.
+        responseSender.result().send(AmqpMessage.create()
+          .address(msg.replyTo())
+          .correlationId(msg.id()) // send the message id as correlation id
+          .withBody("my response to your request")
+          .build()
+        );
+      }, done -> {
+        // We are done, for the receiver side
+      });
+    });
+
+    // On the sender side (sending the initial request and expecting a reply)
+    connection.createDynamicReceiver(replyReceiver -> {
+      // We got a receiver, the address is provided by the broker
+      String replyToAddress = replyReceiver.result().address();
+
+      // Attach the handler receiving the reply
+      replyReceiver.result().handler(msg -> {
+        System.out.println("Got the reply! " + msg.bodyAsString());
+      });
+
+      // Create a sender and send the message:
+      connection.createSender("my-queue", sender -> {
+        sender.result().send(AmqpMessage.create()
+          .replyTo(replyToAddress)
+          .id("my-message-id")
+          .withBody("This is my request").build());
+      });
     });
   }
 }

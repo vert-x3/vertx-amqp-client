@@ -20,7 +20,6 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
-
 /**
  * Once connected to the broker or router, you get a connection. This connection is automatically opened.
  */
@@ -53,7 +52,7 @@ public interface AmqpConnection {
    * @return the connection.
    */
   @Fluent
-  AmqpConnection receiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
+  AmqpConnection createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
    * Creates a receiver used to consume messages from the given address.
@@ -66,7 +65,8 @@ public interface AmqpConnection {
    * @return the connection.
    */
   @Fluent
-  AmqpConnection receiver(String address, Handler<AmqpMessage> messageHandler, Handler<AsyncResult<AmqpReceiver>> completionHandler);
+  AmqpConnection createReceiver(String address, Handler<AmqpMessage> messageHandler,
+    Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
    * Creates a receiver used to consumer messages from the given address.
@@ -79,19 +79,47 @@ public interface AmqpConnection {
    * @return the connection.
    */
   @Fluent
-  AmqpConnection receiver(String address, AmqpReceiverOptions receiverOptions, Handler<AmqpMessage> messageHandler,
-                          Handler<AsyncResult<AmqpReceiver>> completionHandler);
+  AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
+    Handler<AmqpMessage> messageHandler,
+    Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
-   * Creates a sender used to send messages to the given address. If no address (i.e null) is specified then a
-   * sender will be established to the 'anonymous relay' and each message must specify its destination address.
+   * Creates a dynamic receiver. The address is provided by the broker and is available in the {@code completionHandler},
+   * using the {@link AmqpReceiver#address()} method. this method is useful for request-reply to generate a unique
+   * reply address.
    *
-   * @param address           The target address to attach to, or {@code null} to attach to the anonymous relay.
-   * @param completionHandler The handler called with the sender, once opened
+   * @param completionHandler the completion handler, called when the receiver has been created and opened.
    * @return the connection.
    */
   @Fluent
-  AmqpConnection sender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
+  AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler);
+
+  /**
+   * Creates a sender used to send messages to the given address. The address must be set. For anonymous sender, check
+   * {@link #createAnonymousSender(Handler)}.
+   *
+   * @param address           The target address to attach to, must not be {@code null}
+   * @param completionHandler The handler called with the sender, once opened
+   * @return the connection.
+   * @see #createAnonymousSender(Handler)
+   */
+  @Fluent
+  AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
+
+  /**
+   * Creates an anonymous sender.
+   *
+   * The sender will be established to the 'anonymous relay' and each message must specify its destination address.
+   *
+   * Unlike "regular" sender, this sender is not associated to a specific address, and each message sent must provide
+   * an address. This method is generally used in request-reply scenarios where you need a sender to send the reply,
+   * but you don't know the address, as the reply address is passed into the message you are going to receive.
+   *
+   * @param completionHandler The handler called with the created sender, once opened
+   * @return the connection.
+   */
+  @Fluent
+  AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler);
 
   /**
    * Sets a handler for when an AMQP {@code Close} frame is received from the remote peer.

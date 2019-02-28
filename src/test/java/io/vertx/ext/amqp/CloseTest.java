@@ -48,7 +48,7 @@ public class CloseTest extends BareTestBase {
     AmqpClient client = AmqpClient.create(vertx, options);
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().receiver(testName, done -> {
+      res.result().createReceiver(testName, done -> {
         context.assertTrue(done.succeeded());
         AmqpReceiver receiver = done.result();
         receiver.exceptionHandler(x -> exceptionHandlerCalled.set(true));
@@ -179,7 +179,7 @@ public class CloseTest extends BareTestBase {
     client = AmqpClient.create(vertx, options);
     this.client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().receiver(testName,
+      res.result().createReceiver(testName,
         msg -> {
           String content = msg.bodyAsString();
           context.assertNotNull(content, "amqp message body content was null");
@@ -275,7 +275,7 @@ public class CloseTest extends BareTestBase {
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().receiver(testName,
+      res.result().createReceiver(testName,
         msg -> {
           context.assertNotNull(msg.bodyAsString(), "message body was null");
           String amqpBodyContent = msg.bodyAsString();
@@ -353,7 +353,7 @@ public class CloseTest extends BareTestBase {
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().receiver(testName,
+      res.result().createReceiver(testName,
         done -> {
           context.assertTrue(done.succeeded());
           AmqpReceiver consumer = done.result();

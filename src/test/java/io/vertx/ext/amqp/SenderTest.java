@@ -99,7 +99,7 @@ public class SenderTest extends BareTestBase {
       // Set up a producer using the client, use it, close it.
       context.assertTrue(res.succeeded());
 
-      res.result().sender(testName, done -> {
+      res.result().createSender(testName, done -> {
         AmqpSender sender = done.result();
         sender.exceptionHandler(x -> exceptionHandlerCalled.set(true));
         sender.sendWithAck(AmqpMessage.create().withBody(sentContent).build(), x -> {
@@ -198,7 +198,7 @@ public class SenderTest extends BareTestBase {
     AmqpClient client = AmqpClient.create(vertx, options);
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().sender(testName, done -> {
+      res.result().createSender(testName, done -> {
         context.assertTrue(done.succeeded());
         AmqpSender sender = done.result();
         context.assertTrue(sender.writeQueueFull(), "expected write queue to be full, we have not yet granted credit");
@@ -302,7 +302,7 @@ public class SenderTest extends BareTestBase {
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().sender(testName, done -> {
+      res.result().createSender(testName, done -> {
         context.assertTrue(done.succeeded());
         AmqpSender sender = done.result();
         sender.exceptionHandler(ex -> {

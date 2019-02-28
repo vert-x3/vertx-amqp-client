@@ -77,7 +77,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   @Test
   public void testNull() {
     List<Boolean> list = new CopyOnWriteArrayList<>();
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.isBodyNull());
     }, done -> {
       if (done.failed()) {
@@ -101,7 +101,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   @Test
   public void testBoolean() {
     List<Boolean> list = new CopyOnWriteArrayList<>();
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsBoolean());
     }, done -> {
       if (done.failed()) {
@@ -126,7 +126,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testByte() {
     List<Object> list = new CopyOnWriteArrayList<>();
     byte b = 1;
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsByte());
     }, done -> {
       if (done.failed()) {
@@ -149,7 +149,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testShort() {
     List<Object> list = new CopyOnWriteArrayList<>();
     short s = 2;
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsShort());
     }, done -> {
       if (done.failed()) {
@@ -172,7 +172,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testInteger() {
     List<Object> list = new CopyOnWriteArrayList<>();
     int i = 3;
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsInteger());
     }, done -> {
       if (done.failed()) {
@@ -195,7 +195,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testLong() {
     List<Object> list = new CopyOnWriteArrayList<>();
     long l = Long.MAX_VALUE - 1;
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsLong());
     }, done -> {
       if (done.failed()) {
@@ -218,7 +218,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testFloat() {
     List<Object> list = new CopyOnWriteArrayList<>();
     float f = 12.34f;
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsFloat());
     }, done -> {
       if (done.failed()) {
@@ -241,7 +241,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testDouble() {
     List<Object> list = new CopyOnWriteArrayList<>();
     double d = 56.78;
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsDouble());
     }, done -> {
       if (done.failed()) {
@@ -264,7 +264,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testCharacter() {
     List<Object> list = new CopyOnWriteArrayList<>();
     char c = 'c';
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsChar());
     }, done -> {
       if (done.failed()) {
@@ -287,7 +287,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testTimestamp() {
     List<Object> list = new CopyOnWriteArrayList<>();
     Instant instant = Instant.now();
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsTimestamp());
     }, done -> {
       if (done.failed()) {
@@ -308,7 +308,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testUUID() {
     List<Object> list = new CopyOnWriteArrayList<>();
     UUID uuid = UUID.randomUUID();
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsUUID());
     }, done -> {
       if (done.failed()) {
@@ -330,7 +330,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testBinary() {
     List<Object> list = new CopyOnWriteArrayList<>();
     Buffer buffer = Buffer.buffer("hello !!!");
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsBinary());
     }, done -> {
       if (done.failed()) {
@@ -352,7 +352,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testString() {
     List<Object> list = new CopyOnWriteArrayList<>();
     String string = "hello !";
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsString());
     }, done -> {
       if (done.failed()) {
@@ -374,7 +374,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testSymbol() {
     List<Object> list = new CopyOnWriteArrayList<>();
     String string = "my-symbol";
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsSymbol());
     }, done -> {
       if (done.failed()) {
@@ -399,7 +399,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     l.add("foo");
     l.add(1);
     l.add(true);
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsList());
     }, done -> {
       if (done.failed()) {
@@ -424,7 +424,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     l.add("foo");
     l.add(1);
     l.add(true);
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsList());
     }, done -> {
       if (done.failed()) {
@@ -449,7 +449,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     Map<String, String> map = new HashMap<>();
     map.put("1", "hello");
     map.put("2", "bonjour");
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsMap());
     }, done -> {
       if (done.failed()) {
@@ -473,7 +473,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     JsonObject json = new JsonObject().put("data", "message").put("number", 1)
       .put("array", new JsonArray().add(1).add(2).add(3));
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsJsonObject());
     }, done -> {
       if (done.failed()) {
@@ -495,7 +495,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testJsonArray() {
     List<Object> list = new CopyOnWriteArrayList<>();
     JsonArray array = new JsonArray().add(1).add(2).add(3);
-    connection.receiver(address, message -> {
+    connection.createReceiver(address, message -> {
       list.add(message.bodyAsJsonArray());
     }, done -> {
       if (done.failed()) {

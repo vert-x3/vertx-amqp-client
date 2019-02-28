@@ -97,7 +97,7 @@ public class ReceiverCreditTest extends BareTestBase {
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().receiver(testName, done -> {
+      res.result().createReceiver(testName, done -> {
         context.assertTrue(done.succeeded());
         AmqpReceiver consumer = done.result();
         consumer.handler(msg -> {

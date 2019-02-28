@@ -74,7 +74,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     List<AmqpMessage> list = new CopyOnWriteArrayList<>();
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -100,7 +100,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     byte value = 1;
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -122,7 +122,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     short value = 2;
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -147,7 +147,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     int value = 3;
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -171,7 +171,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     long value = 25;
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -195,7 +195,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     float value = 23.45f;
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -219,7 +219,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     double value = 123.45;
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -243,7 +243,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     char value = 'a';
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -267,7 +267,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     Instant value = Instant.now();
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -285,7 +285,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     UUID value = UUID.randomUUID();
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -307,7 +307,7 @@ public class SenderTypeTest extends ArtemisTestBase {
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
 
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -328,7 +328,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     String value = "this is a message";
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -351,7 +351,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     String value = "Newton";
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -377,7 +377,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     value.add(true);
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -403,7 +403,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     value.put("3", "baz");
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -426,7 +426,7 @@ public class SenderTypeTest extends ArtemisTestBase {
       .put("array", new JsonArray().add(1).add(2).add(3));
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
@@ -447,7 +447,7 @@ public class SenderTypeTest extends ArtemisTestBase {
     JsonArray value = new JsonArray().add(1).add(2).add(3);
 
     usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
-    connection.sender(address, done -> {
+    connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {

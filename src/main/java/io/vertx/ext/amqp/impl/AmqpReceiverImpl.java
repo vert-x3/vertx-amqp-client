@@ -34,8 +34,11 @@ public class AmqpReceiverImpl implements AmqpReceiver {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AmqpReceiverImpl.class);
 
-
-  private final String address;
+  /**
+   * The address.
+   * Not final because for dynamic link the address is set when the createReceiver is opened.
+   */
+  private String address;
   private final ProtonReceiver receiver;
   private final AmqpConnectionImpl connection;
   private final Queue<AmqpMessageImpl> buffered = new ArrayDeque<>();
@@ -52,11 +55,11 @@ public class AmqpReceiverImpl implements AmqpReceiver {
    * Creates a new instance of {@link AmqpReceiverImpl}.
    * This method must be called on the connection context.
    *
-   * @param address           the address
+   * @param address           the address, may be {@code null} for dynamic links
    * @param connection        the connection
-   * @param receiver          the underlying proton receiver
+   * @param receiver          the underlying proton createReceiver
    * @param handler           the handler
-   * @param completionHandler called when the receiver is opened
+   * @param completionHandler called when the createReceiver is opened
    */
   AmqpReceiverImpl(
     String address,
@@ -128,6 +131,11 @@ public class AmqpReceiverImpl implements AmqpReceiver {
           completionHandler.handle(res.mapEmpty());
         } else {
           this.connection.register(this);
+          synchronized (this) {
+            if (this.address == null) {
+              this.address = res.result().getRemoteAddress();
+            }
+          }
           completionHandler.handle(Future.succeededFuture(this));
         }
       });
@@ -167,7 +175,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   }
 
   @Override
-  public synchronized AmqpReceiverImpl exceptionHandler(Handler<Throwable> handler) {
+  public synchronized AmqpReceiver exceptionHandler(Handler<Throwable> handler) {
     exceptionHandler = handler;
     return this;
   }
@@ -274,7 +282,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   }
 
   @Override
-  public String address() {
+  public synchronized String address() {
     return address;
   }
 

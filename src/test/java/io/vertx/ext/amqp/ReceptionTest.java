@@ -75,7 +75,7 @@ public class ReceptionTest extends ArtemisTestBase {
       new AmqpClientOptions().setHost(host).setPort(port).setPassword(password).setUsername(username));
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().receiver(testName, msg -> {
+      res.result().createReceiver(testName, msg -> {
         context.assertNotNull(msg, "message was null");
         context.assertNotNull(msg.bodyAsString(), "amqp message body content was null");
         context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body was not as expected");
@@ -128,7 +128,7 @@ public class ReceptionTest extends ArtemisTestBase {
       .setHost(host).setPort(port).setUsername(username).setPassword(password));
     client.connect(res -> {
       // Set up a read stream using the client
-      res.result().receiver(testName, established -> {
+      res.result().createReceiver(testName, established -> {
         established.result().handler(msg -> {
           context.assertNotNull(msg, "message was null");
 
@@ -189,7 +189,7 @@ public class ReceptionTest extends ArtemisTestBase {
     client.connect(res -> {
       context.assertTrue(res.succeeded());
       // Set up a consumer using the client but DONT register the handler
-      res.result().receiver(testName, done -> {
+      res.result().createReceiver(testName, done -> {
         context.assertTrue(done.succeeded());
 
         // Send some message from a regular AMQP client
@@ -264,7 +264,7 @@ public class ReceptionTest extends ArtemisTestBase {
       final AtomicLong pauseStartTime = new AtomicLong();
       final AtomicReference<AmqpReceiver> receiver = new AtomicReference<>();
       // Set up a consumer using the client
-      res.result().receiver(testName,
+      res.result().createReceiver(testName,
         msg -> {
           int msgNum = received.incrementAndGet();
           String amqpBodyContent = msg.bodyAsString();

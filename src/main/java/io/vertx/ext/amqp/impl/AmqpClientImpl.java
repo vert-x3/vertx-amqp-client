@@ -50,7 +50,7 @@ public class AmqpClientImpl implements AmqpClient {
   public AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     Objects.requireNonNull(options.getHost(), "Host must be set");
     Objects.requireNonNull(connectionHandler, "Handler must not be null");
-    new AmqpConnectionImpl(vertx, vertx.getOrCreateContext(), this, options, proton, connectionHandler);
+    new AmqpConnectionImpl(vertx.getOrCreateContext(), this, options, proton, connectionHandler);
     return this;
   }
 

@@ -141,6 +141,22 @@ as non-acknowledged (details can be found in the passed cause).
 
 The {@link io.vertx.ext.amqp.AmqpSender} can be used as a write stream. The flow control is implemented using AMQP credits.
 
+== Implementing request-reply
+
+To implement a request-reply behavior, you need dynamic receiver and anonymous sender. A dynamic receiver is not associated with
+an address by the user, but the address it provided by the broker. Anonymous senders are also not associated to a specific address,
+requiring all messages to contain an address.
+
+The following snippet shows how request-reply can be implemented:
+
+[source, $lang]
+----
+{@link examples.AmqpClientExamples#requestReply(io.vertx.ext.amqp.AmqpConnection)}
+----
+
+To reply to a message, send it to the address specified into the `reply-to`. Also, it's a good practice to indicate the
+`correlation id` using the `message id`, so the reply receiver can associate the response to the request.
+
 == Closing the client
 
 Once you are done with a connection receiver or sender, you should close them using the `close` method. Closing a

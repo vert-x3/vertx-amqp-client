@@ -39,7 +39,7 @@ public class ReceiverTest extends ArtemisTestBase {
       .setUsername(username)
       .setPassword(password)
     ).connect(connection -> {
-        connection.result().receiver(queue, message -> list.add(message.bodyAsString()),
+        connection.result().createReceiver(queue, message -> list.add(message.bodyAsString()),
           done ->
             CompletableFuture.runAsync(() -> {
               usage.produceStrings(queue, 10, null,
