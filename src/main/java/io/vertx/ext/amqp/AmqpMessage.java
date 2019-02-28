@@ -67,18 +67,62 @@ public interface AmqpMessage {
     return new AmqpMessageBuilderImpl(existing);
   }
 
+  /**
+   * @return whether or not the message is durable.
+   * @see <a href="http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-header">AMQP specification</a>
+   */
   boolean isDurable();
 
+  /**
+   * @return if {@code true}, then this message has not been acquired by any other link. If {@code false}, then this
+   * message MAY have previously been acquired by another link or links.
+   * @see <a href="http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-header">AMQP specification</a>
+   */
   boolean isFirstAcquirer();
 
+  /**
+   * @return the relative message priority. Higher numbers indicate higher priority messages. Messages with higher
+   * priorities MAY be delivered before those with lower priorities.
+   * @see <a href="http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-header">AMQP specification</a>
+   */
   int priority();
 
+  /**
+   * @return the number of unsuccessful previous attempts to deliver this message. If this value is non-zero it can be
+   * taken as an indication that the delivery might be a duplicate. On first delivery, the value is zero. It is
+   * incremented upon an outcome being settled at the sender, according to rules defined for each outcome.
+   * @see <a href="http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-header">AMQP specification</a>
+   */
+  int deliveryCount();
+
+  /**
+   * @return the duration in milliseconds for which the message is to be considered "live".
+   * @see <a href="http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-properties">AMQP specification</a>
+   */
+  long ttl();
+
+  /**
+   * @return the message id
+   * @see <a href="http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-properties">AMQP specification</a>
+   */
   String id();
 
+  /**
+   * @return the message address, also named {@code to} field
+   * @see <a href="http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-properties">AMQP specification</a>
+   */
   String address();
 
+  /**
+   * @return The address of the node to send replies to, if any.
+   * @see <a href="http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-properties">AMQP specification</a>
+   */
   String replyTo();
 
+  /**
+   * @return The client-specific id that can be used to mark or identify messages between clients.
+   * @see <a href="http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-properties">AMQP specification</a>
+   */
   String correlationId();
 
   /**
@@ -184,10 +228,6 @@ public interface AmqpMessage {
 
   long creationTime();
 
-  long ttl();
-
-  long deliveryCount();
-
   String groupId();
 
   String replyToGroupId();
@@ -204,6 +244,5 @@ public interface AmqpMessage {
 
   //TODO What type should we use for delivery annotations and message annotations
 
-  // TODO Add header/ footer
 
 }

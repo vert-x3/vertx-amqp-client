@@ -249,8 +249,8 @@ public class AmqpMessageImpl implements AmqpMessage {
   }
 
   @Override
-  public long deliveryCount() {
-    return message.getDeliveryCount();
+  public int deliveryCount() {
+    return (int) message.getDeliveryCount();
   }
 
   @Override

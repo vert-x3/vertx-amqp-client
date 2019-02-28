@@ -62,6 +62,11 @@ public class AmqpMessageBuilderImpl implements AmqpMessageBuilder {
     return this;
   }
 
+  @Override public AmqpMessageBuilder durable(boolean durable) {
+    message.setDurable(durable);
+    return this;
+  }
+
   @Override
   public AmqpMessageBuilderImpl id(String id) {
     message.setMessageId(id);
@@ -131,6 +136,16 @@ public class AmqpMessageBuilderImpl implements AmqpMessageBuilder {
   @Override
   public AmqpMessageBuilderImpl ttl(long ttl) {
     message.setTtl(ttl);
+    return this;
+  }
+
+  @Override public AmqpMessageBuilder firstAcquirer(boolean first) {
+    message.setFirstAcquirer(first);
+    return this;
+  }
+
+  @Override public AmqpMessageBuilder deliveryCount(int count) {
+    message.setDeliveryCount(count);
     return this;
   }
 

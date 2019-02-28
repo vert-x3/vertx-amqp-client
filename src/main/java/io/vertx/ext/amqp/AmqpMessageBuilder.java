@@ -50,7 +50,19 @@ public interface AmqpMessageBuilder {
    */
   AmqpMessage build();
 
+  // Headers
+
   AmqpMessageBuilder priority(short priority);
+
+  AmqpMessageBuilder durable(boolean durable);
+
+  AmqpMessageBuilder ttl(long ttl);
+
+  AmqpMessageBuilder firstAcquirer(boolean first);
+
+  AmqpMessageBuilder deliveryCount(int count);
+
+  // Properties
 
   AmqpMessageBuilder id(String id);
 
@@ -73,8 +85,6 @@ public interface AmqpMessageBuilder {
   AmqpMessageBuilder expiryTime(long expiry);
 
   AmqpMessageBuilder creationTime(long ct);
-
-  AmqpMessageBuilder ttl(long ttl);
 
   AmqpMessageBuilder groupId(String gi);
 
