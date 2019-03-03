@@ -50,6 +50,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   private Handler<Throwable> exceptionHandler;
   private boolean initialCreditGiven;
   private int initialCredit = 1000;
+  private final boolean durable;
 
   /**
    * Creates a new instance of {@link AmqpReceiverImpl}.
@@ -58,18 +59,21 @@ public class AmqpReceiverImpl implements AmqpReceiver {
    * @param address           the address, may be {@code null} for dynamic links
    * @param connection        the connection
    * @param receiver          the underlying proton createReceiver
+   * @param durable           whether the link is durable
    * @param handler           the handler
    * @param completionHandler called when the createReceiver is opened
    */
   AmqpReceiverImpl(
     String address,
     AmqpConnectionImpl connection,
+    boolean durable,
     ProtonReceiver receiver,
     Handler<AmqpMessage> handler, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     this.address = address;
     this.receiver = receiver;
     this.connection = connection;
     this.handler = handler;
+    this.durable = durable;
     int maxBufferedMessages = connection.options().getMaxBufferedMessages();
     if (maxBufferedMessages > 0) {
       this.initialCredit = maxBufferedMessages;
@@ -307,9 +311,14 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     connection.runWithTrampoline(x -> {
       if (this.receiver.isOpen()) {
         try {
-          receiver
-            .closeHandler(done -> actualHandler.handle(done.mapEmpty()))
-            .close();
+          if (isDurable()) {
+            receiver.detachHandler(done -> actualHandler.handle(done.mapEmpty()))
+              .detach();
+          } else {
+            receiver
+              .closeHandler(done -> actualHandler.handle(done.mapEmpty()))
+              .close();
+          }
         } catch (Exception e) {
           // Somehow closed remotely
           actualHandler.handle(Future.failedFuture(e));
@@ -319,5 +328,9 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       }
     });
 
+  }
+
+  private synchronized boolean isDurable() {
+    return durable;
   }
 }

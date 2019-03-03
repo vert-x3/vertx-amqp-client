@@ -20,6 +20,8 @@ import io.vertx.ext.amqp.*;
 import io.vertx.proton.*;
 import io.vertx.proton.impl.ProtonConnectionImpl;
 import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.messaging.TerminusDurability;
+import org.apache.qpid.proton.amqp.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.proton.engine.EndpointState;
 
 import java.util.*;
@@ -249,14 +251,15 @@ public class AmqpConnectionImpl implements AmqpConnection {
       ProtonReceiver receiver = connection.get().createReceiver(address, opts);
       new AmqpReceiverImpl(
         Objects.requireNonNull(address, "The address must not be `null`"),
-        this, receiver, null,
+        this, false, receiver, null,
         Objects.requireNonNull(completionHandler, "The completion handler must not be `null`"));
     });
     return this;
   }
 
   @Override
-  public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions, Handler<AmqpMessage> handler,
+  public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
+    Handler<AmqpMessage> handler,
     Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
     if (receiverOptions != null) {
@@ -268,15 +271,43 @@ public class AmqpConnectionImpl implements AmqpConnection {
     runWithTrampoline(v -> {
       ProtonReceiver receiver = connection.get().createReceiver(address, opts);
 
-      if (receiverOptions != null && receiverOptions.getQos() != null) {
-        receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
+      if (receiverOptions != null) {
+        if (receiverOptions.getQos() != null) {
+          receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
+        }
+
+        List<String> desired = receiverOptions.getDesiredCapabilities();
+        List<String> provided = receiverOptions.getCapabilities();
+
+        receiver.setDesiredCapabilities(desired.stream().map(Symbol::valueOf).toArray(Symbol[]::new));
+        receiver.setOfferedCapabilities(provided.stream().map(Symbol::valueOf).toArray(Symbol[]::new));
+
+        configureTheSource(receiverOptions, receiver);
       }
 
-      runWithTrampoline(x -> {
-        new AmqpReceiverImpl(address, this, receiver, handler, completionHandler);
-      });
+      new AmqpReceiverImpl(address, this, receiverOptions != null && receiverOptions.isDurable(),
+        receiver, handler, completionHandler);
     });
     return this;
+  }
+
+  private void configureTheSource(AmqpReceiverOptions receiverOptions, ProtonReceiver receiver) {
+    org.apache.qpid.proton.amqp.messaging.Source source = (org.apache.qpid.proton.amqp.messaging.Source) receiver
+      .getSource();
+    if (receiverOptions.isDurable()) {
+      source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
+      source.setDurable(TerminusDurability.UNSETTLED_STATE);
+    } else {
+      // Check if we have individual values, not the in this case the receiver won't be considered as durable and the
+      // "close" method will close the link and not detach.
+      if (receiverOptions.getTerminusDurability() != null) {
+        source.setDurable(TerminusDurability.valueOf(receiverOptions.getTerminusDurability().toUpperCase()));
+      }
+      if (receiverOptions.getTerminusExpiryPolicy() != null) {
+        source
+          .setExpiryPolicy(TerminusExpiryPolicy.valueOf(receiverOptions.getTerminusExpiryPolicy()));
+      }
+    }
   }
 
   @Override
@@ -285,6 +316,17 @@ public class AmqpConnectionImpl implements AmqpConnection {
     Objects.requireNonNull(completionHandler, "The completion handler must be set");
     runWithTrampoline(x -> {
       ProtonSender sender = connection.get().createSender(address);
+
+      // TODO Link name
+
+      // TODO shared and durable?
+
+      // TODO AMQPSenderOptions
+
+      // TODO Capabilities x2
+
+      // TODO Set auto drain and auto-settled
+
       AmqpSenderImpl.create(sender, this, completionHandler);
     });
     return this;

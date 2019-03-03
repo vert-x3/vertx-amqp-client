@@ -152,11 +152,39 @@ Sets the username.
 [[AmqpReceiverOptions]]
 == AmqpReceiverOptions
 
+++++
+ Configures the AMQP Receiver.
+++++
+'''
 
 [cols=">25%,25%,50%"]
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
+|[[capabilities]]`@capabilities`|`Array of String`|+++
+Sets the list of offered capabilities
+ A registry of commonly defined source capabilities and their meanings is maintained at
+ <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
++++
+|[[capabilitys]]`@capabilitys`|`Array of String`|+++
+Adds a offered capability.
+ A registry of commonly defined source capabilities and their meanings is maintained at
+ <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
++++
+|[[desiredCapabilities]]`@desiredCapabilities`|`Array of String`|+++
+Sets the desired capabilities.
+ A registry of commonly defined source capabilities and their meanings is maintained at
+ <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
++++
+|[[desiredCapabilitys]]`@desiredCapabilitys`|`Array of String`|+++
+Adds a desired capability.
++++
+|[[durable]]`@durable`|`Boolean`|+++
+Sets the durability.
+ <p>
+ Passing <code>true</code> sets the expiry policy of the source to <code>NEVER</code> and the durability of the source
+ to <code>UNSETTLED_STATE</code>.
++++
 |[[dynamic]]`@dynamic`|`Boolean`|+++
 Sets whether the link remote terminus to be used should indicate it is
  'dynamic', requesting the peer names it with a dynamic address.
@@ -165,6 +193,23 @@ Sets whether the link remote terminus to be used should indicate it is
  terminus details directly) after the link has remotely opened.
 +++
 |[[linkName]]`@linkName`|`String`|-
-|[[qos]]`@qos`|`String`|-
+|[[qos]]`@qos`|`String`|+++
+Sets the local QOS config.
++++
+|[[terminusDurability]]`@terminusDurability`|`String`|+++
+Sets what state of the terminus is retained durably. Accepted values are: state of durable messages (@{code UNSETTLED_STATE}),
+ only existence and configuration of the terminus (<code>CONFIGURATION</code>), or no state at all (<code>NONE</code>).
++++
+|[[terminusExpiryPolicy]]`@terminusExpiryPolicy`|`String`|+++
+Sets the policy that determines when the expiry timer of a terminus starts counting down from the timeout value.
+ Values can be:
+ <ul>
+ <li><code>null</code> - Not set</li>
+ <li><code>link-detach</code> - The expiry timer starts when terminus is detached.</li>
+ <li><code>session-end</code> - The expiry timer starts when the most recently associated session is ended.</li>
+ <li><code>connection-close</code> - The expiry timer starts when most recently associated connection is closed.</li>
+ <li><code>never</code> - The terminus never expires.</li>
+ </ul>
++++
 |===
 

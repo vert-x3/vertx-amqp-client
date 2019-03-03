@@ -29,6 +29,47 @@ public class AmqpReceiverOptionsConverter {
   public static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, AmqpReceiverOptions obj) {
     for (java.util.Map.Entry<String, Object> member : json) {
       switch (member.getKey()) {
+        case "capabilities":
+          if (member.getValue() instanceof JsonArray) {
+            java.util.ArrayList<java.lang.String> list =  new java.util.ArrayList<>();
+            ((Iterable<Object>)member.getValue()).forEach( item -> {
+              if (item instanceof String)
+                list.add((String)item);
+            });
+            obj.setCapabilities(list);
+          }
+          break;
+        case "capabilitys":
+          if (member.getValue() instanceof JsonArray) {
+            ((Iterable<Object>)member.getValue()).forEach( item -> {
+              if (item instanceof String)
+                obj.addCapability((String)item);
+            });
+          }
+          break;
+        case "desiredCapabilities":
+          if (member.getValue() instanceof JsonArray) {
+            java.util.ArrayList<java.lang.String> list =  new java.util.ArrayList<>();
+            ((Iterable<Object>)member.getValue()).forEach( item -> {
+              if (item instanceof String)
+                list.add((String)item);
+            });
+            obj.setDesiredCapabilities(list);
+          }
+          break;
+        case "desiredCapabilitys":
+          if (member.getValue() instanceof JsonArray) {
+            ((Iterable<Object>)member.getValue()).forEach( item -> {
+              if (item instanceof String)
+                obj.addDesiredCapability((String)item);
+            });
+          }
+          break;
+        case "durable":
+          if (member.getValue() instanceof Boolean) {
+            obj.setDurable((Boolean)member.getValue());
+          }
+          break;
         case "dynamic":
           if (member.getValue() instanceof Boolean) {
             obj.setDynamic((Boolean)member.getValue());
@@ -44,6 +85,16 @@ public class AmqpReceiverOptionsConverter {
             obj.setQos((String)member.getValue());
           }
           break;
+        case "terminusDurability":
+          if (member.getValue() instanceof String) {
+            obj.setTerminusDurability((String)member.getValue());
+          }
+          break;
+        case "terminusExpiryPolicy":
+          if (member.getValue() instanceof String) {
+            obj.setTerminusExpiryPolicy((String)member.getValue());
+          }
+          break;
       }
     }
   }
@@ -53,12 +104,29 @@ public class AmqpReceiverOptionsConverter {
   }
 
   public static void toJson(AmqpReceiverOptions obj, java.util.Map<String, Object> json) {
+    if (obj.getCapabilities() != null) {
+      JsonArray array = new JsonArray();
+      obj.getCapabilities().forEach(item -> array.add(item));
+      json.put("capabilities", array);
+    }
+    if (obj.getDesiredCapabilities() != null) {
+      JsonArray array = new JsonArray();
+      obj.getDesiredCapabilities().forEach(item -> array.add(item));
+      json.put("desiredCapabilities", array);
+    }
+    json.put("durable", obj.isDurable());
     json.put("dynamic", obj.isDynamic());
     if (obj.getLinkName() != null) {
       json.put("linkName", obj.getLinkName());
     }
     if (obj.getQos() != null) {
       json.put("qos", obj.getQos());
+    }
+    if (obj.getTerminusDurability() != null) {
+      json.put("terminusDurability", obj.getTerminusDurability());
+    }
+    if (obj.getTerminusExpiryPolicy() != null) {
+      json.put("terminusExpiryPolicy", obj.getTerminusExpiryPolicy());
     }
   }
 }
