@@ -107,10 +107,25 @@ public interface AmqpConnection {
   AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
 
   /**
+   * Creates a sender used to send messages to the given address. The address must be set. For anonymous sender, check
+   * {@link #createAnonymousSender(Handler)}.
+   *
+   * @param address           The target address to attach to, allowed to be {@code null} if the {@code options}
+   *                          configures the sender to be attached to a dynamic address (provided by the broker).
+   * @param options           The AMQP sender options
+   * @param completionHandler The handler called with the sender, once opened
+   * @return the connection.
+   * @see #createAnonymousSender(Handler)
+   */
+  @Fluent
+  AmqpConnection createSender(String address, AmqpSenderOptions options,
+    Handler<AsyncResult<AmqpSender>> completionHandler);
+
+  /**
    * Creates an anonymous sender.
-   *
+   * <p>
    * The sender will be established to the 'anonymous relay' and each message must specify its destination address.
-   *
+   * <p>
    * Unlike "regular" sender, this sender is not associated to a specific address, and each message sent must provide
    * an address. This method is generally used in request-reply scenarios where you need a sender to send the reply,
    * but you don't know the address, as the reply address is passed into the message you are going to receive.

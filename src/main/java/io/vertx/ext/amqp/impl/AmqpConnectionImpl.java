@@ -313,15 +313,32 @@ public class AmqpConnectionImpl implements AmqpConnection {
   @Override
   public AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
     Objects.requireNonNull(address, "The address must be set");
+    return createSender(address, new AmqpSenderOptions(), completionHandler);
+  }
+
+  @Override
+  public AmqpConnection createSender(String address, AmqpSenderOptions options, Handler<AsyncResult<AmqpSender>> completionHandler) {
+    if (address == null  && ! options.isDynamic()) {
+      throw new IllegalArgumentException("Address must be set if the link is not dynamic");
+    }
+
     Objects.requireNonNull(completionHandler, "The completion handler must be set");
     runWithTrampoline(x -> {
-      ProtonSender sender = connection.get().createSender(address);
 
-      // TODO Link name
+      ProtonSender sender;
+      if (options != null) {
+        ProtonLinkOptions opts = new ProtonLinkOptions();
+        opts.setLinkName(options.getLinkName());
+        opts.setDynamic(options.isDynamic());
+
+        sender = connection.get().createSender(address, opts);
+        sender.setAutoDrained(options.isAutoDrained());
+        sender.setAutoDrained(options.isAutoSettle());
+      } else {
+        sender = connection.get().createSender(address);
+      }
 
       // TODO shared and durable?
-
-      // TODO AMQPSenderOptions
 
       // TODO Capabilities x2
 
