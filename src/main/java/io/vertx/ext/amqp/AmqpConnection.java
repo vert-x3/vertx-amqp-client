@@ -124,10 +124,8 @@ public interface AmqpConnection {
   /**
    * Creates an anonymous sender.
    * <p>
-   * The sender will be established to the 'anonymous relay' and each message must specify its destination address.
-   * <p>
    * Unlike "regular" sender, this sender is not associated to a specific address, and each message sent must provide
-   * an address. This method is generally used in request-reply scenarios where you need a sender to send the reply,
+   * an address. This method can be used in request-reply scenarios where you create a sender to send the reply,
    * but you don't know the address, as the reply address is passed into the message you are going to receive.
    *
    * @param completionHandler The handler called with the created sender, once opened

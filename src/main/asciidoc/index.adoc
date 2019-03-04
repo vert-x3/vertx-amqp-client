@@ -143,9 +143,9 @@ The {@link io.vertx.ext.amqp.AmqpSender} can be used as a write stream. The flow
 
 == Implementing request-reply
 
-To implement a request-reply behavior, you need dynamic receiver and anonymous sender. A dynamic receiver is not associated with
-an address by the user, but the address it provided by the broker. Anonymous senders are also not associated to a specific address,
-requiring all messages to contain an address.
+To implement a request-reply behavior, you could use a dynamic receiver and an anonymous sender. A dynamic receiver is not
+associated with an address by the user, but the address it provided by the broker. Anonymous senders are also not associated to
+ a specific address, requiring all messages to contain an address.
 
 The following snippet shows how request-reply can be implemented:
 
