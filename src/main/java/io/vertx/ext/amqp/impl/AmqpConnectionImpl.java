@@ -294,16 +294,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     if (receiverOptions.isDurable()) {
       source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
       source.setDurable(TerminusDurability.UNSETTLED_STATE);
-    } else {
-      // Check if we have individual values, not the in this case the receiver won't be considered as durable and the
-      // "close" method will close the link and not detach.
-      if (receiverOptions.getTerminusDurability() != null) {
-        source.setDurable(TerminusDurability.valueOf(receiverOptions.getTerminusDurability().toUpperCase()));
-      }
-      if (receiverOptions.getTerminusExpiryPolicy() != null) {
-        source
-          .setExpiryPolicy(TerminusExpiryPolicy.valueOf(receiverOptions.getTerminusExpiryPolicy()));
-      }
     }
   }
 
