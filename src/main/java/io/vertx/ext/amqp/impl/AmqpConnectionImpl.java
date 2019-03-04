@@ -333,16 +333,14 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
         sender = connection.get().createSender(address, opts);
         sender.setAutoDrained(options.isAutoDrained());
-        sender.setAutoDrained(options.isAutoSettle());
+        sender.setAutoSettle(options.isAutoSettle());
       } else {
         sender = connection.get().createSender(address);
       }
 
-      // TODO shared and durable?
+      // TODO durable?
 
       // TODO Capabilities x2
-
-      // TODO Set auto drain and auto-settled
 
       AmqpSenderImpl.create(sender, this, completionHandler);
     });

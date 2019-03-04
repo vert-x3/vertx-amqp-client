@@ -15,6 +15,7 @@
  */
 package io.vertx.ext.amqp;
 
+import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -42,6 +43,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -200,6 +202,76 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
         context.assertEquals(address, sender.result().address(), "address was not as expected");
       });
     });
+
+
+    asyncRecvMsg.awaitSuccess();
+
+  }
+
+  @Test(timeout = 20000)
+  @Repeat(10)
+  public void testDynamicSenderWithOptions(TestContext context) {
+    String address = UUID.randomUUID().toString();
+    String sentContent = "myMessageContent-" + address;
+
+    Async asyncRecvMsg = context.async();
+    AtomicBoolean opened = new AtomicBoolean();
+
+    client = AmqpClient.create(vertx,
+      new AmqpClientOptions().setHost(host).setPort(port).setUsername(username).setPassword(password));
+
+    AtomicReference<AmqpSender> reference = new AtomicReference<>();
+    AtomicReference<Context> exec = new AtomicReference<>();
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+
+      res.result().createSender(null,
+        new AmqpSenderOptions()
+        .setDynamic(true)
+        .setLinkName("my-link")
+        .setAutoDrained(false)
+        .setAutoSettle(false),
+        sender -> {
+        context.assertTrue(sender.succeeded());
+        context.assertNotNull(sender.result().address());
+        reference.set(sender.result());
+        exec.set(Vertx.currentContext());
+      });
+    });
+
+    await().until(() -> exec.get() != null);
+
+    ProtonClient proton = ProtonClient.create(vertx);
+    proton.connect(host, port, username, password, res -> {
+      context.assertTrue(res.succeeded());
+
+      ProtonConnection conn = res.result().open();
+      ProtonReceiver receiver = conn.createReceiver(reference.get().address());
+      receiver
+        .openHandler(x -> {
+          opened.set(x.succeeded());
+          exec.get().runOnContext(i -> {
+            reference.get().send(AmqpMessage.create().withBody(sentContent).build());
+          });
+        })
+        .handler((d, m) -> {
+          Section body = m.getBody();
+          context.assertNotNull(body);
+          context.assertTrue(body instanceof AmqpValue);
+          Object actual = ((AmqpValue) body).getValue();
+
+          context.assertEquals(sentContent, actual, "Unexpected message body");
+
+          client.close(x -> {
+            conn.closeHandler(closeResult -> conn.disconnect()).close();
+            asyncRecvMsg.complete();
+          });
+
+        }).open();
+    });
+
+    await().until(opened::get);
+
 
 
     asyncRecvMsg.awaitSuccess();
