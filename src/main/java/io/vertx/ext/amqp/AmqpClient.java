@@ -118,4 +118,14 @@ public interface AmqpClient {
     Handler<AmqpMessage> messageHandler,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
+  /**
+   * Creates a sender used to send messages to the given address. The address must be set.
+   *
+   * @param address           The target address to attach to, must not be {@code null}
+   * @param completionHandler The handler called with the sender, once opened
+   * @return the client.
+   */
+  @Fluent
+  AmqpClient createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
+
 }

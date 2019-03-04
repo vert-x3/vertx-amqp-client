@@ -104,6 +104,31 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
 
   @Test
   @Repeat(10)
+  public void testThatMessagedAreSentWithASenderCreatedFromClient() {
+    String queue = UUID.randomUUID().toString();
+    List<String> list = new CopyOnWriteArrayList<>();
+    usage.consumeStrings(queue, 2, 1, TimeUnit.MINUTES, null, list::add);
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost(host)
+      .setPort(port)
+      .setUsername(username)
+      .setPassword(password)
+    ).createSender(queue, done -> {
+      if (done.failed()) {
+        done.cause().printStackTrace();
+      } else {
+        // Sending a few messages
+        done.result().send(AmqpMessage.create().withBody("hello").address(queue).build());
+        done.result().send(AmqpMessage.create().withBody("world").address(queue).build());
+      }
+    });
+
+    await().until(() -> list.size() == 2);
+    assertThat(list).containsExactly("hello", "world");
+  }
+
+  @Test
+  @Repeat(10)
   public void testThatMessagedAreAcknowledged() {
     String queue = UUID.randomUUID().toString();
     List<String> list = new CopyOnWriteArrayList<>();
@@ -197,12 +222,12 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
         JsonObject applicationProperties = new JsonObject();
         applicationProperties.put(propKey, propValue);
 
-        AmqpMessage message = AmqpMessage.create().withBody(sentContent).applicationProperties(applicationProperties).build();
+        AmqpMessage message = AmqpMessage.create().withBody(sentContent).applicationProperties(applicationProperties)
+          .build();
         sender.result().send(message);
         context.assertEquals(address, sender.result().address(), "address was not as expected");
       });
     });
-
 
     asyncRecvMsg.awaitSuccess();
 
@@ -227,16 +252,16 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
 
       res.result().createSender(null,
         new AmqpSenderOptions()
-        .setDynamic(true)
-        .setLinkName("my-link")
-        .setAutoDrained(false)
-        .setAutoSettle(false),
+          .setDynamic(true)
+          .setLinkName("my-link")
+          .setAutoDrained(false)
+          .setAutoSettle(false),
         sender -> {
-        context.assertTrue(sender.succeeded());
-        context.assertNotNull(sender.result().address());
-        reference.set(sender.result());
-        exec.set(Vertx.currentContext());
-      });
+          context.assertTrue(sender.succeeded());
+          context.assertNotNull(sender.result().address());
+          reference.set(sender.result());
+          exec.set(Vertx.currentContext());
+        });
     });
 
     await().until(() -> exec.get() != null);
@@ -271,8 +296,6 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
     });
 
     await().until(opened::get);
-
-
 
     asyncRecvMsg.awaitSuccess();
 
