@@ -22,6 +22,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.VertxException;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.amqp.AmqpConnection;
 import io.vertx.ext.amqp.AmqpMessage;
 import io.vertx.ext.amqp.AmqpReceiver;
 import io.vertx.proton.ProtonReceiver;
@@ -30,7 +31,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 
 public class AmqpReceiverImpl implements AmqpReceiver {
-
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AmqpReceiverImpl.class);
 
@@ -288,6 +288,11 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   @Override
   public synchronized String address() {
     return address;
+  }
+
+  @Override
+  public AmqpConnection connection() {
+    return connection;
   }
 
   @Override

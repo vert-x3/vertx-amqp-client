@@ -367,6 +367,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return this;
   }
 
+
+
   ProtonConnection unwrap() {
     return this.connection.get();
   }

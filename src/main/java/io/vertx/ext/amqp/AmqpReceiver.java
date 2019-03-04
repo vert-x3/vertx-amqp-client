@@ -42,4 +42,11 @@ public interface AmqpReceiver extends ReadStream<AmqpMessage> {
    * @param handler handler called when the receiver has been closed, can be {@code null}
    */
   void close(Handler<AsyncResult<Void>> handler);
+
+  /**
+   * Gets the connection having created the receiver. Cannot be {@code null}
+   *
+   * @return the connection having created the receiver.
+   */
+  AmqpConnection connection();
 }

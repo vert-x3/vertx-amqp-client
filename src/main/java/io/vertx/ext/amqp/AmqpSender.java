@@ -59,4 +59,11 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
    * @return the configured address.
    */
   String address();
+
+  /**
+   * Gets the connection having created the sender. Cannot be {@code null}
+   *
+   * @return the connection having created the sender.
+   */
+  AmqpConnection connection();
 }

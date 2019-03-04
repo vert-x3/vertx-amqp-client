@@ -20,6 +20,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.amqp.AmqpConnection;
 import io.vertx.ext.amqp.AmqpMessage;
 import io.vertx.ext.amqp.AmqpSender;
 import io.vertx.proton.ProtonDelivery;
@@ -114,6 +115,11 @@ public class AmqpSenderImpl implements AmqpSender {
   @Override
   public synchronized boolean writeQueueFull() {
     return remoteCredit <= 0;
+  }
+
+  @Override
+  public AmqpConnection connection() {
+    return connection;
   }
 
   @Override

@@ -53,5 +53,48 @@ public class ReceiverTest extends ArtemisTestBase {
     assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
   }
 
+  @Test
+  public void testReceptionWithoutConnection() {
+    AtomicInteger count = new AtomicInteger();
+    String queue = UUID.randomUUID().toString();
+    List<String> list = new CopyOnWriteArrayList<>();
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost(host)
+      .setPort(port)
+      .setUsername(username)
+      .setPassword(password)
+    ).createReceiver(queue, message -> list.add(message.bodyAsString()),
+      done ->
+        CompletableFuture.runAsync(() ->
+          usage.produceStrings(queue, 10, null,
+            () -> Integer.toString(count.getAndIncrement())))
+    );
+
+    await().until(() -> list.size() == 10);
+    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+  }
+
+  @Test
+  public void testReceptionWithoutConnectionWithoutMessageHandler() {
+    AtomicInteger count = new AtomicInteger();
+    String queue = UUID.randomUUID().toString();
+    List<String> list = new CopyOnWriteArrayList<>();
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost(host)
+      .setPort(port)
+      .setUsername(username)
+      .setPassword(password)
+    ).createReceiver(queue,
+      done -> {
+        done.result().handler(message -> list.add(message.bodyAsString()));
+        CompletableFuture.runAsync(() ->
+          usage.produceStrings(queue, 10, null,
+            () -> Integer.toString(count.getAndIncrement())));
+      }
+    );
+
+    await().until(() -> list.size() == 10);
+    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+  }
 
 }

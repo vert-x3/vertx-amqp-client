@@ -16,9 +16,7 @@
 package io.vertx.ext.amqp.impl;
 
 import io.vertx.core.*;
-import io.vertx.ext.amqp.AmqpClient;
-import io.vertx.ext.amqp.AmqpClientOptions;
-import io.vertx.ext.amqp.AmqpConnection;
+import io.vertx.ext.amqp.*;
 import io.vertx.proton.ProtonClient;
 
 import java.util.ArrayList;
@@ -81,7 +79,42 @@ public class AmqpClientImpl implements AmqpClient {
         handler.handle(done.mapEmpty());
       }
     });
+  }
 
+  @Override
+  public AmqpClient createReceiver(String address,
+    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+    return connect(res -> {
+      if (res.failed()) {
+        completionHandler.handle(res.mapEmpty());
+      } else {
+        res.result().createReceiver(address, completionHandler);
+      }
+    });
+  }
+
+  @Override
+  public AmqpClient createReceiver(String address, Handler<AmqpMessage> messageHandler,
+    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+      return connect(res -> {
+        if (res.failed()) {
+          completionHandler.handle(res.mapEmpty());
+        } else {
+          res.result().createReceiver(address, messageHandler, completionHandler);
+        }
+      });
+  }
+
+  @Override
+  public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions,
+    Handler<AmqpMessage> messageHandler, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+      return connect(res -> {
+        if (res.failed()) {
+          completionHandler.handle(res.mapEmpty());
+        } else {
+          res.result().createReceiver(address, receiverOptions, messageHandler, completionHandler);
+        }
+      });
   }
 
   synchronized void register(AmqpConnectionImpl connection) {
