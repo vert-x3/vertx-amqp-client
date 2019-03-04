@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class AmqpConnectionImpl implements AmqpConnection {
 
@@ -276,12 +277,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
           receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
         }
 
-        List<String> desired = receiverOptions.getDesiredCapabilities();
-        List<String> provided = receiverOptions.getCapabilities();
-
-        receiver.setDesiredCapabilities(desired.stream().map(Symbol::valueOf).toArray(Symbol[]::new));
-        receiver.setOfferedCapabilities(provided.stream().map(Symbol::valueOf).toArray(Symbol[]::new));
-
         configureTheSource(receiverOptions, receiver);
       }
 
@@ -294,6 +289,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
   private void configureTheSource(AmqpReceiverOptions receiverOptions, ProtonReceiver receiver) {
     org.apache.qpid.proton.amqp.messaging.Source source = (org.apache.qpid.proton.amqp.messaging.Source) receiver
       .getSource();
+
+    source.setCapabilities(receiverOptions.getCapabilities().stream().map(Symbol::valueOf).toArray(Symbol[]::new));
     if (receiverOptions.isDurable()) {
       source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
       source.setDurable(TerminusDurability.UNSETTLED_STATE);

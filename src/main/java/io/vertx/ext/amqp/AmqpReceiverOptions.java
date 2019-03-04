@@ -32,7 +32,6 @@ public class AmqpReceiverOptions {
   private String linkName;
   private boolean dynamic;
   private String qos;
-  private List<String> desiredCapabilities = new ArrayList<>();
   private List<String> capabilities = new ArrayList<>();
   private boolean durable;
   private String terminusDurability;
@@ -46,7 +45,6 @@ public class AmqpReceiverOptions {
     this();
     setDynamic(other.isDynamic());
     setLinkName(other.getLinkName());
-    setDesiredCapabilities(other.getDesiredCapabilities());
     setCapabilities(other.getCapabilities());
     setDurable(other.isDurable());
     setTerminusDurability(other.getTerminusDurability());
@@ -115,50 +113,9 @@ public class AmqpReceiverOptions {
     return this;
   }
 
-  /**
-   * Custom desired capabilities.
-   * A registry of commonly defined source capabilities and their meanings is maintained at
-   * <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
-   *
-   * @return the list of capabilities, empty if none.
-   */
-  public List<String> getDesiredCapabilities() {
-    if (desiredCapabilities == null) {
-      return new ArrayList<>();
-    }
-    return desiredCapabilities;
-  }
 
   /**
-   * Sets the desired capabilities.
-   * A registry of commonly defined source capabilities and their meanings is maintained at
-   * <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
-   *
-   * @param desiredCapabilities the list of desired capabilities.
-   * @return the options.
-   */
-  public AmqpReceiverOptions setDesiredCapabilities(List<String> desiredCapabilities) {
-    this.desiredCapabilities = desiredCapabilities;
-    return this;
-  }
-
-  /**
-   * Adds a desired capability.
-   *
-   * @param capability the capability to be added, must not be {@code null}.
-   * @return the options
-   */
-  public AmqpReceiverOptions addDesiredCapability(String capability) {
-    Objects.requireNonNull(capability, "The capability must not be null");
-    if (this.desiredCapabilities == null) {
-      this.desiredCapabilities = new ArrayList<>();
-    }
-    this.desiredCapabilities.add(capability);
-    return this;
-  }
-
-  /**
-   * Gets the list of offered capabilities.
+   * Gets the list of offered capabilities for the source.
    * A registry of commonly defined source capabilities and their meanings is maintained at
    * <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
    *

@@ -47,24 +47,6 @@ public class AmqpReceiverOptionsConverter {
             });
           }
           break;
-        case "desiredCapabilities":
-          if (member.getValue() instanceof JsonArray) {
-            java.util.ArrayList<java.lang.String> list =  new java.util.ArrayList<>();
-            ((Iterable<Object>)member.getValue()).forEach( item -> {
-              if (item instanceof String)
-                list.add((String)item);
-            });
-            obj.setDesiredCapabilities(list);
-          }
-          break;
-        case "desiredCapabilitys":
-          if (member.getValue() instanceof JsonArray) {
-            ((Iterable<Object>)member.getValue()).forEach( item -> {
-              if (item instanceof String)
-                obj.addDesiredCapability((String)item);
-            });
-          }
-          break;
         case "durable":
           if (member.getValue() instanceof Boolean) {
             obj.setDurable((Boolean)member.getValue());
@@ -108,11 +90,6 @@ public class AmqpReceiverOptionsConverter {
       JsonArray array = new JsonArray();
       obj.getCapabilities().forEach(item -> array.add(item));
       json.put("capabilities", array);
-    }
-    if (obj.getDesiredCapabilities() != null) {
-      JsonArray array = new JsonArray();
-      obj.getDesiredCapabilities().forEach(item -> array.add(item));
-      json.put("desiredCapabilities", array);
     }
     json.put("durable", obj.isDurable());
     json.put("dynamic", obj.isDynamic());

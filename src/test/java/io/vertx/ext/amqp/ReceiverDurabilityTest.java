@@ -83,7 +83,7 @@ public class ReceiverDurabilityTest extends BareTestBase {
             context.assertEquals(TerminusExpiryPolicy.NEVER, source.getExpiryPolicy(), "unexpected expiry");
             context.assertEquals(TerminusDurability.UNSETTLED_STATE, source.getDurable(), "unexpected durability");
           }
-          Symbol[] capabilities = serverSender.getRemoteOfferedCapabilities();
+          Symbol[] capabilities = source.getCapabilities();
           if (custom) {
             context.assertTrue(Arrays
                 .equals(new Symbol[] { Symbol.valueOf("custom") }, capabilities),

@@ -171,14 +171,6 @@ Adds a offered capability.
  A registry of commonly defined source capabilities and their meanings is maintained at
  <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
 +++
-|[[desiredCapabilities]]`@desiredCapabilities`|`Array of String`|+++
-Sets the desired capabilities.
- A registry of commonly defined source capabilities and their meanings is maintained at
- <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
-+++
-|[[desiredCapabilitys]]`@desiredCapabilitys`|`Array of String`|+++
-Adds a desired capability.
-+++
 |[[durable]]`@durable`|`Boolean`|+++
 Sets the durability.
  <p>
