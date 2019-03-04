@@ -34,11 +34,6 @@ public class AmqpSenderOptionsConverter {
             obj.setAutoDrained((Boolean)member.getValue());
           }
           break;
-        case "autoSettle":
-          if (member.getValue() instanceof Boolean) {
-            obj.setAutoSettle((Boolean)member.getValue());
-          }
-          break;
         case "dynamic":
           if (member.getValue() instanceof Boolean) {
             obj.setDynamic((Boolean)member.getValue());
@@ -59,7 +54,6 @@ public class AmqpSenderOptionsConverter {
 
   public static void toJson(AmqpSenderOptions obj, java.util.Map<String, Object> json) {
     json.put("autoDrained", obj.isAutoDrained());
-    json.put("autoSettle", obj.isAutoSettle());
     json.put("dynamic", obj.isDynamic());
     if (obj.getLinkName() != null) {
       json.put("linkName", obj.getLinkName());

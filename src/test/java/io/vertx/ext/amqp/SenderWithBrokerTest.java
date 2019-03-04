@@ -252,10 +252,7 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
 
       res.result().createSender(null,
         new AmqpSenderOptions()
-          .setDynamic(true)
-          .setLinkName("my-link")
-          .setAutoDrained(false)
-          .setAutoSettle(false),
+          .setDynamic(true),
         sender -> {
           context.assertTrue(sender.succeeded());
           context.assertNotNull(sender.result().address());

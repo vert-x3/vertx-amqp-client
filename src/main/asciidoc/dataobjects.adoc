@@ -223,12 +223,6 @@ Sets whether the link is automatically marked drained after the send queue drain
  <p>
  <code>true</code> by default.
 +++
-|[[autoSettle]]`@autoSettle`|`Boolean`|+++
-Sets whether sent deliveries should be automatically locally-settled once they have become remotely-settled by the
- receiving peer.
- <p>
- <code>true</code> by default.
-+++
 |[[dynamic]]`@dynamic`|`Boolean`|+++
 Sets whether the link remote terminus to be used should indicate it is
  'dynamic', requesting the peer names it with a dynamic address.

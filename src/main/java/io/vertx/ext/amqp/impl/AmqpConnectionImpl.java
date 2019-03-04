@@ -320,14 +320,11 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
         sender = connection.get().createSender(address, opts);
         sender.setAutoDrained(options.isAutoDrained());
-        sender.setAutoSettle(options.isAutoSettle());
       } else {
         sender = connection.get().createSender(address);
       }
 
       // TODO durable?
-
-      // TODO Capabilities x2
 
       AmqpSenderImpl.create(sender, this, completionHandler);
     });

@@ -27,7 +27,6 @@ public class AmqpSenderOptions {
   private String linkName;
   private boolean dynamic;
   private boolean autoDrained = true;
-  private boolean autoSettle = true;
 
   public AmqpSenderOptions() {
 
@@ -38,7 +37,6 @@ public class AmqpSenderOptions {
     setDynamic(other.isDynamic());
     setLinkName(other.getLinkName());
     setAutoDrained(other.isAutoDrained());
-    setAutoSettle(other.isAutoSettle());
   }
 
   public AmqpSenderOptions(JsonObject json) {
@@ -104,30 +102,6 @@ public class AmqpSenderOptions {
    */
   public AmqpSenderOptions setAutoDrained(boolean autoDrained) {
     this.autoDrained = autoDrained;
-    return this;
-  }
-
-  /**
-   * Get whether the receiver is auto settling deliveries.
-   *
-   * @return whether deliveries should be auto settled locally after being settled by the receiver
-   * @see #setAutoSettle(boolean)
-   */
-  public boolean isAutoSettle() {
-    return autoSettle;
-  }
-
-  /**
-   * Sets whether sent deliveries should be automatically locally-settled once they have become remotely-settled by the
-   * receiving peer.
-   * <p>
-   * {@code true} by default.
-   *
-   * @param autoSettle whether deliveries should be auto settled locally after being settled by the receiver
-   * @return the options
-   */
-  public AmqpSenderOptions setAutoSettle(boolean autoSettle) {
-    this.autoSettle = autoSettle;
     return this;
   }
 }
