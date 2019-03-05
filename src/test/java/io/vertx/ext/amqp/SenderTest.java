@@ -25,6 +25,8 @@ import org.apache.qpid.proton.amqp.transport.AmqpError;
 import org.apache.qpid.proton.amqp.transport.Target;
 import org.junit.Test;
 
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SenderTest extends BareTestBase {
@@ -203,7 +205,8 @@ public class SenderTest extends BareTestBase {
         AmqpSender sender = done.result();
         context.assertTrue(sender.writeQueueFull(), "expected write queue to be full, we have not yet granted credit");
         sender.drainHandler(x -> {
-          context.assertTrue(asyncSendInitialCredit.isSucceeded(), "should have been called after initial credit delay");
+          context
+            .assertTrue(asyncSendInitialCredit.isSucceeded(), "should have been called after initial credit delay");
           context.assertFalse(sender.writeQueueFull(), "expected write queue not to be full, we just granted credit");
 
           // Send message using the credit
@@ -212,7 +215,8 @@ public class SenderTest extends BareTestBase {
 
           // Now replace the drain handler, have it act on subsequent credit arriving
           sender.drainHandler(y -> {
-            context.assertTrue(asyncSendSubsequentCredit.isSucceeded(), "should have been called after 2nd credit delay");
+            context
+              .assertTrue(asyncSendSubsequentCredit.isSucceeded(), "should have been called after 2nd credit delay");
             context.assertFalse(sender.writeQueueFull(), "expected write queue not to be full, we just granted credit");
 
             client.close(shutdownRes -> {
@@ -246,7 +250,7 @@ public class SenderTest extends BareTestBase {
   }
 
   private void doSenderClosedRemotelyCallsExceptionHandlerTestImpl(TestContext context,
-                                                                   boolean closeWithError) throws Exception {
+    boolean closeWithError) throws Exception {
     final String testName = name.getMethodName();
     final String sentContent = "myMessageContent-" + testName;
 
@@ -333,5 +337,59 @@ public class SenderTest extends BareTestBase {
     } finally {
       server.close();
     }
+  }
+
+  @Test(timeout = 20000)
+  public void testDynamicSenderWithOptions(TestContext context) throws ExecutionException, InterruptedException {
+    String address = UUID.randomUUID().toString();
+    String sentContent = "myMessageContent-" + address;
+
+    Async serverLinkOpenAsync = context.async();
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(result -> serverConnection.open());
+
+      serverConnection.sessionOpenHandler(ProtonSession::open);
+
+      serverConnection.receiverOpenHandler(serverReceiver -> {
+        serverReceiver.closeHandler(res -> serverReceiver.close());
+
+        // Verify the remote terminus details used were as expected
+        context.assertNotNull(serverReceiver.getRemoteTarget(), "source should not be null");
+        org.apache.qpid.proton.amqp.messaging.Target remoteTarget =
+          (org.apache.qpid.proton.amqp.messaging.Target) serverReceiver.getRemoteTarget();
+        context.assertTrue(remoteTarget.getDynamic(), "expected dynamic source to be requested");
+        context.assertNull(remoteTarget.getAddress(), "expected no source address to be set");
+
+        // Set the local terminus details
+        org.apache.qpid.proton.amqp.messaging.Target target =
+          (org.apache.qpid.proton.amqp.messaging.Target) remoteTarget.copy();
+        target.setAddress(address);
+        serverReceiver.setTarget(target);
+
+        serverReceiver.open();
+
+        serverLinkOpenAsync.complete();
+      });
+    });
+
+    client = AmqpClient.create(vertx,
+      new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
+
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+
+      res.result().createSender(null,
+        new AmqpSenderOptions()
+          .setDynamic(true),
+        sender -> {
+          context.assertTrue(sender.succeeded());
+          context.assertNotNull(sender.result().address());
+          sender.result().send(AmqpMessage.create().withBody(sentContent).build());
+        });
+    });
+
+    serverLinkOpenAsync.awaitSuccess();
+
   }
 }
