@@ -99,6 +99,17 @@ access to most of the metadata supported by AMQP. See the list of
 http://docs.oasis-open.org/amqp/core/v1.0/amqp-core-messaging-v1.0.html#type-properties[properties] as references. Note
 that retrieving a JSON object or a JSON array from the body required the value to be passed as AMQP _Data_.
 
+You can also create a receiver directly from the client:
+
+[source, $lang]
+----
+{@link examples.AmqpClientExamples#receiverFromClient(io.vertx.ext.amqp.AmqpClient)}
+----
+
+In this case, a connection is established automatically. You can retrieve it using
+{@link io.vertx.ext.amqp.AmqpReceiver#connection()}
+
+
 == Creating a sender
 
 Senders allows publishing messages to queues and topics. You retrieve a sender as follows:
@@ -140,6 +151,16 @@ Note that message is considered as acknowledged if the delivery is set fo `ACCEP
 as non-acknowledged (details can be found in the passed cause).
 
 The {@link io.vertx.ext.amqp.AmqpSender} can be used as a write stream. The flow control is implemented using AMQP credits.
+
+You can also create a sender directly from the client:
+
+[source, $lang]
+----
+{@link examples.AmqpClientExamples#senderFromClient(io.vertx.ext.amqp.AmqpClient)}
+----
+
+In this case, a connection is established automatically. You can retrieve it using
+{@link io.vertx.ext.amqp.AmqpSender#connection()}.
 
 == Implementing request-reply
 

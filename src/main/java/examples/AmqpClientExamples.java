@@ -61,6 +61,28 @@ public class AmqpClientExamples {
     );
   }
 
+  public void receiverFromClient(AmqpClient client) {
+    client.createReceiver("my-queue",
+      msg -> {
+        // called on every received messages
+        System.out.println("Received " + msg.bodyAsString());
+      },
+      done -> {
+        if (done.failed()) {
+          System.out.println("Unable to create receiver");
+        } else {
+          AmqpReceiver receiver = done.result();
+        }
+      }
+    );
+  }
+
+  public void senderFromClient(AmqpClient client) {
+    client.createSender("my-queue", maybeSender -> {
+      //...
+    });
+  }
+
   public void receiver2(AmqpConnection connection) {
     connection.createReceiver("my-queue",
       done -> {
