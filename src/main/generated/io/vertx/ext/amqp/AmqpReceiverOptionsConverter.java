@@ -72,16 +72,6 @@ public class AmqpReceiverOptionsConverter {
             obj.setQos((String)member.getValue());
           }
           break;
-        case "terminusDurability":
-          if (member.getValue() instanceof String) {
-            obj.setTerminusDurability((String)member.getValue());
-          }
-          break;
-        case "terminusExpiryPolicy":
-          if (member.getValue() instanceof String) {
-            obj.setTerminusExpiryPolicy((String)member.getValue());
-          }
-          break;
       }
     }
   }
@@ -104,12 +94,6 @@ public class AmqpReceiverOptionsConverter {
     json.put("maxBufferedMessages", obj.getMaxBufferedMessages());
     if (obj.getQos() != null) {
       json.put("qos", obj.getQos());
-    }
-    if (obj.getTerminusDurability() != null) {
-      json.put("terminusDurability", obj.getTerminusDurability());
-    }
-    if (obj.getTerminusExpiryPolicy() != null) {
-      json.put("terminusExpiryPolicy", obj.getTerminusExpiryPolicy());
     }
   }
 }

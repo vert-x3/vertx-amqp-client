@@ -33,8 +33,6 @@ public class AmqpReceiverOptions {
   private String qos;
   private List<String> capabilities = new ArrayList<>();
   private boolean durable;
-  private String terminusDurability;
-  private String terminusExpiryPolicy;
   private int maxBufferedMessages;
 
   public AmqpReceiverOptions() {
@@ -47,8 +45,6 @@ public class AmqpReceiverOptions {
     setLinkName(other.getLinkName());
     setCapabilities(other.getCapabilities());
     setDurable(other.isDurable());
-    setTerminusDurability(other.getTerminusDurability());
-    setTerminusExpiryPolicy(other.getTerminusExpiryPolicy());
     setMaxBufferedMessages(other.maxBufferedMessages);
   }
 
@@ -176,64 +172,6 @@ public class AmqpReceiverOptions {
    */
   public AmqpReceiverOptions setDurable(boolean durable) {
     this.durable = durable;
-    return this;
-  }
-
-  /**
-   * Indicates what state of the terminus is retained durably: the state of durable messages (@{code UNSETTLED_STATE}),
-   * only existence and configuration of the terminus ({@code CONFIGURATION}), or no state at all ({@code NONE}).
-   *
-   * @return Indicates what state of the terminus is retained durably, or {@code null} if not set
-   */
-  public String getTerminusDurability() {
-    return terminusDurability;
-  }
-
-  /**
-   * Sets what state of the terminus is retained durably. Accepted values are: state of durable messages (@{code UNSETTLED_STATE}),
-   * only existence and configuration of the terminus ({@code CONFIGURATION}), or no state at all ({@code NONE}).
-   *
-   * @param terminusDurability the state, or {@code null}
-   * @return the options
-   */
-  public AmqpReceiverOptions setTerminusDurability(String terminusDurability) {
-    this.terminusDurability = terminusDurability;
-    return this;
-  }
-
-  /**
-   * Gets the policy that determines when the expiry timer of a terminus starts counting down from the timeout value.
-   * Values can be:
-   * <ul>
-   * <li>{@code null} - Not set</li>
-   * <li>{@code link-detach} - The expiry timer starts when terminus is detached.</li>
-   * <li>{@code session-end} - The expiry timer starts when the most recently associated session is ended.</li>
-   * <li>{@code connection-close} - The expiry timer starts when most recently associated connection is closed.</li>
-   * <li>{@code never} - The terminus never expires.</li>
-   * </ul>
-   *
-   * @return the terminus expiry policy
-   */
-  public String getTerminusExpiryPolicy() {
-    return terminusExpiryPolicy;
-  }
-
-  /**
-   * Sets the policy that determines when the expiry timer of a terminus starts counting down from the timeout value.
-   * Values can be:
-   * <ul>
-   * <li>{@code null} - Not set</li>
-   * <li>{@code link-detach} - The expiry timer starts when terminus is detached.</li>
-   * <li>{@code session-end} - The expiry timer starts when the most recently associated session is ended.</li>
-   * <li>{@code connection-close} - The expiry timer starts when most recently associated connection is closed.</li>
-   * <li>{@code never} - The terminus never expires.</li>
-   * </ul>
-   *
-   * @param terminusExpiryPolicy the policy
-   * @return the options
-   */
-  public AmqpReceiverOptions setTerminusExpiryPolicy(String terminusExpiryPolicy) {
-    this.terminusExpiryPolicy = terminusExpiryPolicy;
     return this;
   }
 

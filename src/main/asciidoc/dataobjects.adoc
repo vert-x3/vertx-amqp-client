@@ -188,21 +188,6 @@ Sets the max buffered messages. This message can be used to configure the initia
 |[[qos]]`@qos`|`String`|+++
 Sets the local QOS config.
 +++
-|[[terminusDurability]]`@terminusDurability`|`String`|+++
-Sets what state of the terminus is retained durably. Accepted values are: state of durable messages (@{code UNSETTLED_STATE}),
- only existence and configuration of the terminus (<code>CONFIGURATION</code>), or no state at all (<code>NONE</code>).
-+++
-|[[terminusExpiryPolicy]]`@terminusExpiryPolicy`|`String`|+++
-Sets the policy that determines when the expiry timer of a terminus starts counting down from the timeout value.
- Values can be:
- <ul>
- <li><code>null</code> - Not set</li>
- <li><code>link-detach</code> - The expiry timer starts when terminus is detached.</li>
- <li><code>session-end</code> - The expiry timer starts when the most recently associated session is ended.</li>
- <li><code>connection-close</code> - The expiry timer starts when most recently associated connection is closed.</li>
- <li><code>never</code> - The terminus never expires.</li>
- </ul>
-+++
 |===
 
 [[AmqpSenderOptions]]
