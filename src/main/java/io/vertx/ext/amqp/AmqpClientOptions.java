@@ -40,7 +40,6 @@ public class AmqpClientOptions extends ProtonClientOptions {
   private String password = getFromSysOrEnv("amqp-client-password");
 
   private String containerId = UUID.randomUUID().toString();
-  private int maxBufferedMessages;
 
   public AmqpClientOptions() {
     super();
@@ -58,7 +57,6 @@ public class AmqpClientOptions extends ProtonClientOptions {
     this.username = other.username;
     this.port = other.port;
     this.containerId = other.containerId;
-    this.maxBufferedMessages = other.maxBufferedMessages;
   }
 
   public JsonObject toJson() {

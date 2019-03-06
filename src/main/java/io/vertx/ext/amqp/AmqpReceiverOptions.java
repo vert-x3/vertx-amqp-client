@@ -49,6 +49,7 @@ public class AmqpReceiverOptions {
     setDurable(other.isDurable());
     setTerminusDurability(other.getTerminusDurability());
     setTerminusExpiryPolicy(other.getTerminusExpiryPolicy());
+    setMaxBufferedMessages(other.maxBufferedMessages);
   }
 
   public AmqpReceiverOptions(JsonObject json) {
