@@ -28,7 +28,6 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 public class AmqpConnectionImpl implements AmqpConnection {
 
@@ -290,7 +289,11 @@ public class AmqpConnectionImpl implements AmqpConnection {
     org.apache.qpid.proton.amqp.messaging.Source source = (org.apache.qpid.proton.amqp.messaging.Source) receiver
       .getSource();
 
-    source.setCapabilities(receiverOptions.getCapabilities().stream().map(Symbol::valueOf).toArray(Symbol[]::new));
+    List<String> capabilities = receiverOptions.getCapabilities();
+    if (! capabilities.isEmpty()) {
+      source.setCapabilities(capabilities.stream().map(Symbol::valueOf).toArray(Symbol[]::new));
+    }
+
     if (receiverOptions.isDurable()) {
       source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
       source.setDurable(TerminusDurability.UNSETTLED_STATE);
@@ -304,8 +307,9 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
-  public AmqpConnection createSender(String address, AmqpSenderOptions options, Handler<AsyncResult<AmqpSender>> completionHandler) {
-    if (address == null  && ! options.isDynamic()) {
+  public AmqpConnection createSender(String address, AmqpSenderOptions options,
+    Handler<AsyncResult<AmqpSender>> completionHandler) {
+    if (address == null && !options.isDynamic()) {
       throw new IllegalArgumentException("Address must be set if the link is not dynamic");
     }
 
@@ -350,8 +354,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     });
     return this;
   }
-
-
 
   ProtonConnection unwrap() {
     return this.connection.get();
