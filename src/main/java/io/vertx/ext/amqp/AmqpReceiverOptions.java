@@ -115,7 +115,7 @@ public class AmqpReceiverOptions {
 
 
   /**
-   * Gets the list of offered capabilities for the source.
+   * Gets the list of desired capabilities for the source.
    * A registry of commonly defined source capabilities and their meanings is maintained at
    * <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
    *
@@ -129,7 +129,7 @@ public class AmqpReceiverOptions {
   }
 
   /**
-   * Sets the list of offered capabilities
+   * Sets the list of desired capabilities
    * A registry of commonly defined source capabilities and their meanings is maintained at
    * <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
    *
@@ -142,7 +142,7 @@ public class AmqpReceiverOptions {
   }
 
   /**
-   * Adds a offered capability.
+   * Adds a desired capability.
    * A registry of commonly defined source capabilities and their meanings is maintained at
    * <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
    *
