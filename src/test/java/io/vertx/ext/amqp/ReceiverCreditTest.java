@@ -93,13 +93,15 @@ public class ReceiverCreditTest extends BareTestBase {
 
     AmqpClientOptions options = new AmqpClientOptions().setHost("localhost")
       .setPort(server.actualPort());
-    if (setMaxBuffered) {
-      options.setMaxBufferedMessages(initialCredit);
-    }
+
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().createReceiver(testName, done -> {
+      AmqpReceiverOptions recOpts = new AmqpReceiverOptions();
+      if (setMaxBuffered) {
+        recOpts.setMaxBufferedMessages(initialCredit);
+      }
+      res.result().createReceiver(testName, recOpts, done -> {
         context.assertTrue(done.succeeded());
         AmqpReceiver consumer = done.result();
         consumer.handler(msg -> {

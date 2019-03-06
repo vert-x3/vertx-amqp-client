@@ -57,9 +57,6 @@ Sets the host.
 
 +++
 |[[logActivity]]`@logActivity`|`Boolean`|-
-|[[maxBufferedMessages]]`@maxBufferedMessages`|`Number (int)`|+++
-Sets the max buffered messages. This message can be used to configure the initial credit of a receiver.
-+++
 |[[maxFrameSize]]`@maxFrameSize`|`Number (int)`|+++
 
 +++
@@ -162,12 +159,12 @@ Sets the username.
 |===
 ^|Name | Type ^| Description
 |[[capabilities]]`@capabilities`|`Array of String`|+++
-Sets the list of offered capabilities
+Sets the list of desired capabilities
  A registry of commonly defined source capabilities and their meanings is maintained at
  <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
 +++
 |[[capabilitys]]`@capabilitys`|`Array of String`|+++
-Adds a offered capability.
+Adds a desired capability.
  A registry of commonly defined source capabilities and their meanings is maintained at
  <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
 +++
@@ -180,11 +177,14 @@ Sets the durability.
 |[[dynamic]]`@dynamic`|`Boolean`|+++
 Sets whether the link remote terminus to be used should indicate it is
  'dynamic', requesting the peer names it with a dynamic address.
-
+ <p>
  The address provided by the peer can then be inspected using the
  link method on the link received once opened.
 +++
 |[[linkName]]`@linkName`|`String`|-
+|[[maxBufferedMessages]]`@maxBufferedMessages`|`Number (int)`|+++
+Sets the max buffered messages. This message can be used to configure the initial credit of a receiver.
++++
 |[[qos]]`@qos`|`String`|+++
 Sets the local QOS config.
 +++

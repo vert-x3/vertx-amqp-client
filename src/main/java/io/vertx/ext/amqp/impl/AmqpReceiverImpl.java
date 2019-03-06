@@ -25,6 +25,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.amqp.AmqpConnection;
 import io.vertx.ext.amqp.AmqpMessage;
 import io.vertx.ext.amqp.AmqpReceiver;
+import io.vertx.ext.amqp.AmqpReceiverOptions;
 import io.vertx.proton.ProtonReceiver;
 
 import java.util.ArrayDeque;
@@ -58,23 +59,23 @@ public class AmqpReceiverImpl implements AmqpReceiver {
    *
    * @param address           the address, may be {@code null} for dynamic links
    * @param connection        the connection
+   * @param options           the receiver options, must not be {@code null}
    * @param receiver          the underlying proton createReceiver
-   * @param durable           whether the link is durable
    * @param handler           the handler
    * @param completionHandler called when the createReceiver is opened
    */
   AmqpReceiverImpl(
     String address,
     AmqpConnectionImpl connection,
-    boolean durable,
+    AmqpReceiverOptions options,
     ProtonReceiver receiver,
     Handler<AmqpMessage> handler, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     this.address = address;
     this.receiver = receiver;
     this.connection = connection;
     this.handler = handler;
-    this.durable = durable;
-    int maxBufferedMessages = connection.options().getMaxBufferedMessages();
+    this.durable = options.isDurable();
+    int maxBufferedMessages = options.getMaxBufferedMessages();
     if (maxBufferedMessages > 0) {
       this.initialCredit = maxBufferedMessages;
     }

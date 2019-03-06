@@ -126,11 +126,6 @@ public class AmqpClientOptionsConverter {
             obj.setLogActivity((Boolean)member.getValue());
           }
           break;
-        case "maxBufferedMessages":
-          if (member.getValue() instanceof Number) {
-            obj.setMaxBufferedMessages(((Number)member.getValue()).intValue());
-          }
-          break;
         case "maxFrameSize":
           if (member.getValue() instanceof Number) {
             obj.setMaxFrameSize(((Number)member.getValue()).intValue());
@@ -345,7 +340,6 @@ public class AmqpClientOptionsConverter {
       json.put("localAddress", obj.getLocalAddress());
     }
     json.put("logActivity", obj.getLogActivity());
-    json.put("maxBufferedMessages", obj.getMaxBufferedMessages());
     json.put("maxFrameSize", obj.getMaxFrameSize());
     if (obj.getMetricsName() != null) {
       json.put("metricsName", obj.getMetricsName());

@@ -538,22 +538,4 @@ public class AmqpClientOptions extends ProtonClientOptions {
       return Integer.parseInt(s);
     }
   }
-
-  /**
-   * Sets the max buffered messages. This message can be used to configure the initial credit of a receiver.
-   *
-   * @param maxBufferSize the max buffered size, must be positive. If not set, default credit is used.
-   * @return the current {@link AmqpClientOptions} instance.
-   */
-  public AmqpClientOptions setMaxBufferedMessages(int maxBufferSize) {
-    this.maxBufferedMessages = maxBufferSize;
-    return this;
-  }
-
-  /**
-   * @return the max buffered messages
-   */
-  public int getMaxBufferedMessages() {
-    return this.maxBufferedMessages;
-  }
 }

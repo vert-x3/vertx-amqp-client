@@ -84,6 +84,19 @@ public interface AmqpConnection {
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
+   * Creates a receiver used to consumer messages from the given address.
+   *
+   * @param address           The source address to attach the consumer to.
+   * @param receiverOptions   The options for this receiver.
+   * @param completionHandler The handler called with the receiver, once opened. Note that the {@code messageHandler}
+   *                          can be called before the {@code completionHandler} if messages are awaiting delivery.
+   * @return the connection.
+   */
+  @Fluent
+  AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
+    Handler<AsyncResult<AmqpReceiver>> completionHandler);
+
+  /**
    * Creates a dynamic receiver. The address is provided by the broker and is available in the {@code completionHandler},
    * using the {@link AmqpReceiver#address()} method. this method is useful for request-reply to generate a unique
    * reply address.

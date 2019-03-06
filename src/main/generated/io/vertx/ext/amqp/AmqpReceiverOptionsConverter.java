@@ -62,6 +62,11 @@ public class AmqpReceiverOptionsConverter {
             obj.setLinkName((String)member.getValue());
           }
           break;
+        case "maxBufferedMessages":
+          if (member.getValue() instanceof Number) {
+            obj.setMaxBufferedMessages(((Number)member.getValue()).intValue());
+          }
+          break;
         case "qos":
           if (member.getValue() instanceof String) {
             obj.setQos((String)member.getValue());
@@ -96,6 +101,7 @@ public class AmqpReceiverOptionsConverter {
     if (obj.getLinkName() != null) {
       json.put("linkName", obj.getLinkName());
     }
+    json.put("maxBufferedMessages", obj.getMaxBufferedMessages());
     if (obj.getQos() != null) {
       json.put("qos", obj.getQos());
     }

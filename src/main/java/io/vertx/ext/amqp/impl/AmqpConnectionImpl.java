@@ -251,7 +251,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
       ProtonReceiver receiver = connection.get().createReceiver(address, opts);
       new AmqpReceiverImpl(
         Objects.requireNonNull(address, "The address must not be `null`"),
-        this, false, receiver, null,
+        this, new AmqpReceiverOptions(), receiver, null,
         Objects.requireNonNull(completionHandler, "The completion handler must not be `null`"));
     });
     return this;
@@ -259,14 +259,19 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   @Override
   public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
+    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+    return createReceiver(address, receiverOptions, null, completionHandler);
+  }
+
+  @Override
+  public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AmqpMessage> handler,
     Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
-    if (receiverOptions != null) {
-      opts
-        .setDynamic(receiverOptions.isDynamic())
-        .setLinkName(receiverOptions.getLinkName());
-    }
+    AmqpReceiverOptions recOpts = receiverOptions == null ? new AmqpReceiverOptions() : receiverOptions;
+    opts
+      .setDynamic(recOpts.isDynamic())
+      .setLinkName(recOpts.getLinkName());
 
     runWithTrampoline(v -> {
       ProtonReceiver receiver = connection.get().createReceiver(address, opts);
@@ -276,11 +281,10 @@ public class AmqpConnectionImpl implements AmqpConnection {
           receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
         }
 
-        configureTheSource(receiverOptions, receiver);
+        configureTheSource(recOpts, receiver);
       }
 
-      new AmqpReceiverImpl(address, this, receiverOptions != null && receiverOptions.isDurable(),
-        receiver, handler, completionHandler);
+      new AmqpReceiverImpl(address, this, recOpts, receiver, handler, completionHandler);
     });
     return this;
   }
@@ -290,7 +294,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
       .getSource();
 
     List<String> capabilities = receiverOptions.getCapabilities();
-    if (! capabilities.isEmpty()) {
+    if (!capabilities.isEmpty()) {
       source.setCapabilities(capabilities.stream().map(Symbol::valueOf).toArray(Symbol[]::new));
     }
 

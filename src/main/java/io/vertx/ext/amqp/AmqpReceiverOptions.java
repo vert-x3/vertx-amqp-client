@@ -17,7 +17,6 @@ package io.vertx.ext.amqp;
 
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
-import io.vertx.proton.ProtonLink;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +35,7 @@ public class AmqpReceiverOptions {
   private boolean durable;
   private String terminusDurability;
   private String terminusExpiryPolicy;
+  private int maxBufferedMessages;
 
   public AmqpReceiverOptions() {
 
@@ -74,7 +74,7 @@ public class AmqpReceiverOptions {
   /**
    * Sets whether the link remote terminus to be used should indicate it is
    * 'dynamic', requesting the peer names it with a dynamic address.
-   *
+   * <p>
    * The address provided by the peer can then be inspected using the
    * {@link AmqpReceiver#address()} method on the {@link AmqpReceiver} received once opened.
    *
@@ -112,7 +112,6 @@ public class AmqpReceiverOptions {
     this.qos = qos;
     return this;
   }
-
 
   /**
    * Gets the list of desired capabilities for the source.
@@ -235,5 +234,23 @@ public class AmqpReceiverOptions {
   public AmqpReceiverOptions setTerminusExpiryPolicy(String terminusExpiryPolicy) {
     this.terminusExpiryPolicy = terminusExpiryPolicy;
     return this;
+  }
+
+  /**
+   * Sets the max buffered messages. This message can be used to configure the initial credit of a receiver.
+   *
+   * @param maxBufferSize the max buffered size, must be positive. If not set, default credit is used.
+   * @return the current {@link AmqpReceiverOptions} instance.
+   */
+  public AmqpReceiverOptions setMaxBufferedMessages(int maxBufferSize) {
+    this.maxBufferedMessages = maxBufferSize;
+    return this;
+  }
+
+  /**
+   * @return the max buffered messages
+   */
+  public int getMaxBufferedMessages() {
+    return this.maxBufferedMessages;
   }
 }
