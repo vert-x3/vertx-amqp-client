@@ -23,6 +23,8 @@ import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Source;
 import org.junit.Test;
 
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ReceiverCreditTest extends BareTestBase {
@@ -114,5 +116,53 @@ public class ReceiverCreditTest extends BareTestBase {
     } finally {
       server.close();
     }
+  }
+
+  @Test(timeout = 20000)
+  public void testDynamicReceiver(TestContext context) throws ExecutionException, InterruptedException {
+    String address = UUID.randomUUID().toString();
+    Async serverLinkOpenAsync = context.async();
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(result -> serverConnection.open());
+
+      serverConnection.sessionOpenHandler(ProtonSession::open);
+
+      serverConnection.senderOpenHandler(serverReceiver -> {
+        serverReceiver.closeHandler(res -> serverReceiver.close());
+
+        // Verify the remote terminus details used were as expected
+        context.assertNotNull(serverReceiver.getRemoteSource(), "source should not be null");
+        org.apache.qpid.proton.amqp.messaging.Source remoteSource =
+          (org.apache.qpid.proton.amqp.messaging.Source) serverReceiver.getRemoteSource();
+        context.assertTrue(remoteSource.getDynamic(), "expected dynamic source to be requested");
+        context.assertNull(remoteSource.getAddress(), "expected no source address to be set");
+
+        // Set the local terminus details
+        org.apache.qpid.proton.amqp.messaging.Source target =
+          (org.apache.qpid.proton.amqp.messaging.Source) remoteSource.copy();
+        target.setAddress(address);
+        serverReceiver.setSource(target);
+
+        serverReceiver.open();
+
+        serverLinkOpenAsync.complete();
+      });
+    });
+
+    client = AmqpClient.create(vertx,
+      new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
+
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+
+      res.result().createDynamicReceiver(rec -> {
+        context.assertTrue(rec.succeeded());
+        context.assertNotNull(rec.result().address());
+      });
+    });
+
+    serverLinkOpenAsync.awaitSuccess();
+
   }
 }

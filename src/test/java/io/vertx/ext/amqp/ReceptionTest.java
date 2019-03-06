@@ -218,7 +218,8 @@ public class ReceptionTest extends ArtemisTestBase {
     asyncShutdown.awaitSuccess();
   }
 
-  private void sendAFewMessages(TestContext context, String testName, String sentContent, Async asyncSendMsg, int msgCount) {
+  private void sendAFewMessages(TestContext context, String testName, String sentContent, Async asyncSendMsg,
+    int msgCount) {
     ProtonClient proton = ProtonClient.create(vertx);
     proton.connect(host, port, username, password, res -> {
       context.assertTrue(res.succeeded());
@@ -306,6 +307,5 @@ public class ReceptionTest extends ArtemisTestBase {
     asyncSendMsg.awaitSuccess();
     asyncShutdown.awaitSuccess();
   }
-
 
 }
