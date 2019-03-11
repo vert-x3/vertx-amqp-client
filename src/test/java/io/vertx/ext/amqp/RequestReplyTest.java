@@ -41,7 +41,8 @@ public class RequestReplyTest extends ArtemisTestBase {
   }
 
   @After
-  public void after(TestContext tc) {
+  public void tearDown(TestContext tc) throws InterruptedException {
+    super.tearDown();
     vertx.close(tc.asyncAssertSuccess());
   }
 

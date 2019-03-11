@@ -350,7 +350,7 @@ public class SenderTest extends BareTestBase {
       serverConnection.openHandler(result -> serverConnection.open());
 
       serverConnection.sessionOpenHandler(ProtonSession::open);
-
+      serverConnection.closeHandler(x -> serverConnection.close());
       serverConnection.receiverOpenHandler(serverReceiver -> {
         serverReceiver.closeHandler(res -> serverReceiver.close());
 

@@ -129,7 +129,7 @@ public class ReceiverCreditTest extends BareTestBase {
       serverConnection.openHandler(result -> serverConnection.open());
 
       serverConnection.sessionOpenHandler(ProtonSession::open);
-
+      serverConnection.closeHandler(conn -> serverConnection.close());
       serverConnection.senderOpenHandler(serverReceiver -> {
         serverReceiver.closeHandler(res -> serverReceiver.close());
 
@@ -160,7 +160,7 @@ public class ReceiverCreditTest extends BareTestBase {
 
       res.result().createDynamicReceiver(rec -> {
         context.assertTrue(rec.succeeded());
-        context.assertNotNull(rec.result().address());
+        context.assertEquals(rec.result().address(), address);
       });
     });
 

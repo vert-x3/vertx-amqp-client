@@ -15,7 +15,6 @@
  */
 package io.vertx.ext.amqp;
 
-import io.vertx.ext.amqp.impl.AmqpConnectionImpl;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.proton.ProtonHelper;

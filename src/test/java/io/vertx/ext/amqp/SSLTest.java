@@ -160,6 +160,7 @@ public class SSLTest extends BareTestBase {
   private void handleStartupProcess(ProtonConnection serverConnection, TestContext context) {
     // Expect a connection
     serverConnection.openHandler(serverSender -> serverConnection.open());
+    serverConnection.closeHandler(x -> serverConnection.close());
 
     // Expect a session to open, when the sender/receiver is created by the client startup
     serverConnection.sessionOpenHandler(ProtonSession::open);
