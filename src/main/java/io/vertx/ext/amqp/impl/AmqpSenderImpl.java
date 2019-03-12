@@ -42,33 +42,9 @@ public class AmqpSenderImpl implements AmqpSender {
     this.sender = sender;
     this.connection = connection;
 
-    sender.closeHandler(res -> {
-      Handler<Throwable> eh = null;
-      boolean closeSender = false;
-
-      synchronized (AmqpSenderImpl.this) {
-        if (!closed && exceptionHandler != null) {
-          eh = exceptionHandler;
-        }
-
-        if (!closed) {
-          closed = true;
-          closeSender = true;
-        }
-      }
-
-      if (eh != null) {
-        if (res.succeeded()) {
-          eh.handle(new Exception("Sender closed remotely"));
-        } else {
-          eh.handle(new Exception("Sender closed remotely with error", res.cause()));
-        }
-      }
-
-      if (closeSender) {
-        sender.close();
-      }
-    });
+    sender
+      .closeHandler(res -> onClose(sender, res, false))
+      .detachHandler(res -> onClose(sender, res, true));
 
     sender.sendQueueDrainHandler(s -> {
       Handler<Void> dh = null;
@@ -97,6 +73,38 @@ public class AmqpSenderImpl implements AmqpSender {
     });
 
     sender.open();
+  }
+
+  private void onClose(ProtonSender sender, AsyncResult<ProtonSender> res, boolean detach) {
+    Handler<Throwable> eh = null;
+    boolean closeSender = false;
+
+    synchronized (AmqpSenderImpl.this) {
+      if (!closed && exceptionHandler != null) {
+        eh = exceptionHandler;
+      }
+
+      if (!closed) {
+        closed = true;
+        closeSender = true;
+      }
+    }
+
+    if (eh != null) {
+      if (res.succeeded()) {
+        eh.handle(new Exception("Sender closed remotely"));
+      } else {
+        eh.handle(new Exception("Sender closed remotely with error", res.cause()));
+      }
+    }
+
+    if (closeSender) {
+      if (detach) {
+        sender.detach();
+      } else {
+        sender.close();
+      }
+    }
   }
 
   /**

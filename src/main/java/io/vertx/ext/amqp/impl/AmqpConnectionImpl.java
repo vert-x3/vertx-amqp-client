@@ -343,11 +343,22 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   @Override
   public AmqpConnection closeHandler(Handler<AmqpConnection> remoteCloseHandler) {
-    this.connection.get().closeHandler(pc -> {
+    Handler<AsyncResult<Void>> handler = pc -> {
       if (remoteCloseHandler != null) {
-        runWithTrampoline(x -> remoteCloseHandler.handle(this));
+        runWithTrampoline(x -> {
+          try {
+            onDisconnect();
+          } finally {
+            onEnd();
+            closed.set(true);
+          }
+          remoteCloseHandler.handle(this);
+        });
       }
-    });
+    };
+    this.connection.get()
+      .closeHandler(x -> handler.handle(x.mapEmpty()))
+      .disconnectHandler(x -> handler.handle(Future.succeededFuture()));
     return this;
   }
 

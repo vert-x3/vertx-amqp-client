@@ -92,42 +92,10 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     }
 
     this.receiver.closeHandler(res -> {
-      Handler<Void> endh = null;
-      Handler<Throwable> exh = null;
-      boolean closeReceiver = false;
-
-      synchronized (AmqpReceiverImpl.this) {
-        if (!closed && endHandler != null) {
-          endh = endHandler;
-        } else if (!closed && exceptionHandler != null) {
-          exh = exceptionHandler;
-        }
-
-        if (!closed) {
-          closed = true;
-          closeReceiver = true;
-        }
-      }
-
-      if (endh != null) {
-        endh.handle(null);
-      } else if (exh != null) {
-        if (res.succeeded()) {
-          exh.handle(new VertxException("Consumer closed remotely"));
-        } else {
-          exh.handle(new VertxException("Consumer closed remotely with error", res.cause()));
-        }
-      } else {
-        if (res.succeeded()) {
-          LOGGER.warn("Consumer for address " + address + " unexpectedly closed remotely");
-        } else {
-          LOGGER.warn("Consumer for address " + address + " unexpectedly closed remotely with error", res.cause());
-        }
-      }
-
-      if (closeReceiver) {
-        receiver.close();
-      }
+      onClose(address, receiver, res, false);
+    })
+    .detachHandler(res -> {
+      onClose(address, receiver, res, true);
     });
 
     this.receiver
@@ -146,6 +114,49 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       });
 
     this.receiver.open();
+  }
+
+  private void onClose(String address, ProtonReceiver receiver, AsyncResult<ProtonReceiver> res, boolean detach) {
+    Handler<Void> endh = null;
+    Handler<Throwable> exh = null;
+    boolean closeReceiver = false;
+
+    synchronized (AmqpReceiverImpl.this) {
+      if (!closed && endHandler != null) {
+        endh = endHandler;
+      } else if (!closed && exceptionHandler != null) {
+        exh = exceptionHandler;
+      }
+
+      if (!closed) {
+        closed = true;
+        closeReceiver = true;
+      }
+    }
+
+    if (endh != null) {
+      endh.handle(null);
+    } else if (exh != null) {
+      if (res.succeeded()) {
+        exh.handle(new VertxException("Consumer closed remotely"));
+      } else {
+        exh.handle(new VertxException("Consumer closed remotely with error", res.cause()));
+      }
+    } else {
+      if (res.succeeded()) {
+        LOGGER.warn("Consumer for address " + address + " unexpectedly closed remotely");
+      } else {
+        LOGGER.warn("Consumer for address " + address + " unexpectedly closed remotely with error", res.cause());
+      }
+    }
+
+    if (closeReceiver) {
+      if (detach) {
+        receiver.detach();
+      } else {
+        receiver.close();
+      }
+    }
   }
 
   private void handleMessage(AmqpMessageImpl message) {
