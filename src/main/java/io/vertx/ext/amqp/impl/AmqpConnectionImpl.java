@@ -24,7 +24,10 @@ import org.apache.qpid.proton.amqp.messaging.TerminusDurability;
 import org.apache.qpid.proton.amqp.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.proton.engine.EndpointState;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -83,12 +86,16 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
             this.connection.get()
               .setProperties(map)
-              .disconnectHandler(ignored -> onEnd())
+              .disconnectHandler(ignored -> {
+                onEnd();
+                closed.set(true);
+              })
               .closeHandler(ignored -> {
                 try {
                   onDisconnect();
                 } finally {
                   onEnd();
+                  closed.set(true);
                 }
               })
               .openHandler(conn -> {
@@ -176,9 +183,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
   @Override
   public AmqpConnection close(Handler<AsyncResult<Void>> done) {
     context.runOnContext(ignored -> {
-      List<Future> futures = new ArrayList<>();
       ProtonConnection actualConnection = connection.get();
-      if (actualConnection == null || (closed.get() && (!isLocalOpen() && !isRemoteOpen()))) {
+      if (actualConnection == null || closed.get() || (!isLocalOpen() && !isRemoteOpen())) {
         if (done != null) {
           done.handle(Future.succeededFuture());
         }
@@ -186,39 +192,25 @@ public class AmqpConnectionImpl implements AmqpConnection {
       } else {
         closed.set(true);
       }
-      synchronized (this) {
-        senders.forEach(sender -> {
-          Future<Void> future = Future.future();
-          futures.add(future);
-          sender.close(future);
-        });
-        receivers.forEach(receiver -> {
-          Future<Void> future = Future.future();
-          futures.add(future);
-          receiver.close(future);
-        });
-      }
 
-      CompositeFuture.join(futures).setHandler(result -> {
-        Future<Void> future = Future.future();
-        if (done != null) {
-          future.setHandler(done);
+      Future<Void> future = Future.future();
+      if (done != null) {
+        future.setHandler(done);
+      }
+      if (actualConnection.isDisconnected()) {
+        future.complete();
+      } else {
+        try {
+          actualConnection
+            .closeHandler(cleanup -> {
+              onDisconnect();
+              future.handle(cleanup.mapEmpty());
+            })
+            .close();
+        } catch (Exception e) {
+          future.fail(e);
         }
-        if (actualConnection.isDisconnected()) {
-          future.complete();
-        } else {
-          try {
-            actualConnection
-              .closeHandler(cleanup -> {
-                onDisconnect();
-                future.handle(cleanup.mapEmpty());
-              })
-              .close();
-          } catch (Exception e) {
-            future.fail(e);
-          }
-        }
-      });
+      }
     });
 
     return this;

@@ -29,6 +29,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ReceiverCreditTest extends BareTestBase {
 
+  private MockServer server;
+
+  @Override
+  public void tearDown() throws InterruptedException {
+    super.tearDown();
+    if (server != null) {
+      server.close();
+    }
+  }
+
   @Test(timeout = 20000)
   public void testInitialCredit(TestContext context) throws Exception {
     doConsumerInitialCreditTestImpl(context, false, 1000);
@@ -40,7 +50,7 @@ public class ReceiverCreditTest extends BareTestBase {
   }
 
   private void doConsumerInitialCreditTestImpl(TestContext context, boolean setMaxBuffered,
-                                               int initialCredit) throws Exception {
+    int initialCredit) throws Exception {
     final String testName = name.getMethodName();
     final String sentContent = "myMessageContent-" + testName;
 
@@ -50,7 +60,7 @@ public class ReceiverCreditTest extends BareTestBase {
 
     // === Server handling ====
 
-    MockServer server = new MockServer(vertx, serverConnection -> {
+    server = new MockServer(vertx, serverConnection -> {
       // Expect a connection
       serverConnection.openHandler(serverSender -> {
         // Add a close handler
@@ -112,12 +122,8 @@ public class ReceiverCreditTest extends BareTestBase {
       });
     });
 
-    try {
-      asyncInitialCredit.awaitSuccess();
-      asyncCompletion.awaitSuccess();
-    } finally {
-      server.close();
-    }
+    asyncInitialCredit.awaitSuccess();
+    asyncCompletion.awaitSuccess();
   }
 
   @Test(timeout = 20000)
@@ -125,7 +131,7 @@ public class ReceiverCreditTest extends BareTestBase {
     String address = UUID.randomUUID().toString();
     Async serverLinkOpenAsync = context.async();
 
-    MockServer server = new MockServer(vertx, serverConnection -> {
+    server = new MockServer(vertx, serverConnection -> {
       serverConnection.openHandler(result -> serverConnection.open());
 
       serverConnection.sessionOpenHandler(ProtonSession::open);
