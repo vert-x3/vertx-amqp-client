@@ -385,12 +385,12 @@ public class CloseTest extends BareTestBase {
   }
 
   @Test(timeout = 20000)
-  public void testConnectionClosedRemotelyCallsEndHandler(TestContext context) throws Exception {
+  public void testConnectionClosedRemotelyCallsExceptionHandler(TestContext context) throws Exception {
     doConnectionEndHandlerCalledTestImpl(context, false);
   }
 
   @Test(timeout = 20000)
-  public void testConnectionDisconnectedCallsEndHandler(TestContext context) throws Exception {
+  public void testConnectionDisconnectedCallsExceptionHandler(TestContext context) throws Exception {
     doConnectionEndHandlerCalledTestImpl(context, true);
   }
 
@@ -423,7 +423,7 @@ public class CloseTest extends BareTestBase {
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().endHandler(
+      res.result().exceptionHandler(
         x -> {
           asyncEndHandlerCalled.complete();
 

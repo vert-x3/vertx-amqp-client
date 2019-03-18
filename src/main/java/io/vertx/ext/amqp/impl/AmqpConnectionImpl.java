@@ -44,11 +44,10 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   private final List<AmqpSender> senders = new CopyOnWriteArrayList<>();
   private final List<AmqpReceiver> receivers = new CopyOnWriteArrayList<>();
-
   /**
-   * Access protected by monitor lock.
+   * The exception handler, protected by the monitor lock.
    */
-  private Handler<Void> endHandler;
+  private Handler<Throwable> exceptionHandler;
 
   AmqpConnectionImpl(Context context, AmqpClientImpl client, AmqpClientOptions options,
     ProtonClient proton, Handler<AsyncResult<AmqpConnection>> connectionHandler) {
@@ -87,14 +86,17 @@ public class AmqpConnectionImpl implements AmqpConnection {
             this.connection.get()
               .setProperties(map)
               .disconnectHandler(ignored -> {
-                onEnd();
-                closed.set(true);
-              })
-              .closeHandler(ignored -> {
                 try {
                   onDisconnect();
                 } finally {
-                  onEnd();
+                  closed.set(true);
+                }
+              })
+              .closeHandler(x -> {
+                // Not expected closing, consider it failed
+                try {
+                  onDisconnect();
+                } finally {
                   closed.set(true);
                 }
               })
@@ -120,28 +122,30 @@ public class AmqpConnectionImpl implements AmqpConnection {
    * Must be called on context.
    */
   private void onDisconnect() {
+    Handler<Throwable> h = null;
     ProtonConnection conn = connection.getAndSet(null);
-    if (conn != null) {
-      try {
-        conn.close();
-      } finally {
-        conn.disconnect();
+    synchronized (this) {
+      if (exceptionHandler != null) {
+        h = exceptionHandler;
       }
+    }
+
+    if (h != null) {
+      String message = getErrorMessage(conn);
+      h.handle(new Exception(message));
     }
   }
 
-  /**
-   * Must be called on context.
-   */
-  private void onEnd() {
-    Handler<Void> handler;
-    synchronized (this) {
-      handler = endHandler;
-      endHandler = null;
+  private String getErrorMessage(ProtonConnection conn) {
+    String message = "Connection disconnected";
+    if (conn.getCondition() != null && conn.getCondition().getDescription() != null) {
+      message += " - " + conn.getCondition().getDescription();
+    } else if (
+      conn.getRemoteCondition() != null
+        && conn.getRemoteCondition().getDescription() != null) {
+      message += " - " + conn.getRemoteCondition().getDescription();
     }
-    if (handler != null && !closed.get()) {
-      handler.handle(null);
-    }
+    return message;
   }
 
   void runOnContext(Handler<Void> action) {
@@ -175,8 +179,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
-  public synchronized AmqpConnection endHandler(Handler<Void> endHandler) {
-    this.endHandler = endHandler;
+  public synchronized AmqpConnection exceptionHandler(Handler<Throwable> handler) {
+    this.exceptionHandler = handler;
     return this;
   }
 
@@ -202,9 +206,17 @@ public class AmqpConnectionImpl implements AmqpConnection {
       } else {
         try {
           actualConnection
-            .closeHandler(cleanup -> {
-              onDisconnect();
-              future.handle(cleanup.mapEmpty());
+            .disconnectHandler(con -> {
+              future.tryFail(getErrorMessage(con));
+              closed.set(true);
+            })
+            .closeHandler(res -> {
+              closed.set(true);
+              if (res.succeeded()) {
+                future.tryComplete();
+              } else {
+                future.tryFail(res.cause());
+              }
             })
             .close();
         } catch (Exception e) {
@@ -338,27 +350,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
       ProtonSender sender = connection.get().createSender(null);
       AmqpSenderImpl.create(sender, this, completionHandler);
     });
-    return this;
-  }
-
-  @Override
-  public AmqpConnection closeHandler(Handler<AmqpConnection> remoteCloseHandler) {
-    Handler<AsyncResult<Void>> handler = pc -> {
-      if (remoteCloseHandler != null) {
-        runWithTrampoline(x -> {
-          try {
-            onDisconnect();
-          } finally {
-            onEnd();
-            closed.set(true);
-          }
-          remoteCloseHandler.handle(this);
-        });
-      }
-    };
-    this.connection.get()
-      .closeHandler(x -> handler.handle(x.mapEmpty()))
-      .disconnectHandler(x -> handler.handle(Future.succeededFuture()));
     return this;
   }
 

@@ -29,10 +29,10 @@ public interface AmqpConnection {
   /**
    * Registers a handler called on disconnection.
    *
-   * @param endHandler the end handler.
+   * @param handler the exception handler.
    */
   @Fluent
-  AmqpConnection endHandler(Handler<Void> endHandler);
+  AmqpConnection exceptionHandler(Handler<Throwable> handler);
 
   /**
    * Closes the AMQP connection, i.e. allows the Close frame to be emitted.
@@ -146,14 +146,5 @@ public interface AmqpConnection {
    */
   @Fluent
   AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler);
-
-  /**
-   * Sets a handler for when an AMQP {@code Close} frame is received from the remote peer.
-   *
-   * @param remoteCloseHandler the handler
-   * @return the connection
-   */
-  @Fluent
-  AmqpConnection closeHandler(Handler<AmqpConnection> remoteCloseHandler);
 
 }
