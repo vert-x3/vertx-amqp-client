@@ -138,12 +138,14 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   private String getErrorMessage(ProtonConnection conn) {
     String message = "Connection disconnected";
-    if (conn.getCondition() != null && conn.getCondition().getDescription() != null) {
-      message += " - " + conn.getCondition().getDescription();
-    } else if (
-      conn.getRemoteCondition() != null
-        && conn.getRemoteCondition().getDescription() != null) {
-      message += " - " + conn.getRemoteCondition().getDescription();
+    if (conn != null) {
+      if (conn.getCondition() != null && conn.getCondition().getDescription() != null) {
+        message += " - " + conn.getCondition().getDescription();
+      } else if (
+        conn.getRemoteCondition() != null
+          && conn.getRemoteCondition().getDescription() != null) {
+        message += " - " + conn.getRemoteCondition().getDescription();
+      }
     }
     return message;
   }
