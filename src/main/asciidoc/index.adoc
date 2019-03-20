@@ -1,0 +1,188 @@
+= Vert.x AMQP Client
+:toc: left
+
+The Vert.x AMQP Client allows interacting with https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol[AMQP 1.0]
+ brokers and routers. It allows:
+
+* Connecting to an AMQP broker or router - SASL and TLS connections are supported
+* Consuming message from a queue or a topic
+* Sending messages to a queue or a topic
+* Checking acknowledgement for sent messages
+
+The AMQP 1.0 protocol support durable subscriptions, persistence, security, conversations, sophisticated routing... More
+ details on the protocol can be found on the https://www.amqp.org/[AMQP homepage].
+
+The Vert.x AMQP client is based on Vert.x Proton. If you need fine-grain control, we recommend using
+https://github.com/vert-x3/vertx-proton[Vert.x Proton] directly.
+
+== Using Vert.x AMQP Client
+
+To use the Vert.x AMQP Client, add the following dependency to the _dependencies_ section of your build
+descriptor:
+
+* Maven (in your `pom.xml`):
+
+[source,xml,subs="+attributes"]
+----
+<dependency>
+  <groupId>io.vertx</groupId>
+  <artifactId>vertx-amqp-client</artifactId>
+  <version>${maven.version}</version>
+</dependency>
+----
+
+* Gradle (in your `build.gradle` file):
+
+[source,groovy,subs="+attributes"]
+----
+compile 'io.vertx:vertx-amqp-client:${maven.version}'
+----
+
+== Creating an AMQP client
+
+Once you have added the client to your _CLASSPATH_, you can instantiate an {@link io.vertx.ext.amqp.AmqpClient} as
+follows:
+
+[source,$lang]
+----
+{@link examples.AmqpClientExamples#creation(io.vertx.core.Vertx)}
+----
+
+There are two methods to instantiate an {@link io.vertx.ext.amqp.AmqpClient}. You can pass an explicit Vert.x instance.
+Use this approach if you are in a Vert.x application, or a Vert.x verticle. Otherwise you can omit passing the Vert.x
+instance, an internal instance is created and closed when the client is closed.
+
+To instantiate an {@link io.vertx.ext.amqp.AmqpClient}, you need to pass {@link io.vertx.ext.amqp.AmqpClientOptions}.
+These options contains the location of the broker or router, credentials... Many aspect of the AMQP client can be
+configured using these options. Note that you can also use these options to configure the underlying Proton client.
+
+Host, port, username and password can also be configured from system properties or environment variables:
+
+* Host: system property: `amqp-client-host`, environment variable: AMQP_CLIENT_HOST` (mandatory)
+* Port: system property: `amqp-client-port`, environment variable: AMQP_CLIENT_PORT` (defaults to 5672)
+* Username: system property: `amqp-client-username`, environment variable: AMQP_CLIENT_USERNAME`
+* Password: system property: `amqp-client-password`, environment variable: AMQP_CLIENT_PASSWORD`
+
+== Establishing a connection
+
+Once you have created a client, you need to explicitly connect to the remote server. This is done using the `connect`
+method:
+
+[source,$lang]
+----
+{@link examples.AmqpClientExamples#connect(io.vertx.ext.amqp.AmqpClient)}
+----
+
+Once established or failed, the handler is called. Note that the connection is used to create receivers and senders.
+
+== Creating a receiver
+
+A receiver is used to receive messages. The AMQP receiver can be retrieved using one of the two following methods:
+
+[source,$lang]
+----
+{@link examples.AmqpClientExamples#receiver1(io.vertx.ext.amqp.AmqpConnection)}
+
+{@link examples.AmqpClientExamples#receiver2(io.vertx.ext.amqp.AmqpConnection)}
+----
+
+The main difference between these 2 approaches is _when_ the message handler is attached to the receiver. In the first
+approach, the handler is immediately passed and will start receiving messages immediately. In the second approach, the
+handler is attached manually after the completion. This give you more control and let you attach other handlers.
+
+The receiver passed in the completion handler can be used as a stream. So, you can pause and resume the reception of
+messages. The back-pressure protocol is implemented using
+http://docs.oasis-open.org/amqp/core/v1.0/csprd02/amqp-core-transport-v1.0-csprd02.html#doc-flow-control[AMQP credits].
+
+The received messages are instances of {@link io.vertx.ext.amqp.AmqpMessage}. Instances are immutable, and provide
+access to most of the metadata supported by AMQP. See the list of
+http://docs.oasis-open.org/amqp/core/v1.0/amqp-core-messaging-v1.0.html#type-properties[properties] as references. Note
+that retrieving a JSON object or a JSON array from the body required the value to be passed as AMQP _Data_.
+
+You can also create a receiver directly from the client:
+
+[source, $lang]
+----
+{@link examples.AmqpClientExamples#receiverFromClient(io.vertx.ext.amqp.AmqpClient)}
+----
+
+In this case, a connection is established automatically. You can retrieve it using
+{@link io.vertx.ext.amqp.AmqpReceiver#connection()}
+
+
+== Creating a sender
+
+Senders allows publishing messages to queues and topics. You retrieve a sender as follows:
+
+[source,$lang]
+----
+{@link examples.AmqpClientExamples#sender(io.vertx.ext.amqp.AmqpConnection)}
+----
+
+Once you have retrieved an AMQP sender, you can create messages. Because {@link io.vertx.ext.amqp.AmqpMessage} are
+immutable, the creation uses the {@link io.vertx.ext.amqp.AmqpMessageBuilder} builder class. The following snippet
+provides a few examples:
+
+[source,$lang]
+----
+{@link examples.AmqpClientExamples#messages()}
+----
+
+Once you have the sender and created the message, you can send it using:
+
+* {@link io.vertx.ext.amqp.AmqpSender#send(io.vertx.ext.amqp.AmqpMessage)} - send the message
+* {@link io.vertx.ext.amqp.AmqpSender#sendWithAck(io.vertx.ext.amqp.AmqpMessage, io.vertx.core.Handler)} - send the message and monitor its acknowledgment
+
+The simplest way to send a message is the following:
+
+[source,$lang]
+----
+{@link examples.AmqpClientExamples#send(io.vertx.ext.amqp.AmqpSender)}
+----
+
+When sending a message, you can monitor the acknowledgment:
+
+[source,$lang]
+----
+{@link examples.AmqpClientExamples#sendWithAck(io.vertx.ext.amqp.AmqpSender)}
+----
+
+Note that message is considered as acknowledged if the delivery is set fo `ACCEPTED`. Other delivery values are considered
+as non-acknowledged (details can be found in the passed cause).
+
+The {@link io.vertx.ext.amqp.AmqpSender} can be used as a write stream. The flow control is implemented using AMQP credits.
+
+You can also create a sender directly from the client:
+
+[source, $lang]
+----
+{@link examples.AmqpClientExamples#senderFromClient(io.vertx.ext.amqp.AmqpClient)}
+----
+
+In this case, a connection is established automatically. You can retrieve it using
+{@link io.vertx.ext.amqp.AmqpSender#connection()}.
+
+== Implementing request-reply
+
+To implement a request-reply behavior, you could use a dynamic receiver and an anonymous sender. A dynamic receiver is not
+associated with an address by the user, but the address it provided by the broker. Anonymous senders are also not associated to
+ a specific address, requiring all messages to contain an address.
+
+The following snippet shows how request-reply can be implemented:
+
+[source, $lang]
+----
+{@link examples.AmqpClientExamples#requestReply(io.vertx.ext.amqp.AmqpConnection)}
+----
+
+To reply to a message, send it to the address specified into the `reply-to`. Also, it's a good practice to indicate the
+`correlation id` using the `message id`, so the reply receiver can associate the response to the request.
+
+== Closing the client
+
+Once you are done with a connection receiver or sender, you should close them using the `close` method. Closing a
+connection, closes all created receivers and senders.
+
+Once the client is not used anymore, you must also close it. It would close all opened connections, and as a consequences
+receivers and senders.
+

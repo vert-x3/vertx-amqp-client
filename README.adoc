@@ -1,4 +1,17 @@
 = Vert.x AMQP Client
 
-Prototype of a new AMQP client for Eclipse Vert.x
+image:https://travis-ci.org/vert-x3/vertx-amqp-client.svg?branch=master["Build Status", link="https://travis-ci.org/vert-x3/vertx-amqp-client"]
+
+== Build
+
+=== Requirements
+
+* Docker (used with Test Container)
+* Java 8
+* Maven
+
+
+=== Instructions
+
+`mvn clean install`
 
