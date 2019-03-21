@@ -2,8 +2,7 @@ sudo: required
 language: java
 branches:
   only:
-  # TODO Change it to master once the default branch will be master.
-  - initial-work
+  - master
   - /^\d+\.\d+$/
 jobs:
   include:
