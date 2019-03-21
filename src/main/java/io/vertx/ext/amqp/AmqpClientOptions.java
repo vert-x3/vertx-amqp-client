@@ -233,15 +233,6 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
-   * @see ProtonClientOptions#setUsePooledBuffers(boolean)
-   */
-  @Override
-  public AmqpClientOptions setUsePooledBuffers(boolean usePooledBuffers) {
-    super.setUsePooledBuffers(usePooledBuffers);
-    return this;
-  }
-
-  /**
    * @see ProtonClientOptions#setIdleTimeout(int)
    */
   @Override

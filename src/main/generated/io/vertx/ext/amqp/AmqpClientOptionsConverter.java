@@ -266,11 +266,6 @@ public class AmqpClientOptionsConverter {
             obj.setUseAlpn((Boolean)member.getValue());
           }
           break;
-        case "usePooledBuffers":
-          if (member.getValue() instanceof Boolean) {
-            obj.setUsePooledBuffers((Boolean)member.getValue());
-          }
-          break;
         case "username":
           if (member.getValue() instanceof String) {
             obj.setUsername((String)member.getValue());
@@ -388,7 +383,6 @@ public class AmqpClientOptionsConverter {
       json.put("trustStoreOptions", obj.getTrustStoreOptions().toJson());
     }
     json.put("useAlpn", obj.isUseAlpn());
-    json.put("usePooledBuffers", obj.isUsePooledBuffers());
     if (obj.getUsername() != null) {
       json.put("username", obj.getUsername());
     }

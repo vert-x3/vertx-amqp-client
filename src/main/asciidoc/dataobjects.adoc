@@ -135,9 +135,6 @@ Sets the port.
 
 +++
 |[[useAlpn]]`@useAlpn`|`Boolean`|-
-|[[usePooledBuffers]]`@usePooledBuffers`|`Boolean`|+++
-
-+++
 |[[username]]`@username`|`String`|+++
 Sets the username.
 +++
