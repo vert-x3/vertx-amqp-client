@@ -4,6 +4,11 @@ branches:
   only:
   - master
   - /^\d+\.\d+$/
+cache:
+  directories:
+    - $HOME/.m2
+before_cache:
+  - rm -rf $HOME/.m2/repository/io/vertx/
 jobs:
   include:
     - stage: test
@@ -21,6 +26,6 @@ jobs:
 notifications:
   email:
     recipients:
-      - secure: "1Y7/KpXJYFmMffrat+eezpX/LfIFfjYXwHLOhdOmEPKZHsnOTMZ9DlPPcX8SW23vRXA0o17JZYK19uVsaWyUoD8b/pazSOeClFJYqLzYcKPgfc1Fd3ebAyTnDhjgDeYzj+2zgB3F+KYMkHu2zfFx0lLCEVAScjMJZ1sGyzL8dFbIGjMy8nwVBaSIkWFv2DOe6EcSbeTHxfYueCMWIrhsD/GdrZ6VN9YkS7IzAquXLe+zJ4LDnjVWCItsHpEdzqIkHTjbRKDAurmZheUicixOqtCiuLKpc3RLYGT2VfietNhMN8O6jpaOy7hDJM1deDLRp9s6A0COfe00ne0qdha5NdVkB0m+Hop1kFpV3RnSvUWCq3IL4WgL3rpBpG3Hkegchrjx5dqomuj44NxpXxNMV0JLz0hvRu8+jtcAGeg95jwbn5MtR/tivQSo2qdFhNz4XVEkHQf3Ae/TqeSkAyFgY58JVkiwReo//bbJtPMTMzTymoDowdhh6mAYdpFNiiAektBTV7YMVpAAT14lIx1xv0UCjwmjf3vf33wtPHiYD9mJicv6ubcMaESpVEvrX+0Vy+TJVQU9vQPJVh4H/Isd8jR88OsdLgDfpWQo5Tf6sKElRlvq8f7k3uo24QVoP94kKAuJpDALGSLygjtUOGs57AyTFuCdNIkqPNMdA+RgJtY="
+      - secure: "VJ1fxK9pl75OoW5mNAIT2Za44Vf2Cf7xmrc3N5eJN8fJkQ1SOVEDPjuxNfc4UqLWFp5cizhaT/fynKDzpvA+LJsH4taRXM3H2QHxbG9BpJkOB3SDedFzvO64S7eebBbVvSaPQP/M1yWmfY1gMZKiXyRc0C8IDwhhsRhRzPOwCq4WhClX+sAaURmxhjIhOoLKE7qWUKBpaqM3d6MWUZfAT0mmjX/XXE5bjTtizXjOK7IY8tKnoTST6gkg/JLDKXmwbxBm5GEy0YGhN8sDz2r2sQzMyy432mNF9VVFDb0sqIBnnUAZQ2z+bJ0JL1AhxtuOG5P0wtn/9ebFo0Jp4L6da5cOJqSw2zfjeSuxiUeoVgFVZSL763iLP8yT8HdheeZmwDC1eLjWi1s5pc+S3pqQn81KSn5/T7/oCBw369n88Vu3wfyZBmEqE9qAYIE00uIrRRbSqmvJEzsP2y3ninSpdT9+VjFk2AQVWqYonvfnbX+hc0iCKJdTOG08kL8H0yvl6lr12pr3aOke6GyNRyDdtpD98Y+FUus4VmD8nLNfxnNmTyV9iI7Oh71DXIo30nhPR09Qy6V4QNfpowuZ3ktC+suw/hoo4oDjnMSiUWtfa2mU0dHTUppjutQIZC0DL7L3T1sGHMzd4T4pkqszpz5ScXoWdmnZrqdji1K7XRYduOk="
     on_success: always
     on_failure: always
