@@ -161,6 +161,7 @@
             <exclude>LICENSE.txt</exclude>
             <exclude>.travis*</exclude>
             <exclude>.editorconfig</exclude>
+            <exclude>pom.xml</exclude>
             <exclude>**/*.txt</exclude>
           </excludes>
         </configuration>
