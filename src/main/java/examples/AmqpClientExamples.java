@@ -15,9 +15,9 @@
  */
 package examples;
 
+import io.vertx.amqp.*;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.amqp.*;
 
 public class AmqpClientExamples {
 
