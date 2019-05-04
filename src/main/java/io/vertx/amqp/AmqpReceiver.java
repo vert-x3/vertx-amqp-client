@@ -16,6 +16,7 @@
 package io.vertx.amqp;
 
 import io.vertx.codegen.annotations.CacheReturn;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -27,6 +28,24 @@ import io.vertx.core.streams.ReadStream;
  */
 @VertxGen
 public interface AmqpReceiver extends ReadStream<AmqpMessage> {
+
+  @Override
+  AmqpReceiver exceptionHandler(Handler<Throwable> handler);
+
+  @Override
+  AmqpReceiver handler(@Nullable Handler<AmqpMessage> handler);
+
+  @Override
+  AmqpReceiver pause();
+
+  @Override
+  AmqpReceiver resume();
+
+  @Override
+  AmqpReceiver fetch(long amount);
+
+  @Override
+  AmqpReceiver endHandler(@Nullable Handler<Void> endHandler);
 
   /**
    * The listened address.
