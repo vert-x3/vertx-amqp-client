@@ -204,6 +204,11 @@ public class AmqpSenderImpl implements AmqpSender {
   }
 
   @Override
+  public AmqpSender write(AmqpMessage data, Handler<AsyncResult<Void>> handler) {
+    return doSend(data, handler);
+  }
+
+  @Override
   public AmqpSender setWriteQueueMaxSize(int maxSize) {
     // No-op, available sending credit is controlled by recipient peer in AMQP 1.0.
     return this;
@@ -212,6 +217,11 @@ public class AmqpSenderImpl implements AmqpSender {
   @Override
   public void end() {
     close(null);
+  }
+
+  @Override
+  public void end(Handler<AsyncResult<Void>> handler) {
+    close(handler);
   }
 
   @Override
