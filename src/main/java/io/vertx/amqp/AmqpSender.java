@@ -27,6 +27,18 @@ import io.vertx.core.streams.WriteStream;
 @VertxGen
 public interface AmqpSender extends WriteStream<AmqpMessage> {
 
+  @Override
+  AmqpSender write(AmqpMessage data);
+
+  @Override
+  AmqpSender write(AmqpMessage data, Handler<AsyncResult<Void>> handler);
+
+  @Override
+  AmqpSender exceptionHandler(Handler<Throwable> handler);
+
+  @Override
+  AmqpSender setWriteQueueMaxSize(int maxSize);
+
   /**
    * Sends an AMQP message. The destination the configured sender address or the address configured in the message.
    *
