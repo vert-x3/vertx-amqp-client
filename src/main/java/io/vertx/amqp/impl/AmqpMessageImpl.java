@@ -229,7 +229,7 @@ public class AmqpMessageImpl implements AmqpMessage {
 
   @Override
   public String contentEncoding() {
-    return message.getContentType();
+    return message.getContentEncoding();
   }
 
   @Override
