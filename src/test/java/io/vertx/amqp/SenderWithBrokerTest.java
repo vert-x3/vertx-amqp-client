@@ -114,6 +114,31 @@ public class SenderWithBrokerTest extends ArtemisTestBase {
 
   @Test
   @Repeat(10)
+  public void testThatMessagedAreSentWithASenderCreatedFromClientWithOptions() {
+    String queue = UUID.randomUUID().toString();
+    List<String> list = new CopyOnWriteArrayList<>();
+    usage.consumeStrings(queue, 2, 1, TimeUnit.MINUTES, null, list::add);
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost(host)
+      .setPort(port)
+      .setUsername(username)
+      .setPassword(password)
+    ).createSender(queue, new AmqpSenderOptions().setDynamic(false), done -> {
+      if (done.failed()) {
+        done.cause().printStackTrace();
+      } else {
+        // Sending a few messages
+        done.result().send(AmqpMessage.create().withBody("hello").address(queue).build());
+        done.result().send(AmqpMessage.create().withBody("world").address(queue).build());
+      }
+    });
+
+    await().until(() -> list.size() == 2);
+    assertThat(list).containsExactly("hello", "world");
+  }
+
+  @Test
+  @Repeat(10)
   public void testThatMessagedAreAcknowledged() {
     String queue = UUID.randomUUID().toString();
     List<String> list = new CopyOnWriteArrayList<>();
