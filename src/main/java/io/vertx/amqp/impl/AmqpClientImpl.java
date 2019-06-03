@@ -128,6 +128,18 @@ public class AmqpClientImpl implements AmqpClient {
     });
   }
 
+  @Override
+  public AmqpClient createSender(String address, AmqpSenderOptions options,
+                                 Handler<AsyncResult<AmqpSender>> completionHandler) {
+    return connect(res -> {
+      if (res.failed()) {
+        completionHandler.handle(res.mapEmpty());
+      } else {
+        res.result().createSender(address, options, completionHandler);
+      }
+    });
+  }
+
   synchronized void register(AmqpConnectionImpl connection) {
     connections.add(connection);
   }
