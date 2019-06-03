@@ -159,12 +159,14 @@ public class AmqpReceiverImpl implements AmqpReceiver {
 
   private void handleMessage(AmqpMessageImpl message) {
     boolean schedule = false;
+    boolean dispatchNow = false;
 
     synchronized (this) {
       if (handler != null && demand > 0L && buffered.isEmpty()) {
         if (demand != Long.MAX_VALUE) {
           demand--;
         }
+        dispatchNow = true;
       } else if (handler != null && demand > 0L) {
         // Buffered messages present, deliver the oldest of those instead
         buffered.add(message);
@@ -180,11 +182,12 @@ public class AmqpReceiverImpl implements AmqpReceiver {
         buffered.add(message);
       }
     }
-    deliverMessageToHandler(message);
 
     // schedule next delivery if appropriate, after earlier delivery to allow chance to pause etc.
     if (schedule) {
       scheduleBufferedMessageDelivery();
+    } else if (dispatchNow) {
+      deliverMessageToHandler(message);
     }
   }
 
