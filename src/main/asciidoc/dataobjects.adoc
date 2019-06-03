@@ -110,6 +110,8 @@ Sets the port.
 |[[ssl]]`@ssl`|`Boolean`|+++
 
 +++
+|[[sslHandshakeTimeout]]`@sslHandshakeTimeout`|`Number (long)`|-
+|[[sslHandshakeTimeoutUnit]]`@sslHandshakeTimeoutUnit`|`link:enums.html#TimeUnit[TimeUnit]`|-
 |[[tcpCork]]`@tcpCork`|`Boolean`|+++
 
 +++
