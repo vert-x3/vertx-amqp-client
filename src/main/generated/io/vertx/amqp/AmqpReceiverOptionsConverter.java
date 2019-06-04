@@ -29,6 +29,11 @@ public class AmqpReceiverOptionsConverter {
   public static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, AmqpReceiverOptions obj) {
     for (java.util.Map.Entry<String, Object> member : json) {
       switch (member.getKey()) {
+        case "autoAcknowledgement":
+          if (member.getValue() instanceof Boolean) {
+            obj.setAutoAcknowledgement((Boolean)member.getValue());
+          }
+          break;
         case "capabilities":
           if (member.getValue() instanceof JsonArray) {
             java.util.ArrayList<java.lang.String> list =  new java.util.ArrayList<>();
@@ -81,6 +86,7 @@ public class AmqpReceiverOptionsConverter {
   }
 
   public static void toJson(AmqpReceiverOptions obj, java.util.Map<String, Object> json) {
+    json.put("autoAcknowledgement", obj.isAutoAcknowledgement());
     if (obj.getCapabilities() != null) {
       JsonArray array = new JsonArray();
       obj.getCapabilities().forEach(item -> array.add(item));

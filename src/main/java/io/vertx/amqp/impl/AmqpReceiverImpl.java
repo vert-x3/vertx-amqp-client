@@ -38,6 +38,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
   private final AmqpConnectionImpl connection;
   private final Queue<AmqpMessageImpl> buffered = new ArrayDeque<>();
   private final boolean durable;
+  private final boolean autoAck;
   /**
    * The address.
    * Not final because for dynamic link the address is set when the createReceiver is opened.
@@ -73,6 +74,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     this.connection = connection;
     this.handler = handler;
     this.durable = options.isDurable();
+    this.autoAck = options.isAutoAcknowledgement();
     int maxBufferedMessages = options.getMaxBufferedMessages();
     if (maxBufferedMessages > 0) {
       this.initialCredit = maxBufferedMessages;
@@ -262,8 +264,18 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       h = handler;
     }
 
-    h.handle(message);
-    message.delivered();
+    try {
+      h.handle(message);
+      if (autoAck) {
+        message.accepted();
+      }
+    } catch (Exception e) {
+      LOGGER.error("Unable to dispatch the AMQP message", e);
+      if (autoAck) {
+        message.rejected();
+      }
+    }
+
     this.receiver.flow(1);
   }
 
