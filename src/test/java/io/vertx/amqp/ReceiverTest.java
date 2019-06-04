@@ -54,6 +54,66 @@ public class ReceiverTest extends ArtemisTestBase {
   }
 
   @Test
+  public void testReceptionWithAcceptedMessages() {
+    AtomicInteger count = new AtomicInteger();
+    String queue = UUID.randomUUID().toString();
+    List<String> list = new CopyOnWriteArrayList<>();
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost(host)
+      .setPort(port)
+      .setUsername(username)
+      .setPassword(password)
+    ).connect(connection -> {
+        connection.result().createReceiver(queue,
+          new AmqpReceiverOptions().setAutoAcknowledgement(false),
+          message -> {
+            list.add(message.bodyAsString());
+            message.accepted();
+          },
+          done ->
+            CompletableFuture.runAsync(() -> {
+              usage.produceStrings(queue, 10, null,
+                () -> Integer.toString(count.getAndIncrement()));
+            })
+        );
+      }
+    );
+
+    await().until(() -> list.size() == 10);
+    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+  }
+
+  @Test
+  public void testReceptionWithRejectedMessages() {
+    AtomicInteger count = new AtomicInteger();
+    String queue = UUID.randomUUID().toString();
+    List<String> list = new CopyOnWriteArrayList<>();
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost(host)
+      .setPort(port)
+      .setUsername(username)
+      .setPassword(password)
+    ).connect(connection -> {
+        connection.result().createReceiver(queue,
+          new AmqpReceiverOptions().setAutoAcknowledgement(false),
+          message -> {
+            list.add(message.bodyAsString());
+            message.rejected();
+          },
+          done ->
+            CompletableFuture.runAsync(() -> {
+              usage.produceStrings(queue, 10, null,
+                () -> Integer.toString(count.getAndIncrement()));
+            })
+        );
+      }
+    );
+
+    await().until(() -> list.size() == 10);
+    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+  }
+
+  @Test
   public void testReceptionWithoutConnection() {
     AtomicInteger count = new AtomicInteger();
     String queue = UUID.randomUUID().toString();

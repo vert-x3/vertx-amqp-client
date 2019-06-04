@@ -281,9 +281,33 @@ public class AmqpMessageImpl implements AmqpMessage {
     return message;
   }
 
-  public void delivered() {
+  @Override
+  public AmqpMessage accepted() {
     if (delivery != null) {
       ProtonHelper.accepted(delivery, true);
+    } else {
+      throw new IllegalStateException("The message is not a received message");
     }
+    return this;
+  }
+
+  @Override
+  public AmqpMessage rejected() {
+    if (delivery != null) {
+      ProtonHelper.rejected(delivery, true);
+    } else {
+      throw new IllegalStateException("The message is not a received message");
+    }
+    return this;
+  }
+
+  @Override
+  public AmqpMessage released() {
+    if (delivery != null) {
+      ProtonHelper.released(delivery, true);
+    } else {
+      throw new IllegalStateException("The message is not a received message");
+    }
+    return this;
   }
 }
