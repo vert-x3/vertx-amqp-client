@@ -109,6 +109,12 @@ You can also create a receiver directly from the client:
 In this case, a connection is established automatically. You can retrieve it using
 {@link io.vertx.amqp.AmqpReceiver#connection()}
 
+By default the messages are automatically acknowledged. You can disable this behavior using
+{@link io.vertx.amqp.AmqpReceiverOptions#setAutoAcknowledgement(boolean)}. Then, you need to explicitly acknowledge
+the incoming messages using:
+* {@link io.vertx.amqp.AmqpMessage#accepted()}
+* {@link io.vertx.amqp.AmqpMessage#rejected()}
+* {@link io.vertx.amqp.AmqpMessage#released()}
 
 == Creating a sender
 

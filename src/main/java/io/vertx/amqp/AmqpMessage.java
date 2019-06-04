@@ -16,6 +16,7 @@
 package io.vertx.amqp;
 
 import io.vertx.amqp.impl.AmqpMessageBuilderImpl;
+import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.buffer.Buffer;
@@ -241,6 +242,37 @@ public interface AmqpMessage {
 
   @GenIgnore
   Message unwrap();
+
+  /**
+   * When receiving a message, and when auto-acknowledgement is disabled, this method is used to acknowledge
+   * the incoming message. It marks the message as delivered with the {@code accepted} status.
+   *
+   * @return the current {@link AmqpMessage} object
+   * @throws IllegalStateException is the current message is not a received message.
+   */
+  @Fluent
+  AmqpMessage accepted();
+
+  /**
+   * When receiving a message, and when auto-acknowledgement is disabled, this method is used to acknowledge
+   * the incoming message as {@code rejected}.
+   *
+   * @return the current {@link AmqpMessage} object
+   * @throws IllegalStateException is the current message is not a received message.
+   */
+  @Fluent
+  AmqpMessage rejected();
+
+  /**
+   * When receiving a message, and when auto-acknowledgement is disabled, this method is used to acknowledge
+   * the incoming message as {@code released}.
+   *
+   * @return the current {@link AmqpMessage} object
+   * @throws IllegalStateException is the current message is not a received message.
+   */
+  @Fluent
+  AmqpMessage released();
+
 
   //TODO What type should we use for delivery annotations and message annotations
 

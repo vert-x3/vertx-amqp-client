@@ -34,6 +34,7 @@ public class AmqpReceiverOptions {
   private List<String> capabilities = new ArrayList<>();
   private boolean durable;
   private int maxBufferedMessages;
+  private boolean autoAcknowledgement = true;
 
   public AmqpReceiverOptions() {
 
@@ -190,6 +191,27 @@ public class AmqpReceiverOptions {
    */
   public AmqpReceiverOptions setMaxBufferedMessages(int maxBufferSize) {
     this.maxBufferedMessages = maxBufferSize;
+    return this;
+  }
+
+  /**
+   * @return {@code true} if the auto-acknowledgement is enabled, {@code false} otherwise.
+   */
+  public boolean isAutoAcknowledgement() {
+    return autoAcknowledgement;
+  }
+
+  /**
+   * Sets the auto-acknowledgement.
+   * When enabled (default), the messages are automatically acknowledged. If set to {@code false}, the messages must
+   * be acknowledged explicitly using {@link AmqpMessage#accepted()}, {@link AmqpMessage#released()} and
+   * {@link AmqpMessage#rejected()}.
+   *
+   * @param auto whether or not the auto-acknowledgement should be enabled.
+   * @return the current {@link AmqpReceiverOptions} instance.
+   */
+  public AmqpReceiverOptions setAutoAcknowledgement(boolean auto) {
+    this.autoAcknowledgement = auto;
     return this;
   }
 }
