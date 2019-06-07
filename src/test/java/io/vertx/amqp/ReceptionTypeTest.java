@@ -118,7 +118,7 @@ public class ReceptionTypeTest extends ArtemisTestBase {
       });
     });
     await().until(() -> list.size() == 4);
-    assertThat(list).containsExactly(true, false, true, false);
+    assertThat(list).containsExactlyInAnyOrder(true, false, true, false);
   }
 
   @Test
