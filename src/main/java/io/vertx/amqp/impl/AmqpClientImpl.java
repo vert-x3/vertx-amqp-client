@@ -56,9 +56,9 @@ public class AmqpClientImpl implements AmqpClient {
   public void close(Handler<AsyncResult<Void>> handler) {
     List<Future> actions = new ArrayList<>();
     for (AmqpConnection connection : connections) {
-      Future<Void> future = Future.future();
+      Promise<Void> future = Promise.promise();
       connection.close(future);
-      actions.add(future);
+      actions.add(future.future());
     }
 
     CompositeFuture.join(actions).setHandler(done -> {

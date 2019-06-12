@@ -199,9 +199,9 @@ public class AmqpConnectionImpl implements AmqpConnection {
         closed.set(true);
       }
 
-      Future<Void> future = Future.future();
+      Promise<Void> future = Promise.promise();
       if (done != null) {
-        future.setHandler(done);
+        future.future().setHandler(done);
       }
       if (actualConnection.isDisconnected()) {
         future.complete();

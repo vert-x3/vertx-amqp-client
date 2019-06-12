@@ -16,6 +16,7 @@
 package io.vertx.amqp;
 
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -47,7 +48,7 @@ public class RequestReplyTest extends ArtemisTestBase {
   }
 
   private Future<Void> prepareReceiver(TestContext context, AmqpConnection connection, String address) {
-    Future<Void> future = Future.future();
+    Promise<Void> future = Promise.promise();
     connection.createReceiver(address, msg -> {
       context.assertEquals("what's your name?", msg.bodyAsString());
       context.assertTrue(msg.replyTo() != null);
@@ -55,11 +56,11 @@ public class RequestReplyTest extends ArtemisTestBase {
       connection.createAnonymousSender(sender ->
         sender.result().send(AmqpMessage.create().address(msg.replyTo()).withBody("my name is Neo").build()));
     }, d -> future.handle(d.mapEmpty()));
-    return future;
+    return future.future();
   }
 
   private Future<AmqpReceiver> prepareReplyReceiver(TestContext context, AmqpConnection connection, Async done) {
-    Future<AmqpReceiver> future = Future.future();
+    Promise<AmqpReceiver> future = Promise.promise();
     connection.createDynamicReceiver(rec -> {
       context.assertTrue(rec.succeeded());
       AmqpReceiver receiver = rec.result();
@@ -70,12 +71,12 @@ public class RequestReplyTest extends ArtemisTestBase {
       });
       future.complete(receiver);
     });
-    return future;
+    return future.future();
   }
 
   private Future<Void> getSenderAndSendInitialMessage(TestContext context, AmqpConnection connection, String address,
     String replyAddress) {
-    Future<Void> future = Future.future();
+    Promise<Void> future = Promise.promise();
     connection.createSender(address, ar -> {
       context.assertTrue(ar.succeeded());
       ar.result().sendWithAck(
@@ -85,7 +86,7 @@ public class RequestReplyTest extends ArtemisTestBase {
         ack -> future.handle(ack.mapEmpty())
       );
     });
-    return future;
+    return future.future();
   }
 
   @Test
