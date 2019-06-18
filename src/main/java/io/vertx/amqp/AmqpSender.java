@@ -28,12 +28,6 @@ import io.vertx.core.streams.WriteStream;
 public interface AmqpSender extends WriteStream<AmqpMessage> {
 
   @Override
-  AmqpSender write(AmqpMessage data);
-
-  @Override
-  AmqpSender write(AmqpMessage data, Handler<AsyncResult<Void>> handler);
-
-  @Override
   AmqpSender exceptionHandler(Handler<Throwable> handler);
 
   @Override

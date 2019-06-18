@@ -21,6 +21,7 @@ import io.vertx.amqp.AmqpSender;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.proton.ProtonDelivery;
@@ -198,24 +199,21 @@ public class AmqpSenderImpl implements AmqpSender {
   }
 
   @Override
-  public AmqpSender write(AmqpMessage data) {
-    return doSend(data, null);
+  public Future<Void> write(AmqpMessage data) {
+    Promise<Void> promise = Promise.promise();
+    doSend(data, promise);
+    return promise.future();
   }
 
   @Override
-  public AmqpSender write(AmqpMessage data, Handler<AsyncResult<Void>> handler) {
-    return doSend(data, handler);
+  public void write(AmqpMessage data, Handler<AsyncResult<Void>> handler) {
+    doSend(data, handler);
   }
 
   @Override
   public AmqpSender setWriteQueueMaxSize(int maxSize) {
     // No-op, available sending credit is controlled by recipient peer in AMQP 1.0.
     return this;
-  }
-
-  @Override
-  public void end() {
-    close(null);
   }
 
   @Override
