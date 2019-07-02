@@ -207,7 +207,8 @@ public interface AmqpMessage {
   /**
    * @return the map contained in the body. The value must be passed as AMQP value.
    */
-  @GenIgnore <K, V> Map<K, V> bodyAsMap();
+  @GenIgnore
+  <K, V> Map<K, V> bodyAsMap();
 
   /**
    * @return the JSON object contained in the body. The value must be passed as AMQP data.
@@ -272,6 +273,18 @@ public interface AmqpMessage {
    */
   @Fluent
   AmqpMessage released();
+
+  /**
+   * When receiving a message,  and when auto-acknowledgement is disabled, this method is used to acknowledge
+   * the incoming message as {@code modified}.
+   *
+   * @param didItFail          pass {@code true} to increase the failed delivery count
+   * @param wasItDeliveredHere pass {@code true} to prevent the re-delivery of the message
+   * @return the current {@link AmqpMessage} object
+   * @throws IllegalStateException is the current message is not a received message.
+   */
+  @Fluent
+  AmqpMessage modified(boolean didItFail, boolean wasItDeliveredHere);
 
 
   //TODO What type should we use for delivery annotations and message annotations
