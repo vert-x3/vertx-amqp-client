@@ -310,4 +310,14 @@ public class AmqpMessageImpl implements AmqpMessage {
     }
     return this;
   }
+
+  @Override
+  public AmqpMessage modified(boolean didItFail, boolean wasItDeliveredHere) {
+    if (delivery != null) {
+      ProtonHelper.modified(delivery, true, didItFail, wasItDeliveredHere);
+    } else {
+      throw new IllegalStateException("The message is not a received message");
+    }
+    return this;
+  }
 }
