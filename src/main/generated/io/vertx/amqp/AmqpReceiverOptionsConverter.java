@@ -19,12 +19,21 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import io.vertx.core.spi.json.JsonCodec;
 
 /**
- * Converter for {@link io.vertx.amqp.AmqpReceiverOptions}.
+ * Converter and Codec for {@link io.vertx.amqp.AmqpReceiverOptions}.
  * NOTE: This class has been automatically generated from the {@link io.vertx.amqp.AmqpReceiverOptions} original class using Vert.x codegen.
  */
-public class AmqpReceiverOptionsConverter {
+public class AmqpReceiverOptionsConverter implements JsonCodec<AmqpReceiverOptions, JsonObject> {
+
+  public static final AmqpReceiverOptionsConverter INSTANCE = new AmqpReceiverOptionsConverter();
+
+  @Override public JsonObject encode(AmqpReceiverOptions value) { return (value != null) ? value.toJson() : null; }
+
+  @Override public AmqpReceiverOptions decode(JsonObject value) { return (value != null) ? new AmqpReceiverOptions(value) : null; }
+
+  @Override public Class<AmqpReceiverOptions> getTargetClass() { return AmqpReceiverOptions.class; }
 
   public static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, AmqpReceiverOptions obj) {
     for (java.util.Map.Entry<String, Object> member : json) {
