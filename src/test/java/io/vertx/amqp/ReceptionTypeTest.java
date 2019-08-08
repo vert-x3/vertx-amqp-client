@@ -15,6 +15,7 @@
  */
 package io.vertx.amqp;
 
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
@@ -34,6 +35,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -73,459 +75,197 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     vertx.close();
   }
 
-  @Test
-  public void testNull() {
-    List<Boolean> list = new CopyOnWriteArrayList<>();
+  private <T> void testType(Handler<AmqpUsage> producer, Function<AmqpMessage, T> extractor, T... expected) {
+    List<T> list = new CopyOnWriteArrayList<>();
     connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
       done.result().handler(message -> {
-        list.add(message.isBodyNull());
+        list.add(extractor.apply(message));
       });
       CompletableFuture.runAsync(() -> {
         try {
-          // Send Amqpvalue(null)
-          usage.produce(address, 1, null, () -> new AmqpValue(null));
-          // Send no body
-          usage.produce(address, 1, null, () -> null);
+          producer.handle(usage);
         } catch (Exception e) {
           e.printStackTrace();
         }
       });
     });
-    await().until(() -> list.size() == 2);
-    assertThat(list).containsExactly(true, true);
+    await().until(() -> list.size() == expected.length);
+    assertThat(list).containsExactly(expected);
+  }
+
+  @Test
+  public void testNull() {
+    testType(usage -> {
+      // Send Amqpvalue(null)
+      usage.produce(address, 1, null, () -> new AmqpValue(null));
+      // Send no body
+      usage.produce(address, 1, null, () -> null);
+    }, AmqpMessage::isBodyNull, true, true);
   }
 
   @Test
   public void testBoolean() {
-    List<Boolean> list = new CopyOnWriteArrayList<>();
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsBoolean());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> true);
-          usage.produce(address, 1, null, () -> false);
-          usage.produce(address, 1, null, () -> Boolean.TRUE);
-          usage.produce(address, 1, null, () -> Boolean.FALSE);
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 4);
-    assertThat(list).containsExactlyInAnyOrder(true, false, true, false);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> true);
+      usage.produce(address, 1, null, () -> false);
+      usage.produce(address, 1, null, () -> Boolean.TRUE);
+      usage.produce(address, 1, null, () -> Boolean.FALSE);
+    }, AmqpMessage::bodyAsBoolean, true, false, true, false);
   }
 
   @Test
   public void testByte() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     byte b = 1;
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsByte());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> b);
-          usage.produce(address, 1, null, () -> Byte.valueOf(b));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 2);
-    assertThat(list).containsExactly(b, b);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> b);
+      usage.produce(address, 1, null, () -> Byte.valueOf(b));
+    }, AmqpMessage::bodyAsByte, b, b);
   }
 
   @Test
   public void testShort() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     short s = 2;
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsShort());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> s);
-          usage.produce(address, 1, null, () -> Short.valueOf(s));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 2);
-    assertThat(list).containsExactly(s, s);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> s);
+      usage.produce(address, 1, null, () -> Short.valueOf(s));
+    }, AmqpMessage::bodyAsShort, s, s);
   }
 
   @Test
   public void testInteger() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     int i = 3;
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsInteger());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> i);
-          usage.produce(address, 1, null, () -> Integer.valueOf(i));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 2);
-    assertThat(list).containsExactly(i, i);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> i);
+      usage.produce(address, 1, null, () -> Integer.valueOf(i));
+    }, AmqpMessage::bodyAsInteger, i, i);
   }
 
   @Test
   public void testLong() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     long l = Long.MAX_VALUE - 1;
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsLong());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> l);
-          usage.produce(address, 1, null, () -> Long.valueOf(l));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 2);
-    assertThat(list).containsExactly(l, l);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> l);
+      usage.produce(address, 1, null, () -> Long.valueOf(l));
+    }, AmqpMessage::bodyAsLong, l, l);
   }
 
   @Test
   public void testFloat() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     float f = 12.34f;
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsFloat());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> f);
-          usage.produce(address, 1, null, () -> Float.valueOf(f));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 2);
-    assertThat(list).containsExactly(f, f);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> f);
+      usage.produce(address, 1, null, () -> Float.valueOf(f));
+    }, AmqpMessage::bodyAsFloat, f, f);
   }
 
   @Test
   public void testDouble() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     double d = 56.78;
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsDouble());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> d);
-          usage.produce(address, 1, null, () -> Double.valueOf(d));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 2);
-    assertThat(list).containsExactly(d, d);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> d);
+      usage.produce(address, 1, null, () -> Double.valueOf(d));
+    }, AmqpMessage::bodyAsDouble, d, d);
   }
 
   @Test
   public void testCharacter() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     char c = 'c';
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsChar());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> c);
-          usage.produce(address, 1, null, () -> Character.valueOf(c));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 2);
-    assertThat(list).containsExactly(c, c);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> c);
+      usage.produce(address, 1, null, () -> Character.valueOf(c));
+    }, AmqpMessage::bodyAsChar, c, c);
   }
 
   @Test
   public void testTimestamp() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     Instant instant = Instant.now();
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsTimestamp());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> Date.from(instant));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> Date.from(instant));
+    }, AmqpMessage::bodyAsTimestamp, instant);
   }
 
   @Test
   public void testUUID() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     UUID uuid = UUID.randomUUID();
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsUUID());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> uuid);
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
-    assertThat(list).containsExactly(uuid);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> uuid);
+    }, AmqpMessage::bodyAsUUID, uuid);
   }
 
   @Test
   public void testBinary() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     Buffer buffer = Buffer.buffer("hello !!!");
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsBinary());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> new Data(new Binary(buffer.getBytes())));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
-    assertThat(list).containsExactly(buffer);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> new Data(new Binary(buffer.getBytes())));
+    }, AmqpMessage::bodyAsBinary, buffer);
   }
 
   @Test
   public void testString() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     String string = "hello !";
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsString());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> string);
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
-    assertThat(list).containsExactly(string);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> string);
+    }, AmqpMessage::bodyAsString, string);
   }
 
   @Test
   public void testSymbol() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     String string = "my-symbol";
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsSymbol());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> Symbol.getSymbol("my-symbol"));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
-    assertThat(list).containsExactly(string);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> Symbol.getSymbol("my-symbol"));
+    }, AmqpMessage::bodyAsSymbol, string);
   }
 
   @Test
   public void testListPassedAsAmqpSequence() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     List<Object> l = new ArrayList<>();
     l.add("foo");
     l.add(1);
     l.add(true);
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsList());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> new AmqpSequence(l));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
-    assertThat(list).containsExactly(l);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> new AmqpSequence(l));
+    }, AmqpMessage::bodyAsList, l);
   }
 
   @Test
   public void testListPassedAsAmqpValue() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     List<Object> l = new ArrayList<>();
     l.add("foo");
     l.add(1);
     l.add(true);
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsList());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> new AmqpValue(l));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
-    assertThat(list).containsExactly(l);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> new AmqpValue(l));
+    }, AmqpMessage::bodyAsList, l);
   }
 
   @Test
   public void testMap() {
-    List<Map<String, String>> list = new CopyOnWriteArrayList<>();
     Map<String, String> map = new HashMap<>();
     map.put("1", "hello");
     map.put("2", "bonjour");
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsMap());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> new AmqpValue(map));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
-    assertThat(list.get(0)).containsAllEntriesOf(map);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> new AmqpValue(map));
+    }, AmqpMessage::bodyAsMap, map);
+//    assertThat(list.get(0)).containsAllEntriesOf(map);
   }
 
   @Test
   public void testJsonObject() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     JsonObject json = new JsonObject().put("data", "message").put("number", 1)
       .put("array", new JsonArray().add(1).add(2).add(3));
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsJsonObject());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> new Data(new Binary(json.toBuffer().getBytes())));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
-    assertThat(list).containsExactly(json);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> new Data(new Binary(json.toBuffer().getBytes())));
+    }, AmqpMessage::bodyAsJsonObject, json);
   }
 
   @Test
   public void testJsonArray() {
-    List<Object> list = new CopyOnWriteArrayList<>();
     JsonArray array = new JsonArray().add(1).add(2).add(3);
-    connection.createReceiver(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      }
-      done.result().handler(message -> {
-        list.add(message.bodyAsJsonArray());
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          usage.produce(address, 1, null, () -> new Data(new Binary(array.toBuffer().getBytes())));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    });
-    await().until(() -> list.size() == 1);
-    assertThat(list).containsExactly(array);
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> new Data(new Binary(array.toBuffer().getBytes())));
+    }, AmqpMessage::bodyAsJsonArray, array);
   }
 }
