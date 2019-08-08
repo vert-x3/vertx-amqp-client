@@ -18,6 +18,7 @@ package io.vertx.amqp;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.WriteStream;
 
@@ -54,12 +55,16 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
   @Fluent
   AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler);
 
+  Future<Void> sendWithAck(AmqpMessage message);
+
   /**
    * Closes the sender.
    *
    * @param handler called when the sender has been closed, must not be {@code null}
    */
   void close(Handler<AsyncResult<Void>> handler);
+
+  Future<Void> close();
 
   /**
    * @return the configured address.

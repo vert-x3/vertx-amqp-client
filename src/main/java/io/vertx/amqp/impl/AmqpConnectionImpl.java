@@ -230,6 +230,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return this;
   }
 
+  @Override
+  public Future<Void> close() {
+    Promise<Void> promise = Promise.promise();
+    close(promise);
+    return promise.future();
+  }
+
   void unregister(AmqpSender sender) {
     senders.remove(sender);
   }
@@ -244,6 +251,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
+  public Future<AmqpReceiver> createDynamicReceiver() {
+    Promise<AmqpReceiver> promise = Promise.promise();
+    createDynamicReceiver(promise);
+    return promise.future();
+  }
+
+  @Override
   public AmqpConnection createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
 
@@ -255,6 +269,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
         Objects.requireNonNull(completionHandler, "The completion handler must not be `null`"));
     });
     return this;
+  }
+
+  @Override
+  public Future<AmqpReceiver> createReceiver(String address) {
+    Promise<AmqpReceiver> promise = Promise.promise();
+    createReceiver(address, promise);
+    return promise.future();
   }
 
   @Override
@@ -282,6 +303,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return this;
   }
 
+  @Override
+  public Future<AmqpReceiver> createReceiver(String address, AmqpReceiverOptions receiverOptions) {
+    Promise<AmqpReceiver> promise = Promise.promise();
+    createReceiver(address, receiverOptions, promise);
+    return promise.future();
+  }
+
   private void configureTheSource(AmqpReceiverOptions receiverOptions, ProtonReceiver receiver) {
     org.apache.qpid.proton.amqp.messaging.Source source = (org.apache.qpid.proton.amqp.messaging.Source) receiver
       .getSource();
@@ -301,6 +329,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
   public AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
     Objects.requireNonNull(address, "The address must be set");
     return createSender(address, new AmqpSenderOptions(), completionHandler);
+  }
+
+  @Override
+  public Future<AmqpSender> createSender(String address) {
+    Promise<AmqpSender> promise = Promise.promise();
+    createSender(address, promise);
+    return promise.future();
   }
 
   @Override
@@ -333,6 +368,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
+  public Future<AmqpSender> createSender(String address, AmqpSenderOptions options) {
+    Promise<AmqpSender> promise = Promise.promise();
+    createSender(address, options, promise);
+    return promise.future();
+  }
+
+  @Override
   public AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler) {
     Objects.requireNonNull(completionHandler, "The completion handler must be set");
     runWithTrampoline(x -> {
@@ -340,6 +382,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
       AmqpSenderImpl.create(sender, this, completionHandler);
     });
     return this;
+  }
+
+  @Override
+  public Future<AmqpSender> createAnonymousSender() {
+    Promise<AmqpSender> promise = Promise.promise();
+    createAnonymousSender(promise);
+    return promise.future();
   }
 
   ProtonConnection unwrap() {

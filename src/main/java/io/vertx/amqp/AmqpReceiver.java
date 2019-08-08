@@ -19,6 +19,7 @@ import io.vertx.codegen.annotations.CacheReturn;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
 
@@ -61,6 +62,8 @@ public interface AmqpReceiver extends ReadStream<AmqpMessage> {
    * @param handler handler called when the receiver has been closed, can be {@code null}
    */
   void close(Handler<AsyncResult<Void>> handler);
+
+  Future<Void> close();
 
   /**
    * Gets the connection having created the receiver. Cannot be {@code null}

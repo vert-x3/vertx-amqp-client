@@ -20,6 +20,7 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
@@ -65,6 +66,8 @@ public interface AmqpClient {
   @Fluent
   AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler);
 
+  Future<AmqpConnection> connect();
+
   /**
    * Closes the client.
    * The client must always be closed once not needed anymore.
@@ -72,6 +75,8 @@ public interface AmqpClient {
    * @param closeHandler the close handler notified when the operation completes. It can be {@code null}.
    */
   void close(@Nullable Handler<AsyncResult<Void>> closeHandler);
+
+  Future<Void> close();
 
   /**
    * Creates a receiver used to consume messages from the given address. The receiver has no handler and won't
@@ -84,6 +89,8 @@ public interface AmqpClient {
    */
   @Fluent
   AmqpClient createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
+
+  Future<AmqpReceiver> createReceiver(String address);
 
   /**
    * Creates a receiver used to consumer messages from the given address.  This method avoids having to connect
@@ -99,6 +106,8 @@ public interface AmqpClient {
   AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
+  Future<AmqpReceiver> createReceiver(String address, AmqpReceiverOptions receiverOptions);
+
   /**
    * Creates a sender used to send messages to the given address. The address must be set.
    *
@@ -108,6 +117,8 @@ public interface AmqpClient {
    */
   @Fluent
   AmqpClient createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
+
+  Future<AmqpSender> createSender(String address);
 
   /**
    * Creates a sender used to send messages to the given address. The address must be set.
@@ -120,5 +131,7 @@ public interface AmqpClient {
   @Fluent
   AmqpClient createSender(String address, AmqpSenderOptions options,
                           Handler<AsyncResult<AmqpSender>> completionHandler);
+
+  Future<AmqpSender> createSender(String address, AmqpSenderOptions options);
 
 }

@@ -18,6 +18,7 @@ package io.vertx.amqp;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 
 /**
@@ -43,6 +44,8 @@ public interface AmqpConnection {
   @Fluent
   AmqpConnection close(Handler<AsyncResult<Void>> done);
 
+  Future<Void> close();
+
   /**
    * Creates a receiver used to consume messages from the given address. The receiver has no handler and won't
    * start receiving messages until a handler is explicitly configured.
@@ -53,6 +56,8 @@ public interface AmqpConnection {
    */
   @Fluent
   AmqpConnection createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
+
+  Future<AmqpReceiver> createReceiver(String address);
 
   /**
    * Creates a receiver used to consumer messages from the given address.
@@ -67,6 +72,8 @@ public interface AmqpConnection {
   AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
+  Future<AmqpReceiver> createReceiver(String address, AmqpReceiverOptions receiverOptions);
+
   /**
    * Creates a dynamic receiver. The address is provided by the broker and is available in the {@code completionHandler},
    * using the {@link AmqpReceiver#address()} method. this method is useful for request-reply to generate a unique
@@ -77,6 +84,8 @@ public interface AmqpConnection {
    */
   @Fluent
   AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler);
+
+  Future<AmqpReceiver> createDynamicReceiver();
 
   /**
    * Creates a sender used to send messages to the given address. The address must be set. For anonymous sender, check
@@ -89,6 +98,8 @@ public interface AmqpConnection {
    */
   @Fluent
   AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
+
+  Future<AmqpSender> createSender(String address);
 
   /**
    * Creates a sender used to send messages to the given address. The address must be set. For anonymous sender, check
@@ -105,6 +116,8 @@ public interface AmqpConnection {
   AmqpConnection createSender(String address, AmqpSenderOptions options,
     Handler<AsyncResult<AmqpSender>> completionHandler);
 
+  Future<AmqpSender> createSender(String address, AmqpSenderOptions options);
+
   /**
    * Creates an anonymous sender.
    * <p>
@@ -117,5 +130,7 @@ public interface AmqpConnection {
    */
   @Fluent
   AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler);
+
+  Future<AmqpSender> createAnonymousSender();
 
 }

@@ -233,6 +233,13 @@ public class AmqpSenderImpl implements AmqpSender {
   }
 
   @Override
+  public Future<Void> sendWithAck(AmqpMessage message) {
+    Promise<Void> promise = Promise.promise();
+    sendWithAck(message, promise);
+    return promise.future();
+  }
+
+  @Override
   public void close(Handler<AsyncResult<Void>> handler) {
     Handler<AsyncResult<Void>> actualHandler;
     if (handler == null) {
@@ -264,6 +271,13 @@ public class AmqpSenderImpl implements AmqpSender {
         actualHandler.handle(Future.succeededFuture());
       }
     });
+  }
+
+  @Override
+  public Future<Void> close() {
+    Promise<Void> promise = Promise.promise();
+    close(promise);
+    return promise.future();
   }
 
   @Override

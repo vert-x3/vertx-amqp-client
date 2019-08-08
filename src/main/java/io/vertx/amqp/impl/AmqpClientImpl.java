@@ -53,6 +53,13 @@ public class AmqpClientImpl implements AmqpClient {
   }
 
   @Override
+  public Future<AmqpConnection> connect() {
+    Promise<AmqpConnection> promise = Promise.promise();
+    connect(promise);
+    return promise.future();
+  }
+
+  @Override
   public void close(Handler<AsyncResult<Void>> handler) {
     List<Future> actions = new ArrayList<>();
     for (AmqpConnection connection : connections) {
@@ -82,6 +89,13 @@ public class AmqpClientImpl implements AmqpClient {
   }
 
   @Override
+  public Future<Void> close() {
+    Promise<Void> promise = Promise.promise();
+    close(promise);
+    return promise.future();
+  }
+
+  @Override
   public AmqpClient createReceiver(String address,
     Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     return connect(res -> {
@@ -91,6 +105,13 @@ public class AmqpClientImpl implements AmqpClient {
         res.result().createReceiver(address, completionHandler);
       }
     });
+  }
+
+  @Override
+  public Future<AmqpReceiver> createReceiver(String address) {
+    Promise<AmqpReceiver> promise = Promise.promise();
+    createReceiver(address, promise);
+    return promise.future();
   }
 
   @Override
@@ -105,6 +126,13 @@ public class AmqpClientImpl implements AmqpClient {
   }
 
   @Override
+  public Future<AmqpReceiver> createReceiver(String address, AmqpReceiverOptions receiverOptions) {
+    Promise<AmqpReceiver> promise = Promise.promise();
+    createReceiver(address, receiverOptions, promise);
+    return promise.future();
+  }
+
+  @Override
   public AmqpClient createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
@@ -113,6 +141,13 @@ public class AmqpClientImpl implements AmqpClient {
         res.result().createSender(address, completionHandler);
       }
     });
+  }
+
+  @Override
+  public Future<AmqpSender> createSender(String address) {
+    Promise<AmqpSender> promise = Promise.promise();
+    createSender(address, promise);
+    return promise.future();
   }
 
   @Override
@@ -125,6 +160,13 @@ public class AmqpClientImpl implements AmqpClient {
         res.result().createSender(address, options, completionHandler);
       }
     });
+  }
+
+  @Override
+  public Future<AmqpSender> createSender(String address, AmqpSenderOptions options) {
+    Promise<AmqpSender> promise = Promise.promise();
+    createSender(address, options, promise);
+    return promise.future();
   }
 
   synchronized void register(AmqpConnectionImpl connection) {
