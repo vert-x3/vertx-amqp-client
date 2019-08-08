@@ -49,13 +49,16 @@ public class RequestReplyTest extends ArtemisTestBase {
 
   private Future<Void> prepareReceiver(TestContext context, AmqpConnection connection, String address) {
     Promise<Void> future = Promise.promise();
-    connection.createReceiver(address, msg -> {
-      context.assertEquals("what's your name?", msg.bodyAsString());
-      context.assertTrue(msg.replyTo() != null);
-      // How do we name this createSender method where the address is not set?
-      connection.createAnonymousSender(sender ->
-        sender.result().send(AmqpMessage.create().address(msg.replyTo()).withBody("my name is Neo").build()));
-    }, d -> future.handle(d.mapEmpty()));
+    connection.createReceiver(address, d -> {
+      d.result().handler(msg -> {
+        context.assertEquals("what's your name?", msg.bodyAsString());
+        context.assertTrue(msg.replyTo() != null);
+        // How do we name this createSender method where the address is not set?
+        connection.createAnonymousSender(sender ->
+          sender.result().send(AmqpMessage.create().address(msg.replyTo()).withBody("my name is Neo").build()));
+      });
+      future.handle(d.mapEmpty());
+    });
     return future.future();
   }
 

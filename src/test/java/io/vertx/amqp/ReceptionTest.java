@@ -74,19 +74,20 @@ public class ReceptionTest extends ArtemisTestBase {
       new AmqpClientOptions().setHost(host).setPort(port).setPassword(password).setUsername(username));
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().createReceiver(testName, msg -> {
-        context.assertNotNull(msg, "message was null");
-        context.assertNotNull(msg.bodyAsString(), "amqp message body content was null");
-        context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body was not as expected");
-
-        // Check the application property was present
-        context.assertTrue(msg.applicationProperties() != null, "application properties element not present");
-        JsonObject appProps = msg.applicationProperties();
-        context.assertTrue(appProps.containsKey(propKey), "expected property key element not present");
-        context.assertEquals(propValue, appProps.getValue(propKey), "app property value not as expected");
-        client.close(x -> asyncShutdown.complete());
-      }, done -> {
+      res.result().createReceiver(testName, done -> {
         context.assertEquals(testName, done.result().address(), "address was not as expected");
+        done.result().handler(msg -> {
+          context.assertNotNull(msg, "message was null");
+          context.assertNotNull(msg.bodyAsString(), "amqp message body content was null");
+          context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body was not as expected");
+
+          // Check the application property was present
+          context.assertTrue(msg.applicationProperties() != null, "application properties element not present");
+          JsonObject appProps = msg.applicationProperties();
+          context.assertTrue(appProps.containsKey(propKey), "expected property key element not present");
+          context.assertEquals(propValue, appProps.getValue(propKey), "app property value not as expected");
+          client.close(x -> asyncShutdown.complete());
+        });
 
         ProtonClient proton = ProtonClient.create(vertx);
         proton.connect(host, port, username, password, res2 -> {
@@ -265,38 +266,38 @@ public class ReceptionTest extends ArtemisTestBase {
       final AtomicReference<AmqpReceiver> receiver = new AtomicReference<>();
       // Set up a consumer using the client
       res.result().createReceiver(testName,
-        msg -> {
-          int msgNum = received.incrementAndGet();
-          String amqpBodyContent = msg.bodyAsString();
-          context.assertNotNull(amqpBodyContent, "message " + msgNum + " jsonObject body was null");
-          context.assertNotNull(amqpBodyContent, "amqp message " + msgNum + " body content was null");
-          context.assertEquals(sentContent, amqpBodyContent, "amqp message " + msgNum + " body not as expected");
-
-          // Pause once we get initial messages
-          if (msgNum == pauseCount) {
-            receiver.get().pause();
-            // Resume after a delay
-            pauseStartTime.set(System.currentTimeMillis());
-            vertx.setTimer(delay, x -> receiver.get().resume());
-          }
-
-          // Verify subsequent deliveries occur after the expected delay
-          if (msgNum > pauseCount) {
-            context.assertTrue(pauseStartTime.get() > 0, "pause start not initialised before receiving msg" + msgNum);
-            context.assertTrue(System.currentTimeMillis() + delay > pauseStartTime.get(),
-              "delivery occurred before expected");
-          }
-
-          if (msgNum == totalMsgCount) {
-            client.close(shutdownRes -> {
-              context.assertTrue(shutdownRes.succeeded());
-              asyncShutdown.complete();
-            });
-          }
-        },
         done -> {
           context.assertTrue(done.succeeded());
           receiver.set(done.result());
+          done.result().handler(msg -> {
+            int msgNum = received.incrementAndGet();
+            String amqpBodyContent = msg.bodyAsString();
+            context.assertNotNull(amqpBodyContent, "message " + msgNum + " jsonObject body was null");
+            context.assertNotNull(amqpBodyContent, "amqp message " + msgNum + " body content was null");
+            context.assertEquals(sentContent, amqpBodyContent, "amqp message " + msgNum + " body not as expected");
+
+            // Pause once we get initial messages
+            if (msgNum == pauseCount) {
+              receiver.get().pause();
+              // Resume after a delay
+              pauseStartTime.set(System.currentTimeMillis());
+              vertx.setTimer(delay, x -> receiver.get().resume());
+            }
+
+            // Verify subsequent deliveries occur after the expected delay
+            if (msgNum > pauseCount) {
+              context.assertTrue(pauseStartTime.get() > 0, "pause start not initialised before receiving msg" + msgNum);
+              context.assertTrue(System.currentTimeMillis() + delay > pauseStartTime.get(),
+                "delivery occurred before expected");
+            }
+
+            if (msgNum == totalMsgCount) {
+              client.close(shutdownRes -> {
+                context.assertTrue(shutdownRes.succeeded());
+                asyncShutdown.complete();
+              });
+            }
+          });
 
           // Send some message from a regular AMQP client
           sendAFewMessages(context, testName, sentContent, asyncSendMsg, totalMsgCount);

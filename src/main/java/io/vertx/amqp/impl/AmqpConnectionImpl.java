@@ -239,14 +239,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
-  public AmqpConnection createReceiver(String address, Handler<AmqpMessage> handler,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
-    return createReceiver(address, null, handler, completionHandler);
-  }
-
-  @Override
   public AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler) {
-    return createReceiver(null, new AmqpReceiverOptions().setDynamic(true), null, completionHandler);
+    return createReceiver(null, new AmqpReceiverOptions().setDynamic(true), completionHandler);
   }
 
   @Override
@@ -257,7 +251,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
       ProtonReceiver receiver = connection.get().createReceiver(address, opts);
       new AmqpReceiverImpl(
         Objects.requireNonNull(address, "The address must not be `null`"),
-        this, new AmqpReceiverOptions(), receiver, null,
+        this, new AmqpReceiverOptions(), receiver,
         Objects.requireNonNull(completionHandler, "The completion handler must not be `null`"));
     });
     return this;
@@ -265,13 +259,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   @Override
   public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
-    return createReceiver(address, receiverOptions, null, completionHandler);
-  }
-
-  @Override
-  public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
-    Handler<AmqpMessage> handler,
     Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
     AmqpReceiverOptions recOpts = receiverOptions == null ? new AmqpReceiverOptions() : receiverOptions;
@@ -290,7 +277,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
         configureTheSource(recOpts, receiver);
       }
 
-      new AmqpReceiverImpl(address, this, recOpts, receiver, handler, completionHandler);
+      new AmqpReceiverImpl(address, this, recOpts, receiver, completionHandler);
     });
     return this;
   }

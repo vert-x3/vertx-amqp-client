@@ -86,34 +86,17 @@ public interface AmqpClient {
   AmqpClient createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
-   * Creates a receiver used to consume messages from the given address. This method avoids having to connect
-   * explicitly. You can retrieve the connection using {@link AmqpReceiver#connection()}.
-   *
-   * @param address           The source address to attach the consumer to, must not be {@code null}
-   * @param messageHandler    The message handler, must not be {@code null}
-   * @param completionHandler the handler called with the receiver that has been opened. Note that the
-   *                          {@code messageHandler} can be called before the {@code completionHandler} if messages
-   *                          are awaiting delivery.
-   * @return the client.
-   */
-  @Fluent
-  AmqpClient createReceiver(String address, Handler<AmqpMessage> messageHandler,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler);
-
-  /**
    * Creates a receiver used to consumer messages from the given address.  This method avoids having to connect
    * explicitly. You can retrieve the connection using {@link AmqpReceiver#connection()}.
    *
    * @param address           The source address to attach the consumer to.
    * @param receiverOptions   The options for this receiver.
-   * @param messageHandler    The message handler, must not be {@code null}
    * @param completionHandler The handler called with the receiver, once opened. Note that the {@code messageHandler}
    *                          can be called before the {@code completionHandler} if messages are awaiting delivery.
    * @return the connection.
    */
   @Fluent
   AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions,
-    Handler<AmqpMessage> messageHandler,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**

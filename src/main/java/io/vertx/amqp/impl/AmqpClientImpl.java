@@ -94,25 +94,12 @@ public class AmqpClientImpl implements AmqpClient {
   }
 
   @Override
-  public AmqpClient createReceiver(String address, Handler<AmqpMessage> messageHandler,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+  public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
         completionHandler.handle(res.mapEmpty());
       } else {
-        res.result().createReceiver(address, messageHandler, completionHandler);
-      }
-    });
-  }
-
-  @Override
-  public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions,
-    Handler<AmqpMessage> messageHandler, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
-    return connect(res -> {
-      if (res.failed()) {
-        completionHandler.handle(res.mapEmpty());
-      } else {
-        res.result().createReceiver(address, receiverOptions, messageHandler, completionHandler);
+        res.result().createReceiver(address, receiverOptions, completionHandler);
       }
     });
   }
