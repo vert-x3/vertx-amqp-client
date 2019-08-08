@@ -47,31 +47,32 @@ public class AmqpClientExamples {
 
   public void receiver1(AmqpConnection connection) {
     connection.createReceiver("my-queue",
-      msg -> {
-        // called on every received messages
-        System.out.println("Received " + msg.bodyAsString());
-      },
       done -> {
         if (done.failed()) {
           System.out.println("Unable to create receiver");
         } else {
           AmqpReceiver receiver = done.result();
+          receiver.handler(msg -> {
+            // called on every received messages
+            System.out.println("Received " + msg.bodyAsString());
+          });
         }
       }
     );
   }
 
   public void receiverFromClient(AmqpClient client) {
-    client.createReceiver("my-queue",
-      msg -> {
-        // called on every received messages
-        System.out.println("Received " + msg.bodyAsString());
-      },
+    client.createReceiver("my-queue"
+      ,
       done -> {
         if (done.failed()) {
           System.out.println("Unable to create receiver");
         } else {
           AmqpReceiver receiver = done.result();
+          receiver.handler(msg -> {
+            // called on every received messages
+            System.out.println("Received " + msg.bodyAsString());
+          });
         }
       }
     );
@@ -150,16 +151,21 @@ public class AmqpClientExamples {
     connection.createAnonymousSender(responseSender -> {
       // You got an anonymous sender, used to send the reply
       // Now register the main receiver:
-      connection.createReceiver("my-queue", msg -> {
-        // You got the message, let's reply.
-        responseSender.result().send(AmqpMessage.create()
-          .address(msg.replyTo())
-          .correlationId(msg.id()) // send the message id as correlation id
-          .withBody("my response to your request")
-          .build()
-        );
-      }, done -> {
-        // We are done, for the receiver side
+      connection.createReceiver("my-queue", done -> {
+        if (done.failed()) {
+          System.out.println("Unable to create receiver");
+        } else {
+          AmqpReceiver receiver = done.result();
+          receiver.handler(msg -> {
+            // You got the message, let's reply.
+            responseSender.result().send(AmqpMessage.create()
+              .address(msg.replyTo())
+              .correlationId(msg.id()) // send the message id as correlation id
+              .withBody("my response to your request")
+              .build()
+            );
+          });
+        }
       });
     });
 

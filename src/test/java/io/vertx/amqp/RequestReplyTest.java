@@ -16,6 +16,7 @@
 package io.vertx.amqp;
 
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -47,15 +48,18 @@ public class RequestReplyTest extends ArtemisTestBase {
   }
 
   private Future<Void> prepareReceiver(TestContext context, AmqpConnection connection, String address) {
-    Future<Void> future = Future.future();
-    connection.createReceiver(address, msg -> {
-      context.assertEquals("what's your name?", msg.bodyAsString());
-      context.assertTrue(msg.replyTo() != null);
-      // How do we name this createSender method where the address is not set?
-      connection.createAnonymousSender(sender ->
-        sender.result().send(AmqpMessage.create().address(msg.replyTo()).withBody("my name is Neo").build()));
-    }, d -> future.handle(d.mapEmpty()));
-    return future;
+    Promise<Void> future = Promise.promise();
+    connection.createReceiver(address, d -> {
+      d.result().handler(msg -> {
+        context.assertEquals("what's your name?", msg.bodyAsString());
+        context.assertTrue(msg.replyTo() != null);
+        // How do we name this createSender method where the address is not set?
+        connection.createAnonymousSender(sender ->
+          sender.result().send(AmqpMessage.create().address(msg.replyTo()).withBody("my name is Neo").build()));
+      });
+      future.handle(d.mapEmpty());
+    });
+    return future.future();
   }
 
   private Future<AmqpReceiver> prepareReplyReceiver(TestContext context, AmqpConnection connection, Async done) {

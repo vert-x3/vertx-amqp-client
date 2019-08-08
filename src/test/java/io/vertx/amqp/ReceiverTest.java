@@ -39,12 +39,14 @@ public class ReceiverTest extends ArtemisTestBase {
       .setUsername(username)
       .setPassword(password)
     ).connect(connection -> {
-        connection.result().createReceiver(queue, message -> list.add(message.bodyAsString()),
-          done ->
+        connection.result().createReceiver(queue,
+          done -> {
+            done.result().handler(message -> list.add(message.bodyAsString()));
             CompletableFuture.runAsync(() -> {
               usage.produceStrings(queue, 10, null,
                 () -> Integer.toString(count.getAndIncrement()));
-            })
+            });
+          }
         );
       }
     );
@@ -66,15 +68,16 @@ public class ReceiverTest extends ArtemisTestBase {
     ).connect(connection -> {
         connection.result().createReceiver(queue,
           new AmqpReceiverOptions().setAutoAcknowledgement(false),
-          message -> {
-            list.add(message.bodyAsString());
-            message.accepted();
-          },
-          done ->
+          done -> {
+            done.result().handler(message -> {
+              list.add(message.bodyAsString());
+              message.accepted();
+            });
             CompletableFuture.runAsync(() -> {
               usage.produceStrings(queue, 10, null,
                 () -> Integer.toString(count.getAndIncrement()));
-            })
+            });
+          }
         );
       }
     );
@@ -96,15 +99,16 @@ public class ReceiverTest extends ArtemisTestBase {
     ).connect(connection -> {
         connection.result().createReceiver(queue,
           new AmqpReceiverOptions().setAutoAcknowledgement(false),
-          message -> {
-            list.add(message.bodyAsString());
-            message.rejected();
-          },
-          done ->
+          done -> {
+            done.result().handler(message -> {
+              list.add(message.bodyAsString());
+              message.rejected();
+            });
             CompletableFuture.runAsync(() -> {
               usage.produceStrings(queue, 10, null,
                 () -> Integer.toString(count.getAndIncrement()));
-            })
+            });
+          }
         );
       }
     );
@@ -126,15 +130,16 @@ public class ReceiverTest extends ArtemisTestBase {
     ).connect(connection -> {
         connection.result().createReceiver(queue,
           new AmqpReceiverOptions().setAutoAcknowledgement(false),
-          message -> {
-            list.add(message.bodyAsString());
-            message.modified(true, true);
-          },
-          done ->
+          done -> {
+            done.result().handler(message -> {
+              list.add(message.bodyAsString());
+              message.modified(true, true);
+            });
             CompletableFuture.runAsync(() -> {
               usage.produceStrings(queue, 10, null,
                 () -> Integer.toString(count.getAndIncrement()));
-            })
+            });
+          }
         );
       }
     );
@@ -154,11 +159,13 @@ public class ReceiverTest extends ArtemisTestBase {
       .setPort(port)
       .setUsername(username)
       .setPassword(password)
-    ).createReceiver(queue, message -> list.add(message.bodyAsString()),
-      done ->
+    ).createReceiver(queue,
+      done -> {
+        done.result().handler(message -> list.add(message.bodyAsString()));
         CompletableFuture.runAsync(() ->
           usage.produceStrings(queue, 10, null,
-            () -> Integer.toString(count.getAndIncrement())))
+            () -> Integer.toString(count.getAndIncrement())));
+      }
     );
 
     await().until(() -> list.size() == 10);

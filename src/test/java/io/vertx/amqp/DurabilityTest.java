@@ -83,8 +83,10 @@ public class DurabilityTest extends ArtemisTestBase {
     List<String> list = new CopyOnWriteArrayList<>();
     client1.createReceiver("my-address",
       new AmqpReceiverOptions().setDurable(true),
-      msg -> list.add(msg.bodyAsString()),
-      done -> c1.set(done.succeeded()));
+      done -> {
+      done.result().handler(msg -> list.add(msg.bodyAsString()));
+      c1.set(done.succeeded());
+    });
     await().untilAtomic(c1, is(true));
 
     AtomicReference<AmqpSender> sender = new AtomicReference<>();
@@ -108,11 +110,11 @@ public class DurabilityTest extends ArtemisTestBase {
     ).connect(x ->
       client1.createReceiver("my-address",
         new AmqpReceiverOptions().setDurable(true),
-        msg -> list.add(msg.bodyAsString()),
         done -> {
           if (done.failed()) {
             done.cause().printStackTrace();
           }
+          done.result().handler(msg -> list.add(msg.bodyAsString()));
           c1.set(done.succeeded());
         })
     );

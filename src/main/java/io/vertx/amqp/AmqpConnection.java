@@ -63,8 +63,10 @@ public interface AmqpConnection {
    *                          {@code messageHandler} can be called before the {@code completionHandler} if messages
    *                          are awaiting delivery.
    * @return the connection.
+   * @deprecated use instead {@link #createReceiver(String, Handler)} and then use {@link AmqpReceiver#handler}
    */
   @Fluent
+  @Deprecated
   AmqpConnection createReceiver(String address, Handler<AmqpMessage> messageHandler,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
@@ -77,8 +79,10 @@ public interface AmqpConnection {
    * @param completionHandler The handler called with the receiver, once opened. Note that the {@code messageHandler}
    *                          can be called before the {@code completionHandler} if messages are awaiting delivery.
    * @return the connection.
+   * @deprecated use instead {@link #createReceiver(String, AmqpReceiverOptions, Handler)} and then use {@link AmqpReceiver#handler}
    */
   @Fluent
+  @Deprecated
   AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AmqpMessage> messageHandler,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);

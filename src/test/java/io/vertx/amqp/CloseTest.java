@@ -180,15 +180,15 @@ public class CloseTest extends BareTestBase {
     this.client.connect(res -> {
       context.assertTrue(res.succeeded());
       res.result().createReceiver(testName,
-        msg -> {
-          String content = msg.bodyAsString();
-          context.assertNotNull(content, "amqp message body content was null");
-          context.assertEquals(sentContent, content, "amqp message body not as expected");
-          msgReceived.set(true);
-        },
         done -> {
           context.assertTrue(done.succeeded());
           AmqpReceiver receiver = done.result();
+          receiver.handler(msg -> {
+            String content = msg.bodyAsString();
+            context.assertNotNull(content, "amqp message body content was null");
+            context.assertEquals(sentContent, content, "amqp message body not as expected");
+            msgReceived.set(true);
+          });
           receiver.exceptionHandler(ex -> {
             context.assertNotNull(ex, "expected exception");
             context.assertTrue(ex instanceof Exception, "expected exception");
@@ -275,17 +275,18 @@ public class CloseTest extends BareTestBase {
     client = AmqpClient.create(vertx, options);
     client.connect(res -> {
       context.assertTrue(res.succeeded());
-      res.result().createReceiver(testName,
-        msg -> {
-          context.assertNotNull(msg.bodyAsString(), "message body was null");
-          String amqpBodyContent = msg.bodyAsString();
-          context.assertNotNull(amqpBodyContent, "amqp message body content was null");
-          context.assertEquals(sentContent, amqpBodyContent, "amqp message body not as expected");
-
-          msgReceived.set(true);
-        }, done -> {
+      res.result().createReceiver(testName
+        , done -> {
           context.assertTrue(done.succeeded());
           AmqpReceiver consumer = done.result();
+          consumer.handler(msg -> {
+            context.assertNotNull(msg.bodyAsString(), "message body was null");
+            String amqpBodyContent = msg.bodyAsString();
+            context.assertNotNull(amqpBodyContent, "amqp message body content was null");
+            context.assertEquals(sentContent, amqpBodyContent, "amqp message body not as expected");
+
+            msgReceived.set(true);
+          });
           consumer.endHandler(x -> {
             context.assertTrue(msgReceived.get(), "expected msg to be received first");
             asyncEndHandlerCalled.complete();

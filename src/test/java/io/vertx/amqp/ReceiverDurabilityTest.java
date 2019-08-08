@@ -111,9 +111,9 @@ public class ReceiverDurabilityTest extends BareTestBase {
           options.addCapability("custom");
         }
 
-        connection.createReceiver("myAddress", options, x -> {
-        }, receiver -> {
+        connection.createReceiver("myAddress", options, receiver -> {
           context.assertTrue(receiver.succeeded());
+          receiver.result().handler(x -> {});
           clientLinkOpenAsync.complete();
           receiver.result()
             .exceptionHandler(context::fail);

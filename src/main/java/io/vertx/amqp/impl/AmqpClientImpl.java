@@ -106,6 +106,11 @@ public class AmqpClientImpl implements AmqpClient {
   }
 
   @Override
+  public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+    return createReceiver(address, receiverOptions, null, completionHandler);
+  }
+
+  @Override
   public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AmqpMessage> messageHandler, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     return connect(res -> {

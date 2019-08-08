@@ -60,7 +60,6 @@ public class AmqpReceiverImpl implements AmqpReceiver {
    * @param connection        the connection
    * @param options           the receiver options, must not be {@code null}
    * @param receiver          the underlying proton createReceiver
-   * @param handler           the handler
    * @param completionHandler called when the createReceiver is opened
    */
   AmqpReceiverImpl(
@@ -68,11 +67,10 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     AmqpConnectionImpl connection,
     AmqpReceiverOptions options,
     ProtonReceiver receiver,
-    Handler<AmqpMessage> handler, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     this.address = address;
     this.receiver = receiver;
     this.connection = connection;
-    this.handler = handler;
     this.durable = options.isDurable();
     this.autoAck = options.isAutoAcknowledgement();
     int maxBufferedMessages = options.getMaxBufferedMessages();

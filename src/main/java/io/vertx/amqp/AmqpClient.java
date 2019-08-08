@@ -95,10 +95,26 @@ public interface AmqpClient {
    *                          {@code messageHandler} can be called before the {@code completionHandler} if messages
    *                          are awaiting delivery.
    * @return the client.
+   * @deprecated use instead {@link #createReceiver(String, Handler)} and then use {@link AmqpReceiver#handler}
    */
+  @Deprecated
   @Fluent
   AmqpClient createReceiver(String address, Handler<AmqpMessage> messageHandler,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
+
+  /**
+   * Creates a receiver used to consumer messages from the given address.  This method avoids having to connect
+   * explicitly. You can retrieve the connection using {@link AmqpReceiver#connection()}.
+   *
+   * @param address           The source address to attach the consumer to.
+   * @param receiverOptions   The options for this receiver.
+   * @param completionHandler The handler called with the receiver, once opened. Note that the {@code messageHandler}
+   *                          can be called before the {@code completionHandler} if messages are awaiting delivery.
+   * @return the connection.
+   */
+  @Fluent
+  AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions,
+                            Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
    * Creates a receiver used to consumer messages from the given address.  This method avoids having to connect
@@ -110,7 +126,9 @@ public interface AmqpClient {
    * @param completionHandler The handler called with the receiver, once opened. Note that the {@code messageHandler}
    *                          can be called before the {@code completionHandler} if messages are awaiting delivery.
    * @return the connection.
+   * @deprecated use instead {@link #createReceiver(String, AmqpReceiverOptions, Handler)} and then use {@link AmqpReceiver#handler}
    */
+  @Deprecated
   @Fluent
   AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AmqpMessage> messageHandler,

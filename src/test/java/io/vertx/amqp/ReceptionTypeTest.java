@@ -76,12 +76,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   @Test
   public void testNull() {
     List<Boolean> list = new CopyOnWriteArrayList<>();
-    connection.createReceiver(address, message -> {
-      list.add(message.isBodyNull());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.isBodyNull());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           // Send Amqpvalue(null)
@@ -100,12 +101,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   @Test
   public void testBoolean() {
     List<Boolean> list = new CopyOnWriteArrayList<>();
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsBoolean());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsBoolean());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> true);
@@ -125,12 +127,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testByte() {
     List<Object> list = new CopyOnWriteArrayList<>();
     byte b = 1;
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsByte());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsByte());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> b);
@@ -148,12 +151,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testShort() {
     List<Object> list = new CopyOnWriteArrayList<>();
     short s = 2;
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsShort());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsShort());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> s);
@@ -171,12 +175,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testInteger() {
     List<Object> list = new CopyOnWriteArrayList<>();
     int i = 3;
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsInteger());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsInteger());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> i);
@@ -194,12 +199,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testLong() {
     List<Object> list = new CopyOnWriteArrayList<>();
     long l = Long.MAX_VALUE - 1;
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsLong());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsLong());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> l);
@@ -217,12 +223,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testFloat() {
     List<Object> list = new CopyOnWriteArrayList<>();
     float f = 12.34f;
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsFloat());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsFloat());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> f);
@@ -240,12 +247,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testDouble() {
     List<Object> list = new CopyOnWriteArrayList<>();
     double d = 56.78;
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsDouble());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsDouble());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> d);
@@ -263,12 +271,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testCharacter() {
     List<Object> list = new CopyOnWriteArrayList<>();
     char c = 'c';
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsChar());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsChar());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> c);
@@ -286,12 +295,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testTimestamp() {
     List<Object> list = new CopyOnWriteArrayList<>();
     Instant instant = Instant.now();
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsTimestamp());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsTimestamp());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> Date.from(instant));
@@ -307,12 +317,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testUUID() {
     List<Object> list = new CopyOnWriteArrayList<>();
     UUID uuid = UUID.randomUUID();
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsUUID());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsUUID());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> uuid);
@@ -329,12 +340,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testBinary() {
     List<Object> list = new CopyOnWriteArrayList<>();
     Buffer buffer = Buffer.buffer("hello !!!");
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsBinary());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsBinary());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> new Data(new Binary(buffer.getBytes())));
@@ -351,12 +363,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testString() {
     List<Object> list = new CopyOnWriteArrayList<>();
     String string = "hello !";
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsString());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsString());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> string);
@@ -373,12 +386,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testSymbol() {
     List<Object> list = new CopyOnWriteArrayList<>();
     String string = "my-symbol";
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsSymbol());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsSymbol());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> Symbol.getSymbol("my-symbol"));
@@ -398,12 +412,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     l.add("foo");
     l.add(1);
     l.add(true);
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsList());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsList());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> new AmqpSequence(l));
@@ -423,12 +438,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     l.add("foo");
     l.add(1);
     l.add(true);
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsList());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsList());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> new AmqpValue(l));
@@ -447,12 +463,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     Map<String, String> map = new HashMap<>();
     map.put("1", "hello");
     map.put("2", "bonjour");
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsMap());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsMap());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> new AmqpValue(map));
@@ -470,12 +487,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
     List<Object> list = new CopyOnWriteArrayList<>();
     JsonObject json = new JsonObject().put("data", "message").put("number", 1)
       .put("array", new JsonArray().add(1).add(2).add(3));
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsJsonObject());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsJsonObject());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> new Data(new Binary(json.toBuffer().getBytes())));
@@ -492,12 +510,13 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   public void testJsonArray() {
     List<Object> list = new CopyOnWriteArrayList<>();
     JsonArray array = new JsonArray().add(1).add(2).add(3);
-    connection.createReceiver(address, message -> {
-      list.add(message.bodyAsJsonArray());
-    }, done -> {
+    connection.createReceiver(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
+      done.result().handler(message -> {
+        list.add(message.bodyAsJsonArray());
+      });
       CompletableFuture.runAsync(() -> {
         try {
           usage.produce(address, 1, null, () -> new Data(new Binary(array.toBuffer().getBytes())));
