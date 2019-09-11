@@ -239,12 +239,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   @Override
-  public AmqpConnection createReceiver(String address, Handler<AmqpMessage> handler,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
-    return createReceiver(address, null, handler, completionHandler);
-  }
-
-  @Override
   public AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     return createReceiver(null, new AmqpReceiverOptions().setDynamic(true), completionHandler);
   }
@@ -265,13 +259,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   @Override
   public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
-    return createReceiver(address, receiverOptions, null, completionHandler);
-  }
-
-  @Override
-  public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
-    Handler<AmqpMessage> handler,
     Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
     AmqpReceiverOptions recOpts = receiverOptions == null ? new AmqpReceiverOptions() : receiverOptions;
