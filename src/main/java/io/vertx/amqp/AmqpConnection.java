@@ -44,6 +44,9 @@ public interface AmqpConnection {
   @Fluent
   AmqpConnection close(Handler<AsyncResult<Void>> done);
 
+  /**
+   * Like {@link #close(Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<Void> close();
 
   /**
@@ -57,6 +60,9 @@ public interface AmqpConnection {
   @Fluent
   AmqpConnection createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
+  /**
+   * Like {@link #createReceiver(String, Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<AmqpReceiver> createReceiver(String address);
 
   /**
@@ -72,6 +78,9 @@ public interface AmqpConnection {
   AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
+  /**
+   * Like {@link #createReceiver(String, AmqpReceiverOptions, Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<AmqpReceiver> createReceiver(String address, AmqpReceiverOptions receiverOptions);
 
   /**
@@ -85,6 +94,9 @@ public interface AmqpConnection {
   @Fluent
   AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
+  /**
+   * Like {@link #createDynamicReceiver(Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<AmqpReceiver> createDynamicReceiver();
 
   /**
@@ -99,6 +111,9 @@ public interface AmqpConnection {
   @Fluent
   AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
 
+  /**
+   * Like {@link #createSender(String, Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<AmqpSender> createSender(String address);
 
   /**
@@ -116,6 +131,9 @@ public interface AmqpConnection {
   AmqpConnection createSender(String address, AmqpSenderOptions options,
     Handler<AsyncResult<AmqpSender>> completionHandler);
 
+  /**
+   * Like {@link #createSender(String, AmqpSenderOptions, Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<AmqpSender> createSender(String address, AmqpSenderOptions options);
 
   /**
@@ -131,6 +149,9 @@ public interface AmqpConnection {
   @Fluent
   AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler);
 
+  /**
+   * Like {@link #createAnonymousSender(Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<AmqpSender> createAnonymousSender();
 
 }

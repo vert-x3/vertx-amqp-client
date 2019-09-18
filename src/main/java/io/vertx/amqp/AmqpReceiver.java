@@ -63,6 +63,9 @@ public interface AmqpReceiver extends ReadStream<AmqpMessage> {
    */
   void close(Handler<AsyncResult<Void>> handler);
 
+  /**
+   * Like {@link #close(Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<Void> close();
 
   /**

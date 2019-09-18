@@ -55,6 +55,9 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
   @Fluent
   AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler);
 
+  /**
+   * Like {@link #sendWithAck(AmqpMessage, Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<Void> sendWithAck(AmqpMessage message);
 
   /**
@@ -64,6 +67,9 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
    */
   void close(Handler<AsyncResult<Void>> handler);
 
+  /**
+   * Like {@link #close(Handler)} but returns a {@code Future} of the asynchronous result
+   */
   Future<Void> close();
 
   /**
