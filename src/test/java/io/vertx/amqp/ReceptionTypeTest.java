@@ -181,7 +181,10 @@ public class ReceptionTypeTest extends ArtemisTestBase {
 
   @Test
   public void testTimestamp() {
-    Instant instant = Instant.now();
+    // We avoid using Instant.now() in the test since its precision is
+    // variable and JDK + platform dependent, while timestamp is always
+    // millisecond precision. A mismatch throws off the equality comparison.
+    Instant instant = Instant.ofEpochMilli(System.currentTimeMillis());
     testType(usage -> {
       usage.produce(address, 1, null, () -> Date.from(instant));
     }, AmqpMessage::bodyAsTimestamp, instant);
