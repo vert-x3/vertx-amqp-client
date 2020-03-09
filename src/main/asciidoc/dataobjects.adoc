@@ -47,12 +47,6 @@ Sets the host.
 
 +++
 |[[idleTimeoutUnit]]`@idleTimeoutUnit`|`link:enums.html#TimeUnit[TimeUnit]`|-
-|[[jdkSslEngineOptions]]`@jdkSslEngineOptions`|`link:dataobjects.html#JdkSSLEngineOptions[JdkSSLEngineOptions]`|+++
-
-+++
-|[[keyStoreOptions]]`@keyStoreOptions`|`link:dataobjects.html#JksOptions[JksOptions]`|+++
-
-+++
 |[[localAddress]]`@localAddress`|`String`|+++
 
 +++
@@ -61,28 +55,12 @@ Sets the host.
 
 +++
 |[[metricsName]]`@metricsName`|`String`|-
-|[[openSslEngineOptions]]`@openSslEngineOptions`|`link:dataobjects.html#OpenSSLEngineOptions[OpenSSLEngineOptions]`|+++
-
-+++
 |[[password]]`@password`|`String`|+++
 Sets the password.
-+++
-|[[pemKeyCertOptions]]`@pemKeyCertOptions`|`link:dataobjects.html#PemKeyCertOptions[PemKeyCertOptions]`|+++
-
-+++
-|[[pemTrustOptions]]`@pemTrustOptions`|`link:dataobjects.html#PemTrustOptions[PemTrustOptions]`|+++
-
-+++
-|[[pfxKeyCertOptions]]`@pfxKeyCertOptions`|`link:dataobjects.html#PfxOptions[PfxOptions]`|+++
-
-+++
-|[[pfxTrustOptions]]`@pfxTrustOptions`|`link:dataobjects.html#PfxOptions[PfxOptions]`|+++
-
 +++
 |[[port]]`@port`|`Number (int)`|+++
 Sets the port.
 +++
-|[[proxyOptions]]`@proxyOptions`|`link:dataobjects.html#ProxyOptions[ProxyOptions]`|-
 |[[receiveBufferSize]]`@receiveBufferSize`|`Number (int)`|+++
 
 +++
@@ -131,9 +109,6 @@ Sets the port.
 
 +++
 |[[trustAll]]`@trustAll`|`Boolean`|+++
-
-+++
-|[[trustStoreOptions]]`@trustStoreOptions`|`link:dataobjects.html#JksOptions[JksOptions]`|+++
 
 +++
 |[[useAlpn]]`@useAlpn`|`Boolean`|-
