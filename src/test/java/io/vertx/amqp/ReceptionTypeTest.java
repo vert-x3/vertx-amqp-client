@@ -107,13 +107,19 @@ public class ReceptionTypeTest extends ArtemisTestBase {
   }
 
   @Test
-  public void testBoolean() {
+  public void testBooleanTrue() {
     testType(usage -> {
       usage.produce(address, 1, null, () -> true);
-      usage.produce(address, 1, null, () -> false);
       usage.produce(address, 1, null, () -> Boolean.TRUE);
+    }, AmqpMessage::bodyAsBoolean, true, true);
+  }
+
+  @Test
+  public void testBooleanFalse() {
+    testType(usage -> {
+      usage.produce(address, 1, null, () -> false);
       usage.produce(address, 1, null, () -> Boolean.FALSE);
-    }, AmqpMessage::bodyAsBoolean, true, false, true, false);
+    }, AmqpMessage::bodyAsBoolean, false, false);
   }
 
   @Test
