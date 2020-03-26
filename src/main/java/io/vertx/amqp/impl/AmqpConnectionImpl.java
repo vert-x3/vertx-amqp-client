@@ -248,11 +248,16 @@ public class AmqpConnectionImpl implements AmqpConnection {
     ProtonLinkOptions opts = new ProtonLinkOptions();
 
     runWithTrampoline(x -> {
-      ProtonReceiver receiver = connection.get().createReceiver(address, opts);
-      new AmqpReceiverImpl(
-        Objects.requireNonNull(address, "The address must not be `null`"),
-        this, new AmqpReceiverOptions(), receiver,
-        Objects.requireNonNull(completionHandler, "The completion handler must not be `null`"));
+      ProtonConnection conn = connection.get();
+      if (conn == null) {
+        completionHandler.handle(Future.failedFuture("Not connected"));
+      } else {
+        ProtonReceiver receiver = conn.createReceiver(address, opts);
+        new AmqpReceiverImpl(
+          Objects.requireNonNull(address, "The address must not be `null`"),
+          this, new AmqpReceiverOptions(), receiver,
+          Objects.requireNonNull(completionHandler, "The completion handler must not be `null`"));
+      }
     });
     return this;
   }
@@ -267,17 +272,22 @@ public class AmqpConnectionImpl implements AmqpConnection {
       .setLinkName(recOpts.getLinkName());
 
     runWithTrampoline(v -> {
-      ProtonReceiver receiver = connection.get().createReceiver(address, opts);
+      ProtonConnection conn = connection.get();
+      if (conn == null) {
+        completionHandler.handle(Future.failedFuture("Not connected"));
+      } else {
+        ProtonReceiver receiver = conn.createReceiver(address, opts);
 
-      if (receiverOptions != null) {
-        if (receiverOptions.getQos() != null) {
-          receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
+        if (receiverOptions != null) {
+          if (receiverOptions.getQos() != null) {
+            receiver.setQoS(ProtonQoS.valueOf(receiverOptions.getQos().toUpperCase()));
+          }
+
+          configureTheSource(recOpts, receiver);
         }
 
-        configureTheSource(recOpts, receiver);
+        new AmqpReceiverImpl(address, this, recOpts, receiver, completionHandler);
       }
-
-      new AmqpReceiverImpl(address, this, recOpts, receiver, completionHandler);
     });
     return this;
   }
@@ -313,21 +323,26 @@ public class AmqpConnectionImpl implements AmqpConnection {
     Objects.requireNonNull(completionHandler, "The completion handler must be set");
     runWithTrampoline(x -> {
 
-      ProtonSender sender;
-      if (options != null) {
-        ProtonLinkOptions opts = new ProtonLinkOptions();
-        opts.setLinkName(options.getLinkName());
-        opts.setDynamic(options.isDynamic());
-
-        sender = connection.get().createSender(address, opts);
-        sender.setAutoDrained(options.isAutoDrained());
+      ProtonConnection conn = connection.get();
+      if (conn == null) {
+        completionHandler.handle(Future.failedFuture("Not connected"));
       } else {
-        sender = connection.get().createSender(address);
+        ProtonSender sender;
+        if (options != null) {
+          ProtonLinkOptions opts = new ProtonLinkOptions();
+          opts.setLinkName(options.getLinkName());
+          opts.setDynamic(options.isDynamic());
+
+          sender = conn.createSender(address, opts);
+          sender.setAutoDrained(options.isAutoDrained());
+        } else {
+          sender = conn.createSender(address);
+        }
+
+        // TODO durable?
+
+        AmqpSenderImpl.create(sender, this, completionHandler);
       }
-
-      // TODO durable?
-
-      AmqpSenderImpl.create(sender, this, completionHandler);
     });
     return this;
   }
@@ -336,8 +351,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
   public AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler) {
     Objects.requireNonNull(completionHandler, "The completion handler must be set");
     runWithTrampoline(x -> {
-      ProtonSender sender = connection.get().createSender(null);
-      AmqpSenderImpl.create(sender, this, completionHandler);
+      ProtonConnection conn = connection.get();
+      if (conn == null) {
+        completionHandler.handle(Future.failedFuture("Not connected"));
+      } else {
+        ProtonSender sender = conn.createSender(null);
+        AmqpSenderImpl.create(sender, this, completionHandler);
+      }
     });
     return this;
   }
