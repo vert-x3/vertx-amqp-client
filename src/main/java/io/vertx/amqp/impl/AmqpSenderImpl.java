@@ -272,4 +272,9 @@ public class AmqpSenderImpl implements AmqpSender {
   public String address() {
     return sender.getRemoteAddress();
   }
+
+  @Override
+  public long remainingCredits() {
+    return ((ProtonSenderImpl) sender).getRemoteCredit();
+  }
 }

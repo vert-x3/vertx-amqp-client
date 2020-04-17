@@ -118,4 +118,9 @@ public interface AmqpConnection {
   @Fluent
   AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler);
 
+  /**
+   * @return whether the connection has been disconnected.
+   */
+  boolean isDisconnected();
+
 }

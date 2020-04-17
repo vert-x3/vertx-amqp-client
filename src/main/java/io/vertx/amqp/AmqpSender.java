@@ -78,4 +78,9 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
    * @return the connection having created the sender.
    */
   AmqpConnection connection();
+
+  /**
+   * @return the remaining credit, 0 is none.
+   */
+  long remainingCredits();
 }
