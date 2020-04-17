@@ -411,7 +411,22 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return promise.future();
   }
 
-  ProtonConnection unwrap() {
+  @Override
+  public boolean isDisconnected() {
+    ProtonConnection current = this.connection.get();
+    if (current != null) {
+      return current.isDisconnected();
+    } else {
+      return true;
+    }
+  }
+
+  /**
+   * Allows retrieving the underlying {@link ProtonConnection}.
+   *
+   * @return the underlying connection
+   */
+  public ProtonConnection unwrap() {
     return this.connection.get();
   }
 
