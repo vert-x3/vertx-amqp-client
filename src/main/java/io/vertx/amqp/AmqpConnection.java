@@ -154,4 +154,9 @@ public interface AmqpConnection {
    */
   Future<AmqpSender> createAnonymousSender();
 
+  /**
+   * @return whether the connection has been disconnected.
+   */
+  boolean isDisconnected();
+
 }
