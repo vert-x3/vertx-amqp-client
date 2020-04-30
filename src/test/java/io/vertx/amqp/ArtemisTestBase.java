@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 public class ArtemisTestBase {
 
   @ClassRule
-  public static GenericContainer artemis = new GenericContainer("vromero/activemq-artemis:2.6.3-alpine")
+  public static GenericContainer artemis = new GenericContainer("vromero/activemq-artemis:2.11.0-alpine")
     .withExposedPorts(8161)
     .withExposedPorts(5672);
   AmqpClient client;
