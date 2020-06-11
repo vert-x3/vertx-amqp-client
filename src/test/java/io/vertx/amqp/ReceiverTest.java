@@ -15,13 +15,18 @@
  */
 package io.vertx.amqp;
 
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -195,4 +200,47 @@ public class ReceiverTest extends ArtemisTestBase {
     assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
   }
 
+  @Test
+  public void testReceptionWhenDemandChangesWhileHandlingMessages() {
+    final AtomicInteger count = new AtomicInteger();
+    final String queue = UUID.randomUUID().toString();
+    final List<String> list = new CopyOnWriteArrayList<>();
+    final Promise<AmqpReceiver> receiverCreationPromise = Promise.promise();
+    final Future<AmqpReceiver> receiverCreationFuture = receiverCreationPromise.future();
+
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost(host)
+      .setPort(port)
+      .setUsername(username)
+      .setPassword(password))
+      .connect(connection -> connection.result().createReceiver(queue,
+        done -> {
+          done.result()
+            .pause()
+            .handler(amqpMessage -> list.add(amqpMessage.bodyAsString()));
+          receiverCreationPromise.complete(done.result());
+        }));
+
+    await().until(receiverCreationFuture::succeeded);
+
+    Promise<Void> firstBatchMessageSendingPromise = Promise.promise();
+    CompletableFuture.runAsync(() -> usage.produceStrings(queue, 1000, firstBatchMessageSendingPromise::complete,
+      () -> Integer.toString(count.getAndIncrement())));
+
+    await().until(() -> firstBatchMessageSendingPromise.future().succeeded());
+
+    AmqpReceiver amqpReceiver = receiverCreationFuture.result();
+
+    amqpReceiver.fetch(400);
+
+    Promise<Void> secondBatchMessageSendingPromise = Promise.promise();
+    CompletableFuture.runAsync(() -> usage.produceStrings(queue, 1000, secondBatchMessageSendingPromise::complete,
+      () -> Integer.toString(count.getAndIncrement())));
+
+    await().until(() -> secondBatchMessageSendingPromise.future().succeeded());
+    amqpReceiver.fetch(1600);
+
+    await("All sent messages should be handled").atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(list)
+      .containsAll(IntStream.range(0, 2000).mapToObj(String::valueOf).collect(Collectors.toList())));
+  }
 }
