@@ -26,6 +26,8 @@ import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.transport.AmqpError;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CloseTest extends BareTestBase {
@@ -386,6 +388,51 @@ public class CloseTest extends BareTestBase {
   }
 
   @Test(timeout = 20000)
+  public void testConnectionClosedLocallyDoesNotCallExceptionHandler(TestContext context) throws Exception {
+    final Async asyncShutdown = context.async();
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    // === Server handling ====
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> {
+          serverConnection.close();
+          serverConnection.disconnect();
+        });
+
+        serverConnection.open();
+      });
+    });
+
+    // === Client handling ====
+
+    AmqpClientOptions options = new AmqpClientOptions()
+        .setHost("localhost").setPort(server.actualPort());
+    client = AmqpClient.create(vertx, options);
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+      AmqpConnection conn = res.result();
+      conn.exceptionHandler(
+          x -> {
+            latch.countDown();
+          });
+
+      conn.close(shutdownRes -> {
+        context.assertTrue(shutdownRes.succeeded());
+        asyncShutdown.complete();
+      });
+    });
+
+    try {
+      asyncShutdown.awaitSuccess();
+      context.assertFalse(latch.await(50, TimeUnit.MILLISECONDS), "exception handler should not have fired");
+    } finally {
+      server.close();
+    }
+  }
+
+  @Test(timeout = 20000)
   public void testConnectionClosedRemotelyCallsExceptionHandler(TestContext context) throws Exception {
     doConnectionEndHandlerCalledTestImpl(context, false);
   }
@@ -398,6 +445,7 @@ public class CloseTest extends BareTestBase {
   private void doConnectionEndHandlerCalledTestImpl(TestContext context, boolean disconnect) throws Exception {
     final Async asyncShutdown = context.async();
     final Async asyncEndHandlerCalled = context.async();
+    final CountDownLatch latch = new CountDownLatch(1);
 
     // === Server handling ====
 
@@ -412,6 +460,7 @@ public class CloseTest extends BareTestBase {
             serverConnection.disconnect();
           } else {
             serverConnection.close();
+            serverConnection.disconnect();
           }
         });
       });
@@ -426,6 +475,9 @@ public class CloseTest extends BareTestBase {
       context.assertTrue(res.succeeded());
       res.result().exceptionHandler(
         x -> {
+          if(asyncEndHandlerCalled.isCompleted()) {
+            latch.countDown();
+          }
           asyncEndHandlerCalled.complete();
 
           client.close(shutdownRes -> {
@@ -438,6 +490,10 @@ public class CloseTest extends BareTestBase {
     try {
       asyncEndHandlerCalled.awaitSuccess();
       asyncShutdown.awaitSuccess();
+
+      if(!disconnect) {
+        context.assertFalse(latch.await(50, TimeUnit.MILLISECONDS), "exception handler should not have fired more than once");
+      }
     } finally {
       server.close();
     }
