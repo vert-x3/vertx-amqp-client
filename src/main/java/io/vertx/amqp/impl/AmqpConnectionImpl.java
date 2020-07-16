@@ -130,7 +130,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
       }
     }
 
-    if (h != null) {
+    if (h != null && !closed.get()) {
       String message = getErrorMessage(conn);
       h.handle(new Exception(message));
     }

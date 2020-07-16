@@ -30,6 +30,7 @@ public interface AmqpConnection {
    * Registers a handler called on disconnection.
    *
    * @param handler the exception handler.
+   * @return the connection
    */
   @Fluent
   AmqpConnection exceptionHandler(Handler<Throwable> handler);
