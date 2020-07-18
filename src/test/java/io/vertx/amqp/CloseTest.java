@@ -388,6 +388,55 @@ public class CloseTest extends BareTestBase {
   }
 
   @Test(timeout = 20000)
+  public void testConnectionClosedLocallyDisconnectsTransport(TestContext context) throws Exception {
+    final Async asyncShutdown = context.async();
+    final Async asyncCloseHandlerCalled = context.async();
+    final Async asyncDisconnectHandlerCalled = context.async();
+
+    // === Server handling ====
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      // Expect a connection, open it, expect it to close, then disconnect
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.open();
+
+        serverConnection.closeHandler(y -> {
+          serverConnection.close();
+          asyncCloseHandlerCalled.complete();
+        });
+
+        serverConnection.disconnectHandler(y -> {
+          context.assertTrue(asyncCloseHandlerCalled.isCompleted());
+          asyncDisconnectHandlerCalled.complete();
+        });
+      });
+    });
+
+    // === Client handling ====
+
+    AmqpClientOptions options = new AmqpClientOptions()
+      .setHost("localhost").setPort(server.actualPort());
+    client = AmqpClient.create(vertx, options);
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+      AmqpConnection conn = res.result();
+
+      conn.close(shutdownRes -> {
+        context.assertTrue(shutdownRes.succeeded());
+        asyncShutdown.complete();
+      });
+    });
+
+    try {
+      asyncCloseHandlerCalled.awaitSuccess();
+      asyncDisconnectHandlerCalled.awaitSuccess();
+      asyncShutdown.awaitSuccess();
+    } finally {
+      server.close();
+    }
+  }
+
+  @Test(timeout = 20000)
   public void testConnectionClosedLocallyDoesNotCallExceptionHandler(TestContext context) throws Exception {
     final Async asyncShutdown = context.async();
     final CountDownLatch latch = new CountDownLatch(1);
@@ -494,6 +543,73 @@ public class CloseTest extends BareTestBase {
       if(!disconnect) {
         context.assertFalse(latch.await(50, TimeUnit.MILLISECONDS), "exception handler should not have fired more than once");
       }
+    } finally {
+      server.close();
+    }
+  }
+
+  @Test(timeout = 20000)
+  public void testConnectionClosedRemotelySendsCloseInResponseAndDisconnects(TestContext context) throws Exception {
+    final Async asyncExeptionHandlerCalled = context.async();
+    final Async asyncShutdown = context.async();
+    final Async asyncCloseHandlerCalled = context.async();
+    final Async asyncDisconnectHandlerCalled = context.async();
+
+    // === Server handling ====
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      // Expect a connection
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.open();
+
+        // Remotely close the connection after a delay, but don't disconnect
+        vertx.setTimer(20, x -> {
+          serverConnection.closeHandler(y -> {
+            asyncCloseHandlerCalled.complete();
+
+            context.assertTrue(asyncExeptionHandlerCalled.isCompleted());
+            context.assertFalse(asyncDisconnectHandlerCalled.isCompleted());
+          });
+
+          serverConnection.disconnectHandler(y -> {
+            asyncDisconnectHandlerCalled.complete();
+
+            context.assertTrue(asyncExeptionHandlerCalled.isCompleted());
+            context.assertTrue(asyncCloseHandlerCalled.isCompleted());
+          });
+
+          serverConnection.close();
+        });
+      });
+    });
+
+    // === Client handling ====
+
+    AmqpClientOptions options = new AmqpClientOptions()
+      .setHost("localhost").setPort(server.actualPort());
+    client = AmqpClient.create(vertx, options);
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+      AmqpConnection conn = res.result();
+
+      conn.exceptionHandler(
+        x -> {
+          asyncExeptionHandlerCalled.complete();
+          context.assertFalse(asyncCloseHandlerCalled.isCompleted());
+          context.assertFalse(asyncDisconnectHandlerCalled.isCompleted());
+
+          client.close(shutdownRes -> {
+            context.assertTrue(shutdownRes.succeeded());
+            asyncShutdown.complete();
+          });
+        });
+    });
+
+    try {
+      asyncExeptionHandlerCalled.awaitSuccess();
+      asyncShutdown.awaitSuccess();
+      asyncCloseHandlerCalled.awaitSuccess();
+      asyncDisconnectHandlerCalled.awaitSuccess();
     } finally {
       server.close();
     }

@@ -68,7 +68,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
           // Called on the connection context.
 
           if (ar.succeeded()) {
-            if (!this.connection.compareAndSet(null, ar.result())) {
+            ProtonConnection result = ar.result();
+            if (!this.connection.compareAndSet(null, result)) {
               connectionHandler.handle(Future.failedFuture("Unable to connect - already holding a connection"));
               return;
             }
@@ -96,6 +97,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
                 // Not expected closing, consider it failed
                 try {
                   onDisconnect();
+
+                  result.close();
+                  runOnContext(y -> {
+                    if(!result.isDisconnected()) {
+                      result.disconnect();
+                    }
+                  });
                 } finally {
                   closed.set(true);
                 }
@@ -219,6 +227,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
               } else {
                 future.tryFail(res.cause());
               }
+              actualConnection.disconnect();
             })
             .close();
         } catch (Exception e) {
