@@ -17,230 +17,330 @@ package io.vertx.amqp;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.proton.ProtonDelivery;
+
+import org.apache.qpid.proton.Proton;
+import org.apache.qpid.proton.amqp.messaging.Accepted;
+import org.apache.qpid.proton.amqp.messaging.AmqpValue;
+import org.apache.qpid.proton.amqp.messaging.Modified;
+import org.apache.qpid.proton.amqp.messaging.Rejected;
+import org.apache.qpid.proton.amqp.transport.DeliveryState;
+import org.apache.qpid.proton.message.Message;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-public class ReceiverTest extends ArtemisTestBase {
+public class ReceiverTest extends BareTestBase {
 
   @Test
-  public void testReception() {
-    AtomicInteger count = new AtomicInteger();
-    String queue = UUID.randomUUID().toString();
-    List<String> list = new CopyOnWriteArrayList<>();
-    client = AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password)
-    ).connect(connection -> {
-        connection.result().createReceiver(queue,
-          done -> {
-            done.result().handler(message -> list.add(message.bodyAsString()));
-            CompletableFuture.runAsync(() -> {
-              usage.produceStrings(queue, 10, null,
-                () -> Integer.toString(count.getAndIncrement()));
+  public void testReceptionWithAutoAccept(TestContext context) throws Exception {
+    final int msgCount = 10;
+    final List<Integer> acks = new CopyOnWriteArrayList<>();
+
+    MockServer server = setupMockServer(context, msgCount, (delivery, i) -> {
+      DeliveryState state = delivery.getRemoteState();
+      context.assertEquals(state.getClass(), Accepted.class, "state was not accepted");
+      acks.add(i);
+    });
+
+    try {
+      String queue = UUID.randomUUID().toString();
+      List<String> list = new CopyOnWriteArrayList<>();
+      client = AmqpClient.create(new AmqpClientOptions()
+        .setHost("localhost")
+        .setPort(server.actualPort())
+      ).connect(connResult -> {
+        context.assertTrue(connResult.succeeded());
+        AmqpConnection connection = connResult.result();
+
+        connection.createReceiver(queue, recResult -> {
+          context.assertTrue(recResult.succeeded());
+          AmqpReceiver receiver = recResult.result();
+
+          receiver.handler(message -> list.add(message.bodyAsString()));
+        });
+      });
+
+      await().until(() -> list.size() == msgCount);
+      assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+
+      await().until(() -> acks.size() == msgCount);
+      assertThat(acks).containsExactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    } finally {
+      server.close();
+    }
+  }
+
+  @Test
+  public void testReceptionWithManuallyAcceptedMessages(TestContext context) throws Exception {
+    final int msgCount = 10;
+    final List<Integer> acks = new CopyOnWriteArrayList<>();
+
+    MockServer server = setupMockServer(context, msgCount, (delivery, i) -> {
+      DeliveryState state = delivery.getRemoteState();
+      context.assertEquals(state.getClass(), Accepted.class, "state was not accepted");
+      acks.add(i);
+    });
+
+    try {
+      String queue = UUID.randomUUID().toString();
+      List<String> list = new CopyOnWriteArrayList<>();
+      client = AmqpClient.create(new AmqpClientOptions()
+        .setHost("localhost")
+        .setPort(server.actualPort())
+      ).connect(connResult -> {
+        context.assertTrue(connResult.succeeded());
+        AmqpConnection connection = connResult.result();
+
+        AmqpReceiverOptions options = new AmqpReceiverOptions().setAutoAcknowledgement(false);
+        connection.createReceiver(queue, options, recResult -> {
+          context.assertTrue(recResult.succeeded());
+          AmqpReceiver receiver = recResult.result();
+
+          receiver.handler(message -> {
+            list.add(message.bodyAsString());
+            message.accepted();
+          });
+        });
+      });
+
+      await().until(() -> list.size() == msgCount);
+      assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+
+      await().until(() -> acks.size() == msgCount);
+      assertThat(acks).containsExactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    } finally {
+      server.close();
+    }
+  }
+
+  @Test
+  public void testReceptionWithManuallyRejectedMessages(TestContext context) throws Exception {
+    final int msgCount = 10;
+    final List<Integer> acks = new CopyOnWriteArrayList<>();
+
+    MockServer server = setupMockServer(context, msgCount, (delivery, i) -> {
+      DeliveryState state = delivery.getRemoteState();
+      context.assertEquals(state.getClass(), Rejected.class, "state was not rejected");
+      acks.add(i);
+    });
+
+    try {
+      String queue = UUID.randomUUID().toString();
+      List<String> list = new CopyOnWriteArrayList<>();
+      client = AmqpClient.create(new AmqpClientOptions()
+        .setHost("localhost")
+        .setPort(server.actualPort())
+      ).connect(connResult -> {
+        context.assertTrue(connResult.succeeded());
+        AmqpConnection connection = connResult.result();
+
+        AmqpReceiverOptions options = new AmqpReceiverOptions().setAutoAcknowledgement(false);
+        connection.createReceiver(queue, options, recResult -> {
+          context.assertTrue(recResult.succeeded());
+          AmqpReceiver receiver = recResult.result();
+
+          receiver.handler(message -> {
+            list.add(message.bodyAsString());
+            message.rejected();
+          });
+        });
+      });
+
+      await().until(() -> list.size() == msgCount);
+      assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+
+      await().until(() -> acks.size() == msgCount);
+      assertThat(acks).containsExactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    } finally {
+      server.close();
+    }
+  }
+
+  @Test
+  public void testReceptionWithManuallyModifiedFailedMessages(TestContext context) throws Exception {
+    doReceptionWithManuallyModifiedMessagesTestImpl(context, false);
+  }
+
+  @Test
+  public void testReceptionWithManuallyModifiedFailedUndeliverableHereMessages(TestContext context) throws Exception {
+    doReceptionWithManuallyModifiedMessagesTestImpl(context, true);
+  }
+
+  private void doReceptionWithManuallyModifiedMessagesTestImpl(TestContext context, boolean undeliverable) throws Exception {
+    final int msgCount = 10;
+    final List<Integer> acks = new CopyOnWriteArrayList<>();
+
+    MockServer server = setupMockServer(context, msgCount, (delivery, i) -> {
+      DeliveryState state = delivery.getRemoteState();
+      context.assertEquals(state.getClass(), Modified.class, "state was not modified");
+
+      context.assertTrue(((Modified) state).getDeliveryFailed());
+      context.assertEquals(undeliverable, ((Modified) state).getUndeliverableHere());
+
+      acks.add(i);
+    });
+
+    try {
+      String queue = UUID.randomUUID().toString();
+      List<String> list = new CopyOnWriteArrayList<>();
+      client = AmqpClient.create(new AmqpClientOptions()
+        .setHost("localhost")
+        .setPort(server.actualPort())
+      ).connect(connResult -> {
+        context.assertTrue(connResult.succeeded());
+        AmqpConnection connection = connResult.result();
+
+        AmqpReceiverOptions options = new AmqpReceiverOptions().setAutoAcknowledgement(false);
+        connection.createReceiver(queue, options, recResult -> {
+          context.assertTrue(recResult.succeeded());
+          AmqpReceiver receiver = recResult.result();
+
+          receiver.handler(message -> {
+            list.add(message.bodyAsString());
+            message.modified(true, undeliverable);
+          });
+        });
+      });
+
+      await().until(() -> list.size() == msgCount);
+      assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+
+      await().until(() -> acks.size() == msgCount);
+      assertThat(acks).containsExactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    } finally {
+      server.close();
+    }
+  }
+
+
+  @Test
+  public void testReceptionCreatingReceiverWithoutConnection(TestContext context) throws Exception {
+    final int msgCount = 10;
+    final List<Integer> acks = new CopyOnWriteArrayList<>();
+
+    MockServer server = setupMockServer(context, msgCount, (delivery, i) -> {
+      DeliveryState state = delivery.getRemoteState();
+      context.assertEquals(state.getClass(), Accepted.class, "state was not accepted");
+      acks.add(i);
+    });
+
+    try {
+      String queue = UUID.randomUUID().toString();
+      List<String> list = new CopyOnWriteArrayList<>();
+      client = AmqpClient.create(new AmqpClientOptions()
+        .setHost("localhost")
+        .setPort(server.actualPort())
+      ).createReceiver(queue, recResult -> {
+          context.assertTrue(recResult.succeeded());
+          AmqpReceiver receiver = recResult.result();
+
+          receiver.handler(message -> list.add(message.bodyAsString()));
+        }
+      );
+
+      await().until(() -> list.size() == msgCount);
+      assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+
+      await().until(() -> acks.size() == msgCount);
+      assertThat(acks).containsExactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    } finally {
+      server.close();
+    }
+  }
+
+  private MockServer setupMockServer(TestContext context, int msgCount, BiConsumer<ProtonDelivery, Integer> stateCheck) throws Exception {
+    AtomicInteger sent = new AtomicInteger();
+
+    return new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      serverConnection.sessionOpenHandler(serverSession -> {
+        serverSession.closeHandler(x -> serverSession.close());
+        serverSession.open();
+      });
+
+      serverConnection.senderOpenHandler(serverSender-> {
+        serverSender.sendQueueDrainHandler(x-> {
+          while(sent.get() < msgCount && !serverSender.sendQueueFull()) {
+            Message m = Proton.message();
+            final int i = sent.getAndIncrement();
+            m.setBody(new AmqpValue(String.valueOf(i)));
+
+            serverSender.send(m , delivery -> {
+              context.assertNotNull(delivery.getRemoteState(), "message had no state set");
+              stateCheck.accept(delivery, i);
+              context.assertTrue(delivery.remotelySettled(), "message was not settled");
             });
           }
-        );
-      }
-    );
+        });
 
-    await().until(() -> list.size() == 10);
-    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+        serverSender.open();
+      });
+    });
   }
 
   @Test
-  public void testReceptionWithAcceptedMessages() {
-    AtomicInteger count = new AtomicInteger();
-    String queue = UUID.randomUUID().toString();
-    List<String> list = new CopyOnWriteArrayList<>();
-    client = AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password)
-    ).connect(connection -> {
-        connection.result().createReceiver(queue,
-          new AmqpReceiverOptions().setAutoAcknowledgement(false),
-          done -> {
-            done.result().handler(message -> {
-              list.add(message.bodyAsString());
-              message.accepted();
-            });
-            CompletableFuture.runAsync(() -> {
-              usage.produceStrings(queue, 10, null,
-                () -> Integer.toString(count.getAndIncrement()));
-            });
-          }
-        );
-      }
-    );
+  public void testReceptionWhenDemandChangesWhileHandlingMessages(TestContext context) throws Exception {
+    final int msgCount = 2000;
+    final List<Integer> acks = new CopyOnWriteArrayList<>();
 
-    await().until(() -> list.size() == 10);
-    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
-  }
-
-  @Test
-  public void testReceptionWithRejectedMessages() {
-    AtomicInteger count = new AtomicInteger();
-    String queue = UUID.randomUUID().toString();
-    List<String> list = new CopyOnWriteArrayList<>();
-    client = AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password)
-    ).connect(connection -> {
-        connection.result().createReceiver(queue,
-          new AmqpReceiverOptions().setAutoAcknowledgement(false),
-          done -> {
-            done.result().handler(message -> {
-              list.add(message.bodyAsString());
-              message.rejected();
-            });
-            CompletableFuture.runAsync(() -> {
-              usage.produceStrings(queue, 10, null,
-                () -> Integer.toString(count.getAndIncrement()));
-            });
-          }
-        );
-      }
-    );
-
-    await().until(() -> list.size() == 10);
-    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
-  }
-
-  @Test
-  public void testReceptionWithModifiedMessages() {
-    AtomicInteger count = new AtomicInteger();
-    String queue = UUID.randomUUID().toString();
-    List<String> list = new CopyOnWriteArrayList<>();
-    client = AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password)
-    ).connect(connection -> {
-        connection.result().createReceiver(queue,
-          new AmqpReceiverOptions().setAutoAcknowledgement(false),
-          done -> {
-            done.result().handler(message -> {
-              list.add(message.bodyAsString());
-              message.modified(true, true);
-            });
-            CompletableFuture.runAsync(() -> {
-              usage.produceStrings(queue, 10, null,
-                () -> Integer.toString(count.getAndIncrement()));
-            });
-          }
-        );
-      }
-    );
-
-    await().until(() -> list.size() == 10);
-    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
-  }
-
-
-  @Test
-  public void testReceptionWithoutConnection() {
-    AtomicInteger count = new AtomicInteger();
-    String queue = UUID.randomUUID().toString();
-    List<String> list = new CopyOnWriteArrayList<>();
-    client = AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password)
-    ).createReceiver(queue,
-      done -> {
-        done.result().handler(message -> list.add(message.bodyAsString()));
-        CompletableFuture.runAsync(() ->
-          usage.produceStrings(queue, 10, null,
-            () -> Integer.toString(count.getAndIncrement())));
-      }
-    );
-
-    await().until(() -> list.size() == 10);
-    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
-  }
-
-  @Test
-  public void testReceptionWithoutConnectionWithoutMessageHandler() {
-    AtomicInteger count = new AtomicInteger();
-    String queue = UUID.randomUUID().toString();
-    List<String> list = new CopyOnWriteArrayList<>();
-    client = AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password)
-    ).createReceiver(queue,
-      done -> {
-        done.result().handler(message -> list.add(message.bodyAsString()));
-        CompletableFuture.runAsync(() ->
-          usage.produceStrings(queue, 10, null,
-            () -> Integer.toString(count.getAndIncrement())));
-      }
-    );
-
-    await().until(() -> list.size() == 10);
-    assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
-  }
-
-  @Test
-  public void testReceptionWhenDemandChangesWhileHandlingMessages() {
-    final AtomicInteger count = new AtomicInteger();
     final String queue = UUID.randomUUID().toString();
     final List<String> list = new CopyOnWriteArrayList<>();
     final Promise<AmqpReceiver> receiverCreationPromise = Promise.promise();
     final Future<AmqpReceiver> receiverCreationFuture = receiverCreationPromise.future();
 
-    client = AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password))
-      .connect(connection -> connection.result().createReceiver(queue,
-        done -> {
-          done.result()
-            .pause()
-            .handler(amqpMessage -> list.add(amqpMessage.bodyAsString()));
-          receiverCreationPromise.complete(done.result());
+    MockServer server = setupMockServer(context, msgCount, (delivery, i) -> {
+      DeliveryState state = delivery.getRemoteState();
+      context.assertEquals(state.getClass(), Accepted.class, "state was not accepted");
+      acks.add(i);
+    });
+
+    try {
+      client = AmqpClient.create(new AmqpClientOptions()
+        .setHost("localhost")
+        .setPort(server.actualPort()))
+        .connect(connection -> connection.result().createReceiver(queue, recResult -> {
+          context.assertTrue(recResult.succeeded());
+          AmqpReceiver receiver = recResult.result();
+
+          receiver.pause();
+          receiver.handler(amqpMessage -> list.add(amqpMessage.bodyAsString()));
+          receiverCreationPromise.complete(receiver);
         }));
 
-    await().until(receiverCreationFuture::succeeded);
+      await().until(receiverCreationFuture::succeeded);
 
-    Promise<Void> firstBatchMessageSendingPromise = Promise.promise();
-    CompletableFuture.runAsync(() -> usage.produceStrings(queue, 1000, firstBatchMessageSendingPromise::complete,
-      () -> Integer.toString(count.getAndIncrement())));
+      AmqpReceiver amqpReceiver = receiverCreationFuture.result();
 
-    await().until(() -> firstBatchMessageSendingPromise.future().succeeded());
+      amqpReceiver.fetch(400);
 
-    AmqpReceiver amqpReceiver = receiverCreationFuture.result();
+      await().until(() -> list.size() == 400);
 
-    amqpReceiver.fetch(400);
+      amqpReceiver.fetch(1600);
 
-    Promise<Void> secondBatchMessageSendingPromise = Promise.promise();
-    CompletableFuture.runAsync(() -> usage.produceStrings(queue, 1000, secondBatchMessageSendingPromise::complete,
-      () -> Integer.toString(count.getAndIncrement())));
+      await("All messages should be handled").atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(list)
+        .containsAll(IntStream.range(0, msgCount).mapToObj(String::valueOf).collect(Collectors.toList())));
 
-    await().until(() -> secondBatchMessageSendingPromise.future().succeeded());
-    amqpReceiver.fetch(1600);
-
-    await("All sent messages should be handled").atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(list)
-      .containsAll(IntStream.range(0, 2000).mapToObj(String::valueOf).collect(Collectors.toList())));
+      await("All messages should be acknowledged").atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(acks)
+        .containsAll(IntStream.range(0, msgCount).boxed().collect(Collectors.toList())));
+    } finally {
+      server.close();
+    }
   }
+
 }

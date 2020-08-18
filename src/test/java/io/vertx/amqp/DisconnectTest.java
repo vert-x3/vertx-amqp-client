@@ -15,55 +15,34 @@
  */
 package io.vertx.amqp;
 
-import io.vertx.core.Vertx;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Repeat;
-import io.vertx.ext.unit.junit.RepeatRule;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
+import java.util.UUID;
+
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
-public class DisconnectTest extends ArtemisTestBase {
+public class DisconnectTest extends BareTestBase {
 
-  private Vertx vertx;
+  @Test(timeout = 20000)
+  public void testUseConnectionAfterDisconnect(TestContext ctx) throws Exception {
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      // Expect a connection
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+    });
 
-  @Before
-  public void setUp() {
-    vertx = Vertx.vertx();
-  }
-
-  @After
-  public void tearDown() throws InterruptedException {
-    super.tearDown();
-    if (vertx != null) {
-      vertx.close();
-    }
-  }
-
-  @Test
-  public void testUseConnectionAfterDisconnect(TestContext ctx) {
     String queue = UUID.randomUUID().toString();
-    client = AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password)
-    );
+    client = AmqpClient.create(vertx, new AmqpClientOptions()
+        .setHost("localhost")
+        .setPort(server.actualPort()));
+
+    Async handlerFired = ctx.async();
     client.connect(ctx.asyncAssertSuccess(conn -> {
       conn.exceptionHandler(err -> {
         conn.createSender(queue, ctx.asyncAssertFailure(sender -> {
@@ -76,12 +55,13 @@ public class DisconnectTest extends ArtemisTestBase {
         }));
         conn.createDynamicReceiver(ctx.asyncAssertFailure(sender -> {
         }));
+
+        handlerFired.complete();
       });
-      vertx.executeBlocking(promise -> {
-        artemis.close();
-        promise.complete();
-      }, ctx.asyncAssertSuccess(v -> {
-      }));
+
+      server.close();
     }));
+
+    handlerFired.awaitSuccess();
   }
 }
