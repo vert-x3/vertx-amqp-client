@@ -278,13 +278,13 @@ public interface AmqpMessage {
    * When receiving a message,  and when auto-acknowledgement is disabled, this method is used to acknowledge
    * the incoming message as {@code modified}.
    *
-   * @param didItFail          pass {@code true} to increase the failed delivery count
-   * @param wasItDeliveredHere pass {@code true} to prevent the re-delivery of the message
+   * @param deliveryFailed pass {@code true} to increase the failed delivery count
+   * @param undeliverableHere pass {@code true} to prevent re-delivery of this message to the same consumer
    * @return the current {@link AmqpMessage} object
    * @throws IllegalStateException is the current message is not a received message.
    */
   @Fluent
-  AmqpMessage modified(boolean didItFail, boolean wasItDeliveredHere);
+  AmqpMessage modified(boolean deliveryFailed, boolean undeliverableHere);
 
 
   //TODO What type should we use for delivery annotations and message annotations
