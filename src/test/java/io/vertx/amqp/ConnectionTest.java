@@ -15,9 +15,6 @@
  */
 package io.vertx.amqp;
 
-import io.vertx.core.Vertx;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -28,70 +25,102 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 
-public class ConnectionTest extends ArtemisTestBase {
+public class ConnectionTest extends BareTestBase {
 
-  private Vertx vertx;
+  @Test
+  public void testConnectionSuccessWithDetailsPassedInOptions() throws Exception {
+    AtomicBoolean serverConnectionOpen = new AtomicBoolean();
 
-  @Before
-  public void init() {
-    vertx = Vertx.vertx();
-  }
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      // Expect a connection
+      serverConnection.openHandler(serverSender -> {
+        serverConnectionOpen.set(true);
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+    });
 
-  @After
-  public void destroy() {
-    vertx.close();
+    try {
+      AtomicBoolean done = new AtomicBoolean();
+      client = AmqpClient.create(vertx, new AmqpClientOptions()
+          .setHost("localhost")
+          .setPort(server.actualPort()));
+
+      client.connect(ar -> done.set(ar.succeeded()));
+
+      await().untilAtomic(serverConnectionOpen, is(true));
+      await().untilAtomic(done, is(true));
+    } finally {
+      server.close();
+    }
   }
 
   @Test
-  public void testConnectionSuccessWithDetailsPassedInOptions() {
-    AtomicBoolean done = new AtomicBoolean();
-    client = AmqpClient.create(new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
+  public void testConnectionSuccessWithDetailsPassedAsSystemVariables() throws Exception {
+    AtomicBoolean serverConnectionOpen = new AtomicBoolean();
 
-    ).connect(
-      ar -> done.set(ar.succeeded())
-    );
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      // Expect a connection
+      serverConnection.openHandler(serverSender -> {
+        serverConnectionOpen.set(true);
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+    });
 
-    await().untilAtomic(done, is(true));
-  }
+    System.setProperty("amqp-client-host", "localhost");
+    System.setProperty("amqp-client-port", Integer.toString(server.actualPort()));
+    try {
+      AtomicBoolean done = new AtomicBoolean();
+      client = AmqpClient.create(vertx, new AmqpClientOptions());
 
-  @Test
-  public void testConnectionSuccessWithDetailsPassedAsSystemVariables() {
-    System.setProperty("amqp-client-host", host);
-    System.setProperty("amqp-client-port", Integer.toString(port));
-    AtomicBoolean done = new AtomicBoolean();
-    client = AmqpClient.create(new AmqpClientOptions()).connect(
-      ar -> {
+      client.connect(ar -> {
         if (ar.failed()) {
           ar.cause().printStackTrace();
         }
         done.set(ar.succeeded());
-      }
-    );
+      });
 
-    await().untilAtomic(done, is(true));
-
-    System.clearProperty("amqp-client-host");
-    System.clearProperty("amqp-client-port");
+      await().untilAtomic(serverConnectionOpen, is(true));
+      await().untilAtomic(done, is(true));
+    }
+    finally {
+      System.clearProperty("amqp-client-host");
+      System.clearProperty("amqp-client-port");
+      server.close();
+    }
   }
 
   @Test
-  public void testConnectionFailedBecauseOfBadHost() {
+  public void testConnectionFailedBecauseOfBadHost() throws Exception {
     AtomicBoolean done = new AtomicBoolean();
-    AtomicReference<Throwable> failure = new AtomicReference<>();
-    client = AmqpClient.create(vertx, new AmqpClientOptions()
-      .setHost("org.acme")
-      .setPort(port)
-    ).connect(
-      ar -> {
+    AtomicBoolean serverConnectionOpen = new AtomicBoolean();
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      // [Dont] expect a connection
+      serverConnection.openHandler(serverSender -> {
+        serverConnectionOpen.set(true);
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+    });
+
+    try {
+      AtomicReference<Throwable> failure = new AtomicReference<>();
+      client = AmqpClient.create(vertx, new AmqpClientOptions()
+          .setHost("org.acme")
+          .setPort(server.actualPort()));
+
+      client.connect(ar -> {
         failure.set(ar.cause());
         done.set(true);
-      }
-    );
+      });
 
-    await().pollInterval(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS)
-      .untilAtomic(done, is(true));
-    assertThat(failure.get()).isNotNull();
+      await().pollInterval(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).untilAtomic(done, is(true));
+      assertThat(failure.get()).isNotNull();
+      assertThat(serverConnectionOpen.get()).isFalse();
+    } finally {
+      server.close();
+    }
   }
 }
