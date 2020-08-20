@@ -21,7 +21,7 @@
   <parent>
     <groupId>io.vertx</groupId>
     <artifactId>vertx-ext-parent</artifactId>
-    <version>34</version>
+    <version>37</version>
   </parent>
 
   <artifactId>vertx-amqp-client</artifactId>
@@ -31,6 +31,7 @@
 
   <properties>
     <stack.version>4.0.0-SNAPSHOT</stack.version>
+    <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
   </properties>
 
   <dependencyManagement>

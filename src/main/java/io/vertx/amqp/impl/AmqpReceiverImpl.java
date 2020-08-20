@@ -86,9 +86,6 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       .setPrefetch(0);
 
     this.receiver.handler((delivery, message) -> handleMessage(new AmqpMessageImpl(message, delivery)));
-    if (this.handler != null) {
-      handler(this.handler);
-    }
 
     this.receiver.closeHandler(res -> {
       onClose(address, receiver, res, false);
@@ -160,35 +157,32 @@ public class AmqpReceiverImpl implements AmqpReceiver {
 
   private void handleMessage(AmqpMessageImpl message) {
     boolean schedule = false;
-    boolean dispatchNow = false;
 
+    Handler<AmqpMessage> h;
     synchronized (this) {
-      if (handler != null && demand > 0L && buffered.isEmpty()) {
-        if (demand != Long.MAX_VALUE) {
-          demand--;
-        }
-        dispatchNow = true;
-      } else if (handler != null && demand > 0L) {
+      h = handler;
+      if(h == null || demand == 0L) {
+        // Buffer message until we aren't paused
+        buffered.add(message);
+        return;
+      }
+
+      if(!buffered.isEmpty()) {
         // Buffered messages present, deliver the oldest of those instead
         buffered.add(message);
         message = buffered.poll();
-        if (demand != Long.MAX_VALUE) {
-          demand--;
-        }
-
         // Schedule a delivery for the next buffered message
         schedule = true;
-      } else {
-        // Buffer message until we aren't paused
-        buffered.add(message);
+      }
+      if (demand != Long.MAX_VALUE) {
+        demand--;
       }
     }
+    deliverMessageToHandler(h, message);
 
     // schedule next delivery if appropriate, after earlier delivery to allow chance to pause etc.
-    if (schedule) {
+    if(schedule) {
       scheduleBufferedMessageDelivery();
-    } else if (dispatchNow) {
-      deliverMessageToHandler(message);
     }
   }
 
@@ -257,12 +251,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     return this;
   }
 
-  private void deliverMessageToHandler(AmqpMessageImpl message) {
-    Handler<AmqpMessage> h;
-    synchronized (this) {
-      h = handler;
-    }
-
+  private void deliverMessageToHandler(Handler<AmqpMessage> h, AmqpMessageImpl message) {
     try {
       h.handle(message);
       if (autoAck) {
@@ -287,20 +276,22 @@ public class AmqpReceiverImpl implements AmqpReceiver {
 
     if (schedule) {
       connection.runOnContext(v -> {
+        Handler<AmqpMessage> h;
         AmqpMessageImpl message = null;
 
         synchronized (this) {
-          if (demand > 0L) {
-            if (demand != Long.MAX_VALUE) {
+          h = handler;
+          if (h != null && demand > 0L) {
+            message = buffered.poll();
+            if (demand != Long.MAX_VALUE && message != null) {
               demand--;
             }
-            message = buffered.poll();
           }
         }
 
         if (message != null) {
           // Delivering outside the synchronized block
-          deliverMessageToHandler(message);
+          deliverMessageToHandler(h, message);
 
           // Schedule a delivery for a further buffered message if any
           scheduleBufferedMessageDelivery();
