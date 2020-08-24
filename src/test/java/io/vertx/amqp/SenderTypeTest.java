@@ -15,274 +15,308 @@
  */
 package io.vertx.amqp;
 
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.unit.TestContext;
+
+import org.apache.qpid.proton.amqp.Binary;
+import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.messaging.Accepted;
+import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
+import org.apache.qpid.proton.amqp.messaging.AmqpValue;
+import org.apache.qpid.proton.amqp.messaging.Data;
+import org.apache.qpid.proton.amqp.messaging.Section;
+import org.apache.qpid.proton.message.Message;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 
-public class SenderTypeTest extends ArtemisTestBase {
+public class SenderTypeTest extends BareTestBase {
 
-  private Vertx vertx;
   private AmqpConnection connection;
   private String address;
+  private MockServer server;
+  private List<Object> list;
+  private AtomicReference<Consumer<Message>> msgCheckRef;
 
   @Before
-  public void setUp() {
-    vertx = Vertx.vertx();
+  public void init() throws Exception {
+    list = new CopyOnWriteArrayList<>();
+    msgCheckRef = new AtomicReference<>();
+    server = setupMockServer(msgCheckRef, list);
+
+    CountDownLatch latch = new CountDownLatch(1);
     AtomicReference<AmqpConnection> reference = new AtomicReference<>();
     client = AmqpClient.create(vertx, new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password))
+      .setHost("localhost")
+      .setPort(server.actualPort()))
       .connect(connection -> {
         reference.set(connection.result());
         if (connection.failed()) {
           connection.cause().printStackTrace();
         }
+        latch.countDown();
       });
 
-    await().untilAtomic(reference, is(notNullValue()));
+    assertThat(latch.await(6, TimeUnit.SECONDS)).isTrue();
     this.connection = reference.get();
+    assertThat(connection).isNotNull();
     this.address = UUID.randomUUID().toString();
   }
 
   @After
   public void tearDown() throws InterruptedException {
     super.tearDown();
-    vertx.close();
+    server.close();
   }
 
-  @Test
-  public void testBoolean() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
+  @Test(timeout = 10000)
+  public void testBoolean(TestContext context) throws Exception {
+    CountDownLatch msgsRecieved = new CountDownLatch(2);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
         sender.send(AmqpMessage.create().withBooleanAsBody(true).build());
-        sender.send(AmqpMessage.create().withBooleanAsBody(false).build());
-        sender.send(AmqpMessage.create().withBooleanAsBody(Boolean.TRUE).build());
         sender.send(AmqpMessage.create().withBooleanAsBody(Boolean.FALSE).build());
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 4);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsBoolean).collect(Collectors.toList()))
-      .containsExactly(true, false, true, false);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(true, false);
   }
 
-  @Test
-  public void testByte() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
-    byte value = 1;
+  @Test(timeout = 10000)
+  public void testByte(TestContext context) throws Exception {
+    byte valueA = Byte.MAX_VALUE;
+    byte valueB = Byte.MIN_VALUE;
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(2);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withByteAsBody(value).build());
-        sender.send(AmqpMessage.create().withByteAsBody(Byte.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withByteAsBody(valueA).build());
+        sender.send(AmqpMessage.create().withByteAsBody(Byte.valueOf(valueB)).build());
       }
     });
 
-    await().until(() -> list.size() == 2);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsByte).collect(Collectors.toList()))
-      .containsExactly(value, value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(valueA, valueB);
   }
 
-  @Test
-  public void testShort() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
-    short value = 2;
+  @Test(timeout = 10000)
+  public void testShort(TestContext context) throws Exception {
+    short valueA = Short.MAX_VALUE;
+    short valueB = Short.MIN_VALUE;
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(2);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withShortAsBody(value).build());
-        sender.send(AmqpMessage.create().withShortAsBody(Short.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withShortAsBody(valueA).build());
+        sender.send(AmqpMessage.create().withShortAsBody(Short.valueOf(valueB)).build());
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 2);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsShort).collect(Collectors.toList()))
-      .containsExactly(value, value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(valueA, valueB);
   }
 
-  @Test
-  public void testInteger() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
-    int value = 3;
+  @Test(timeout = 10000)
+  public void testInteger(TestContext context) throws Exception {
+    int valueA = Integer.MAX_VALUE;
+    int valueB = Integer.MIN_VALUE;
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(2);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withIntegerAsBody(value).build());
-        sender.send(AmqpMessage.create().withIntegerAsBody(Integer.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withIntegerAsBody(valueA).build());
+        sender.send(AmqpMessage.create().withIntegerAsBody(Integer.valueOf(valueB)).build());
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 2);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsInteger).collect(Collectors.toList()))
-      .containsExactly(value, value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(valueA, valueB);
   }
 
-  @Test
-  public void testLong() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
-    long value = 25;
+  @Test(timeout = 10000)
+  public void testLong(TestContext context) throws Exception {
+    long valueA = Long.MAX_VALUE;
+    long valueB = Long.MIN_VALUE;;
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(2);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withLongAsBody(value).build());
-        sender.send(AmqpMessage.create().withLongAsBody(Long.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withLongAsBody(valueA).build());
+        sender.send(AmqpMessage.create().withLongAsBody(Long.valueOf(valueB)).build());
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 2);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsLong).collect(Collectors.toList()))
-      .containsExactly(value, value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(valueA, valueB);
   }
 
-  @Test
-  public void testFloat() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
-    float value = 23.45f;
+  @Test(timeout = 10000)
+  public void testFloat(TestContext context) throws Exception {
+    float valueA = Float.MAX_VALUE;
+    float valueB = Float.MIN_VALUE;
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(2);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withFloatAsBody(value).build());
-        sender.send(AmqpMessage.create().withFloatAsBody(Float.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withFloatAsBody(valueA).build());
+        sender.send(AmqpMessage.create().withFloatAsBody(Float.valueOf(valueB)).build());
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 2);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsFloat).collect(Collectors.toList()))
-      .containsExactly(value, value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(valueA, valueB);
   }
 
-  @Test
-  public void testDouble() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
-    double value = 123.45;
+  @Test(timeout = 10000)
+  public void testDouble(TestContext context) throws Exception {
+    double valueA = Double.MAX_VALUE;
+    double valueB = Double.MIN_VALUE;
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(2);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withDoubleAsBody(value).build());
-        sender.send(AmqpMessage.create().withDoubleAsBody(Double.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withDoubleAsBody(valueA).build());
+        sender.send(AmqpMessage.create().withDoubleAsBody(Double.valueOf(valueB)).build());
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 2);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsDouble).collect(Collectors.toList()))
-      .containsExactly(value, value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(valueA, valueB);
   }
 
-  @Test
-  public void testCharacter() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
-    char value = 'a';
+  @Test(timeout = 10000)
+  public void testCharacter(TestContext context) throws Exception {
+    char valueA = 'a';
+    char valueB = 'Z';
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(2);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withCharAsBody(value).build());
-        sender.send(AmqpMessage.create().withCharAsBody(Character.valueOf(value)).build());
+        sender.send(AmqpMessage.create().withCharAsBody(valueA).build());
+        sender.send(AmqpMessage.create().withCharAsBody(Character.valueOf(valueB)).build());
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 2);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsChar).collect(Collectors.toList()))
-      .containsExactly(value, value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(valueA, valueB);
   }
 
-  @Test
-  public void testTimestamp() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
-    Instant value = Instant.now();
+  @Test(timeout = 10000)
+  public void testTimestamp(TestContext context) throws Exception {
+    // We avoid using Instant.now() in the test since its precision is
+    // variable and JDK + platform dependent, while timestamp is always
+    // millisecond precision. A mismatch throws off the equality comparison.
+    long currentTimeMillis = System.currentTimeMillis();
+    Instant instant = Instant.ofEpochMilli(currentTimeMillis);
+    Date timestamp = new Date(currentTimeMillis);
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(1);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       } else {
         AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withInstantAsBody(value).build());
+        sender.send(AmqpMessage.create().withInstantAsBody(instant).build());
       }
     });
 
-    await().until(() -> list.size() == 1);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(timestamp);
   }
 
-  @Test
-  public void testUUID() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
+  @Test(timeout = 10000)
+  public void testUUID(TestContext context) throws Exception {
     UUID value = UUID.randomUUID();
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(1);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -292,18 +326,22 @@ public class SenderTypeTest extends ArtemisTestBase {
       }
     });
 
-    await().until(() -> list.size() == 1);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsUUID).collect(Collectors.toList()))
-      .containsExactly(value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(value);
   }
 
-  @Test
-  public void testBinary() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
-    Buffer value = Buffer.buffer("this is a message");
+  @Test(timeout = 10000)
+  public void testBinary(TestContext context) throws Exception {
+    String textString = "this is a message";
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    Buffer value = Buffer.buffer(textString);
+    Binary dataContents = new Binary(textString.getBytes(StandardCharsets.UTF_8));
+
+    CountDownLatch msgsRecieved = new CountDownLatch(1);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof Data);
+      msgsRecieved.countDown();
+    });
 
     connection.createSender(address, done -> {
       if (done.failed()) {
@@ -314,18 +352,20 @@ public class SenderTypeTest extends ArtemisTestBase {
       }
     });
 
-    await().until(() -> list.size() == 1);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsBinary).collect(Collectors.toList()))
-      .containsExactly(value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(dataContents);
   }
 
-  @Test
-  public void testString() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
+  @Test(timeout = 10000)
+  public void testString(TestContext context) throws Exception {
     String value = "this is a message";
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(1);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -335,20 +375,20 @@ public class SenderTypeTest extends ArtemisTestBase {
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 1);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsString).collect(Collectors.toList()))
-      .containsExactly(value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(value);
   }
 
-  @Test
-  public void testSymbol() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
+  @Test(timeout = 10000)
+  public void testSymbol(TestContext context) throws Exception {
     String value = "Newton";
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(1);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -358,23 +398,23 @@ public class SenderTypeTest extends ArtemisTestBase {
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 1);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsSymbol).collect(Collectors.toList()))
-      .containsExactly(value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(Symbol.valueOf(value));
   }
 
-  @Test
-  public void testList() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
+  @Test(timeout = 10000)
+  public void testList(TestContext context) throws Exception {
     List<Object> value = new ArrayList<>();
     value.add("foo");
     value.add(1);
     value.add(true);
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(1);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -384,23 +424,24 @@ public class SenderTypeTest extends ArtemisTestBase {
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 1);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsList).collect(Collectors.toList()))
-      .containsExactly(value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(value);
   }
 
-  @Test
-  public void testMap() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
+  @Test(timeout = 10000)
+  @SuppressWarnings("unchecked")
+  public void testMap(TestContext context) throws Exception {
     Map<String, String> value = new HashMap<>();
     value.put("1", "foo");
     value.put("2", "bar");
     value.put("3", "baz");
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(1);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof AmqpValue);
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -410,20 +451,23 @@ public class SenderTypeTest extends ArtemisTestBase {
       }
     });
 
-    await()
-      .pollInterval(2, TimeUnit.SECONDS)
-      .until(() -> list.size() == 1);
-
-    assertThat(list.get(0).bodyAsMap()).containsAllEntriesOf(value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat((Map<String, String>) list.get(0)).containsAllEntriesOf(value);
   }
 
-  @Test
-  public void testJsonObject() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
+  @Test(timeout = 10000)
+  public void testJsonObject(TestContext context) throws Exception {
     JsonObject value = new JsonObject().put("data", "message").put("number", 1)
       .put("array", new JsonArray().add(1).add(2).add(3));
+    Binary dataContents = new Binary(value.encode().getBytes(StandardCharsets.UTF_8));
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(1);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof Data);
+      context.assertEquals("application/json", msg.getContentType());
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -433,18 +477,22 @@ public class SenderTypeTest extends ArtemisTestBase {
       }
     });
 
-    await().until(() -> list.size() == 1);
-
-    assertThat(list.stream().map(AmqpMessage::bodyAsJsonObject).collect(Collectors.toList()))
-      .containsExactly(value);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(dataContents);
   }
 
-  @Test
-  public void testJsonArray() {
-    List<AmqpMessage> list = new CopyOnWriteArrayList<>();
+  @Test(timeout = 10000)
+  public void testJsonArray(TestContext context) throws Exception {
     JsonArray value = new JsonArray().add(1).add(2).add(3);
+    Binary dataContents = new Binary(value.encode().getBytes(StandardCharsets.UTF_8));
 
-    usage.consumeMessages(address, 4, 10, TimeUnit.SECONDS, null, list::add);
+    CountDownLatch msgsRecieved = new CountDownLatch(1);
+    msgCheckRef.set(msg -> {
+      context.assertTrue(msg.getBody() instanceof Data);
+      context.assertEquals("application/json", msg.getContentType());
+      msgsRecieved.countDown();
+    });
+
     connection.createSender(address, done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
@@ -454,9 +502,42 @@ public class SenderTypeTest extends ArtemisTestBase {
       }
     });
 
-    await().until(() -> list.size() == 1);
+    assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(list).containsExactly(dataContents);
+  }
 
-    assertThat(list.stream().map(AmqpMessage::bodyAsJsonArray).collect(Collectors.toList()))
-      .containsExactly(value);
+  private MockServer setupMockServer(AtomicReference<Consumer<Message>> msgCheckRef, List<Object> payloads) throws Exception {
+    return new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      serverConnection.sessionOpenHandler(serverSession -> {
+        serverSession.closeHandler(x -> serverSession.close());
+        serverSession.open();
+      });
+
+      serverConnection.receiverOpenHandler(serverReceiver-> {
+        serverReceiver.handler((delivery, message) -> {
+          delivery.disposition(Accepted.getInstance(), true);
+
+          Section body = message.getBody();
+          if(body instanceof AmqpValue) {
+            payloads.add(((AmqpValue) body).getValue());
+          } else if(body instanceof AmqpSequence) {
+            payloads.add(((AmqpSequence) body).getValue());
+          } else if(body instanceof Data) {
+            payloads.add(((Data) body).getValue());
+          }
+
+          Consumer<Message> msgCheck = msgCheckRef.get();
+          msgCheck.accept(message);
+
+        });
+
+        serverReceiver.open();
+      });
+    });
   }
 }
