@@ -19,17 +19,46 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonSession;
+
+import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
+import org.apache.qpid.proton.amqp.messaging.Modified;
+import org.apache.qpid.proton.amqp.messaging.Rejected;
+import org.apache.qpid.proton.amqp.messaging.Released;
 import org.apache.qpid.proton.amqp.messaging.Section;
 import org.apache.qpid.proton.amqp.transport.AmqpError;
 import org.apache.qpid.proton.amqp.transport.Target;
+import org.junit.After;
 import org.junit.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SenderTest extends BareTestBase {
+
+  private static final String ACCEPT = "accept";
+  private static final String RELEASE = "release";
+  private static final String MODIFY_FAILED = "modify-failed";
+  private static final String MODIFY_FAILED_U_H = "modify-failed-u-h";
+  private static final String REJECT = "reject";
+
+  private MockServer server;
+
+  @After
+  @Override
+  public void tearDown() throws InterruptedException {
+    super.tearDown();
+    if(server !=null) {
+      server.close();
+    }
+  }
 
   @Test(timeout = 20000)
   public void testProducerClose(TestContext context) throws Exception {
@@ -390,6 +419,216 @@ public class SenderTest extends BareTestBase {
     });
 
     serverLinkOpenAsync.awaitSuccess();
-
   }
+
+  @Test
+  public void testAcknowledgementHandling(TestContext context) throws Exception {
+    String queue = UUID.randomUUID().toString();
+    List<Object> recieved = new CopyOnWriteArrayList<>();
+    CountDownLatch acksRecieved = new CountDownLatch(5);
+
+    server = setupMockServerForAckHandling(context, recieved);
+
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost("localhost")
+      .setPort(server.actualPort()))
+      .connect(connResult -> {
+        context.assertTrue(connResult.succeeded());
+
+        AmqpConnection connection = connResult.result();
+        connection.createSender(queue, senderRes -> {
+          if (senderRes.failed()) {
+            senderRes.cause().printStackTrace();
+          }
+
+          context.assertTrue(senderRes.succeeded());
+          AmqpSender sender = senderRes.result();
+
+          AmqpMessage msgAccept = AmqpMessage.create().withBody(ACCEPT).build();
+          sender.sendWithAck(msgAccept, ack -> {
+            context.assertTrue(ack.succeeded());
+            acksRecieved.countDown();
+          });
+
+          AmqpMessage msgRelease = AmqpMessage.create().withBody(RELEASE).build();
+          sender.sendWithAck(msgRelease, ack -> {
+            context.assertFalse(ack.succeeded());
+            context.assertTrue(ack.cause().getMessage().contains("RELEASED"));
+            acksRecieved.countDown();
+          });
+
+          AmqpMessage msgModifyFailed = AmqpMessage.create().withBody(MODIFY_FAILED).build();
+          sender.sendWithAck(msgModifyFailed, ack -> {
+            context.assertFalse(ack.succeeded());
+            context.assertTrue(ack.cause().getMessage().contains("MODIFIED"));
+            acksRecieved.countDown();
+          });
+
+          AmqpMessage msgModifyFailedUH = AmqpMessage.create().withBody(MODIFY_FAILED_U_H).build();
+          sender.sendWithAck(msgModifyFailedUH, ack -> {
+            context.assertFalse(ack.succeeded());
+            context.assertTrue(ack.cause().getMessage().contains("MODIFIED"));
+            acksRecieved.countDown();
+          });
+
+          AmqpMessage msgRejected = AmqpMessage.create().withBody(REJECT).build();
+          sender.sendWithAck(msgRejected, ack -> {
+            context.assertFalse(ack.succeeded());
+            context.assertTrue(ack.cause().getMessage().contains("REJECTED"));
+            acksRecieved.countDown();
+          });
+        });
+      });
+
+    assertThat(acksRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(recieved).containsExactly(ACCEPT, RELEASE, MODIFY_FAILED, MODIFY_FAILED_U_H, REJECT);
+  }
+
+  private MockServer setupMockServerForAckHandling(TestContext context, List<Object> payloads) throws Exception {
+    return new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      serverConnection.sessionOpenHandler(serverSession -> {
+        serverSession.closeHandler(x -> serverSession.close());
+        serverSession.open();
+      });
+
+      serverConnection.receiverOpenHandler(serverReceiver-> {
+        serverReceiver.setAutoAccept(false);
+        serverReceiver.handler((delivery, message) -> {
+          Section section = message.getBody();
+          context.assertTrue(section instanceof AmqpValue);
+          context.assertNotNull(((AmqpValue) section).getValue());
+          context.assertTrue(((AmqpValue) section).getValue() instanceof String);
+
+          String payload = (String) ((AmqpValue) section).getValue();
+
+          payloads.add(payload);
+            switch(payload) {
+            case ACCEPT:
+              delivery.disposition(Accepted.getInstance(), true);
+              break;
+            case RELEASE:
+              delivery.disposition(Released.getInstance(), true);
+              break;
+            case MODIFY_FAILED:
+              Modified modifiedFailed = new Modified();
+              modifiedFailed.setDeliveryFailed(true);
+              delivery.disposition(modifiedFailed, true);
+              break;
+            case MODIFY_FAILED_U_H:
+              Modified modifiedFailedUH = new Modified();
+              modifiedFailedUH.setDeliveryFailed(true);
+              modifiedFailedUH.setUndeliverableHere(true);
+              delivery.disposition(modifiedFailedUH, true);
+              break;
+            case REJECT:
+              delivery.disposition(new Rejected(), true);
+              break;
+            default:
+              context.fail("Unexpected message payload recieved");
+            }
+        });
+
+        serverReceiver.open();
+      });
+    });
+  }
+
+  @Test
+  public void testCreatingSenderWithoutCreatingConnectionFirst(TestContext context) throws Exception {
+    String queue = UUID.randomUUID().toString();
+    List<Object> recieved = new CopyOnWriteArrayList<>();
+    CountDownLatch ackRecieved = new CountDownLatch(1);
+    String message = "testCreatingSenderWithoutCreatingConnectionFirst";
+    server = setupMockServerForCreatingSenderWithoutConnectionFirst(context, recieved, null);
+
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost("localhost")
+      .setPort(server.actualPort()))
+      .createSender(queue, senderRes -> {
+        if (senderRes.failed()) {
+          senderRes.cause().printStackTrace();
+        }
+
+        context.assertTrue(senderRes.succeeded());
+        AmqpSender sender = senderRes.result();
+
+        AmqpMessage msgAccept = AmqpMessage.create().withBody(message).build();
+        sender.sendWithAck(msgAccept, ack -> {
+          context.assertTrue(ack.succeeded());
+          ackRecieved.countDown();
+        });
+      });
+
+    assertThat(ackRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(recieved).containsExactly(message);
+  }
+
+  @Test
+  public void testCreatingSenderWithOptionsWithoutCreatingConnectionFirst(TestContext context) throws Exception {
+    String senderLinkName = "notUsuallyExplicitlySetForSendersButEasilyVerified";
+    String queue = UUID.randomUUID().toString();
+    List<Object> recieved = new CopyOnWriteArrayList<>();
+    CountDownLatch ackRecieved = new CountDownLatch(1);
+    String message = "testCreatingSenderWithOptionsWithoutCreatingConnectionFirst";
+
+    server = setupMockServerForCreatingSenderWithoutConnectionFirst(context, recieved, senderLinkName);
+
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost("localhost")
+      .setPort(server.actualPort()))
+      .createSender(queue, new AmqpSenderOptions().setLinkName(senderLinkName), senderRes -> {
+        if (senderRes.failed()) {
+          senderRes.cause().printStackTrace();
+        }
+
+        context.assertTrue(senderRes.succeeded());
+        AmqpSender sender = senderRes.result();
+
+        AmqpMessage msgAccept = AmqpMessage.create().withBody(message).build();
+        sender.sendWithAck(msgAccept, ack -> {
+          context.assertTrue(ack.succeeded());
+          ackRecieved.countDown();
+        });
+      });
+
+    assertThat(ackRecieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(recieved).containsExactly(message);
+  }
+
+  private MockServer setupMockServerForCreatingSenderWithoutConnectionFirst(TestContext context,  List<Object> payloads, String linkName) throws Exception {
+    return new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      serverConnection.sessionOpenHandler(serverSession -> {
+        serverSession.closeHandler(x -> serverSession.close());
+        serverSession.open();
+      });
+
+      serverConnection.receiverOpenHandler(serverReceiver-> {
+        if(linkName != null) {
+          context.assertEquals(linkName, serverReceiver.getName());
+        }
+
+        serverReceiver.handler((delivery, message) -> {
+          Section section = message.getBody();
+          context.assertTrue(section instanceof AmqpValue);
+          Object value = ((AmqpValue) section).getValue();
+          context.assertNotNull(value);
+
+          payloads.add(value);
+        });
+
+        serverReceiver.open();
+      });
+    });
+  }
+
 }
