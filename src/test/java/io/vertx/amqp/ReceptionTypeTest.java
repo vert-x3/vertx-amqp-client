@@ -15,8 +15,6 @@
  */
 package io.vertx.amqp;
 
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -25,256 +23,245 @@ import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.AmqpSequence;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Data;
+import org.apache.qpid.proton.amqp.messaging.Section;
+import org.apache.qpid.proton.message.Message;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.sql.Date;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 
-public class ReceptionTypeTest extends ArtemisTestBase {
+public class ReceptionTypeTest extends BareTestBase {
 
-  private Vertx vertx;
   private AmqpConnection connection;
-  private String address;
+  private AtomicReference<Object> msgPayloadRef;
+  private MockServer server;
 
   @Before
-  public void init() {
-    vertx = Vertx.vertx();
+  public void init() throws Exception {
+    msgPayloadRef = new AtomicReference<>();
+    server = setupMockServer(msgPayloadRef);
+
+    CountDownLatch latch = new CountDownLatch(1);
     AtomicReference<AmqpConnection> reference = new AtomicReference<>();
     client = AmqpClient.create(vertx, new AmqpClientOptions()
-      .setHost(host)
-      .setPort(port)
-      .setUsername(username)
-      .setPassword(password))
+      .setHost("localhost")
+      .setPort(server.actualPort()))
       .connect(connection -> {
         reference.set(connection.result());
         if (connection.failed()) {
           connection.cause().printStackTrace();
         }
+        latch.countDown();
       });
 
-    await().untilAtomic(reference, is(notNullValue()));
+    assertThat(latch.await(6, TimeUnit.SECONDS)).isTrue();
     this.connection = reference.get();
-    this.address = UUID.randomUUID().toString();
+    assertThat(connection).isNotNull();
   }
 
   @After
   public void tearDown() throws InterruptedException {
     super.tearDown();
-    vertx.close();
+    if(server != null) {
+      server.close();
+    }
   }
 
-  private <T> void testType(Handler<AmqpUsage> producer, Function<AmqpMessage, T> extractor, T... expected) {
+  private <T> void testType(Object payload, Function<AmqpMessage, T> extractor, T expected) throws Exception {
+    assertThat(msgPayloadRef.compareAndSet(null, payload)).isTrue();
+    CountDownLatch latch = new CountDownLatch(1);
     List<T> list = new CopyOnWriteArrayList<>();
-    connection.createReceiver(address, done -> {
+
+    connection.createReceiver(UUID.randomUUID().toString(), done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }
       done.result().handler(message -> {
         list.add(extractor.apply(message));
-      });
-      CompletableFuture.runAsync(() -> {
-        try {
-          producer.handle(usage);
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
+        latch.countDown();
       });
     });
-    await().until(() -> list.size() == expected.length);
+
+    assertThat(latch.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(expected);
   }
 
-  @Test
-  public void testNull() {
-    testType(usage -> {
-      // Send Amqpvalue(null)
-      usage.produce(address, 1, null, () -> new AmqpValue(null));
-      // Send no body
-      usage.produce(address, 1, null, () -> null);
-    }, AmqpMessage::isBodyNull, true, true);
+  @Test(timeout = 10000)
+  public void testNoBody() throws Exception {
+    testType(null, AmqpMessage::isBodyNull, true);
   }
 
-  @Test
-  public void testBooleanTrue() {
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> true);
-      usage.produce(address, 1, null, () -> Boolean.TRUE);
-    }, AmqpMessage::bodyAsBoolean, true, true);
+  @Test(timeout = 10000)
+  public void testNull() throws Exception {
+    testType(new AmqpValue(null), AmqpMessage::isBodyNull, true);
   }
 
-  @Test
-  public void testBooleanFalse() {
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> false);
-      usage.produce(address, 1, null, () -> Boolean.FALSE);
-    }, AmqpMessage::bodyAsBoolean, false, false);
+  @Test(timeout = 10000)
+  public void testBooleanTrue() throws Exception {
+    boolean b = Boolean.TRUE;
+    testType(b, AmqpMessage::bodyAsBoolean, b);
   }
 
-  @Test
-  public void testByte() {
+  @Test(timeout = 10000)
+  public void testBooleanFalse() throws Exception {
+    boolean b = Boolean.FALSE;
+    testType(b, AmqpMessage::bodyAsBoolean, b);
+  }
+
+  @Test(timeout = 10000)
+  public void testByte() throws Exception {
     byte b = 1;
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> b);
-      usage.produce(address, 1, null, () -> Byte.valueOf(b));
-    }, AmqpMessage::bodyAsByte, b, b);
+    testType(b, AmqpMessage::bodyAsByte, b);
   }
 
-  @Test
-  public void testShort() {
+  @Test(timeout = 10000)
+  public void testShort() throws Exception {
     short s = 2;
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> s);
-      usage.produce(address, 1, null, () -> Short.valueOf(s));
-    }, AmqpMessage::bodyAsShort, s, s);
+    testType(s, AmqpMessage::bodyAsShort, s);
   }
 
-  @Test
-  public void testInteger() {
+  @Test(timeout = 10000)
+  public void testInteger() throws Exception {
     int i = 3;
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> i);
-      usage.produce(address, 1, null, () -> Integer.valueOf(i));
-    }, AmqpMessage::bodyAsInteger, i, i);
+    testType(i, AmqpMessage::bodyAsInteger, i);
   }
 
-  @Test
-  public void testLong() {
+  @Test(timeout = 10000)
+  public void testLong() throws Exception {
     long l = Long.MAX_VALUE - 1;
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> l);
-      usage.produce(address, 1, null, () -> Long.valueOf(l));
-    }, AmqpMessage::bodyAsLong, l, l);
+    testType(l, AmqpMessage::bodyAsLong, l);
   }
 
-  @Test
-  public void testFloat() {
+  @Test(timeout = 10000)
+  public void testFloat() throws Exception {
     float f = 12.34f;
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> f);
-      usage.produce(address, 1, null, () -> Float.valueOf(f));
-    }, AmqpMessage::bodyAsFloat, f, f);
+    testType(f, AmqpMessage::bodyAsFloat, f);
   }
 
-  @Test
-  public void testDouble() {
+  @Test(timeout = 10000)
+  public void testDouble() throws Exception {
     double d = 56.78;
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> d);
-      usage.produce(address, 1, null, () -> Double.valueOf(d));
-    }, AmqpMessage::bodyAsDouble, d, d);
+    testType(d, AmqpMessage::bodyAsDouble, d);
   }
 
-  @Test
-  public void testCharacter() {
+  @Test(timeout = 10000)
+  public void testCharacter() throws Exception {
     char c = 'c';
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> c);
-      usage.produce(address, 1, null, () -> Character.valueOf(c));
-    }, AmqpMessage::bodyAsChar, c, c);
+    testType(c, AmqpMessage::bodyAsChar, c);
   }
 
-  @Test
-  public void testTimestamp() {
+  @Test(timeout = 10000)
+  public void testTimestamp() throws Exception {
     // We avoid using Instant.now() in the test since its precision is
     // variable and JDK + platform dependent, while timestamp is always
     // millisecond precision. A mismatch throws off the equality comparison.
-    Instant instant = Instant.ofEpochMilli(System.currentTimeMillis());
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> Date.from(instant));
-    }, AmqpMessage::bodyAsTimestamp, instant);
+    long currentTimeMillis = System.currentTimeMillis();
+    Instant instant = Instant.ofEpochMilli(currentTimeMillis);
+    testType(new Date(currentTimeMillis), AmqpMessage::bodyAsTimestamp, instant);
   }
 
-  @Test
-  public void testUUID() {
+  @Test(timeout = 10000)
+  public void testUUID() throws Exception {
     UUID uuid = UUID.randomUUID();
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> uuid);
-    }, AmqpMessage::bodyAsUUID, uuid);
+    testType(uuid, AmqpMessage::bodyAsUUID, uuid);
   }
 
-  @Test
-  public void testBinary() {
+  @Test(timeout = 10000)
+  public void testBinary() throws Exception {
     Buffer buffer = Buffer.buffer("hello !!!");
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> new Data(new Binary(buffer.getBytes())));
-    }, AmqpMessage::bodyAsBinary, buffer);
+    testType(new Data(new Binary(buffer.getBytes())), AmqpMessage::bodyAsBinary, buffer);
   }
 
-  @Test
-  public void testString() {
+  @Test(timeout = 10000)
+  public void testString() throws Exception {
     String string = "hello !";
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> string);
-    }, AmqpMessage::bodyAsString, string);
+    testType(string, AmqpMessage::bodyAsString, string);
   }
 
-  @Test
-  public void testSymbol() {
+  @Test(timeout = 10000)
+  public void testSymbol() throws Exception {
     String string = "my-symbol";
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> Symbol.getSymbol("my-symbol"));
-    }, AmqpMessage::bodyAsSymbol, string);
+    testType(Symbol.valueOf(string), AmqpMessage::bodyAsSymbol, string);
   }
 
-  @Test
-  public void testListPassedAsAmqpSequence() {
+  @Test(timeout = 10000)
+  public void testList() throws Exception {
     List<Object> l = new ArrayList<>();
     l.add("foo");
     l.add(1);
     l.add(true);
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> new AmqpSequence(l));
-    }, AmqpMessage::bodyAsList, l);
+    testType(l, AmqpMessage::bodyAsList, l);
   }
 
-  @Test
-  public void testListPassedAsAmqpValue() {
+  @Test(timeout = 10000)
+  public void testListPassedAsAmqpSequence() throws Exception {
     List<Object> l = new ArrayList<>();
-    l.add("foo");
-    l.add(1);
+    l.add("sequence");
+    l.add(2);
     l.add(true);
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> new AmqpValue(l));
-    }, AmqpMessage::bodyAsList, l);
+    testType(new AmqpSequence(l), AmqpMessage::bodyAsList, l);
   }
 
-  @Test
-  public void testMap() {
+  @Test(timeout = 10000)
+  public void testMap() throws Exception {
     Map<String, String> map = new HashMap<>();
     map.put("1", "hello");
     map.put("2", "bonjour");
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> new AmqpValue(map));
-    }, AmqpMessage::bodyAsMap, map);
-//    assertThat(list.get(0)).containsAllEntriesOf(map);
+    testType(map, AmqpMessage::bodyAsMap, map);
   }
 
-  @Test
-  public void testJsonObject() {
+  @Test(timeout = 10000)
+  public void testJsonObject() throws Exception {
     JsonObject json = new JsonObject().put("data", "message").put("number", 1)
       .put("array", new JsonArray().add(1).add(2).add(3));
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> new Data(new Binary(json.toBuffer().getBytes())));
-    }, AmqpMessage::bodyAsJsonObject, json);
+    Data data = new Data(new Binary(json.toBuffer().getBytes()));
+    testType(data, AmqpMessage::bodyAsJsonObject, json);
   }
 
-  @Test
-  public void testJsonArray() {
+  @Test(timeout = 10000)
+  public void testJsonArray() throws Exception {
     JsonArray array = new JsonArray().add(1).add(2).add(3);
-    testType(usage -> {
-      usage.produce(address, 1, null, () -> new Data(new Binary(array.toBuffer().getBytes())));
-    }, AmqpMessage::bodyAsJsonArray, array);
+    Data data = new Data(new Binary(array.toBuffer().getBytes()));
+    testType(data, AmqpMessage::bodyAsJsonArray, array);
+  }
+
+  private MockServer setupMockServer(AtomicReference<Object> msgPayloadSupplier) throws Exception {
+    return new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      serverConnection.sessionOpenHandler(serverSession -> {
+        serverSession.closeHandler(x -> serverSession.close());
+        serverSession.open();
+      });
+
+      serverConnection.senderOpenHandler(serverSender-> {
+        serverSender.open();
+
+        Message msg = Message.Factory.create();
+
+        Object payload = msgPayloadSupplier.get();
+        if (payload instanceof Section) {
+          msg.setBody((Section) payload);
+        } else if (payload != null) {
+          msg.setBody(new AmqpValue(payload));
+        } else {
+          // Don't set a body.
+        }
+
+        serverSender.send(msg);
+      });
+    });
   }
 }
