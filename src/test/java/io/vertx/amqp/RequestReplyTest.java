@@ -17,59 +17,54 @@ package io.vertx.amqp;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.After;
-import org.junit.Before;
+import io.vertx.proton.ProtonSender;
+
+import org.apache.qpid.proton.amqp.messaging.AmqpValue;
+import org.apache.qpid.proton.amqp.messaging.Section;
+import org.apache.qpid.proton.amqp.messaging.Source;
+import org.apache.qpid.proton.amqp.messaging.Target;
+import org.apache.qpid.proton.message.Message;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Test the request-reply use case.
+ * Test the request-reply use case, specifically creating a dynamic address receiver
+ * for consuming responses, and anonymous sender for sending replies.
  */
 @RunWith(VertxUnitRunner.class)
-public class RequestReplyTest extends ArtemisTestBase {
+public class RequestReplyTest extends BareTestBase {
 
-  private Vertx vertx;
+  private static final String REQUEST = "what's your name?";
+  private static final String RESPONSE = "my name is Neo";
 
-  @Before
-  public void before() {
-    vertx = Vertx.vertx();
-  }
-
-  @After
-  public void tearDown(TestContext tc) throws InterruptedException {
-    super.tearDown();
-    vertx.close(tc.asyncAssertSuccess());
-  }
-
-  private Future<Void> prepareReceiver(TestContext context, AmqpConnection connection, String address) {
+  private Future<Void> prepareRequestReceiverAndAnonymousSenderResponder(TestContext context, AmqpConnection connection, String requestQueue, String replyAddress) {
     Promise<Void> future = Promise.promise();
-    connection.createReceiver(address, d -> {
+    connection.createReceiver(requestQueue, d -> {
       d.result().handler(msg -> {
-        context.assertEquals("what's your name?", msg.bodyAsString());
-        context.assertTrue(msg.replyTo() != null);
-        // How do we name this createSender method where the address is not set?
+        context.assertEquals(REQUEST, msg.bodyAsString());
+        context.assertEquals(replyAddress, msg.replyTo());
         connection.createAnonymousSender(sender ->
-          sender.result().send(AmqpMessage.create().address(msg.replyTo()).withBody("my name is Neo").build()));
+          sender.result().send(AmqpMessage.create().address(msg.replyTo()).withBody(RESPONSE).build()));
       });
       future.handle(d.mapEmpty());
     });
     return future.future();
   }
 
-  private Future<AmqpReceiver> prepareReplyReceiver(TestContext context, AmqpConnection connection, Async done) {
+  private Future<AmqpReceiver> prepareDynamicReplyReceiver(TestContext context, AmqpConnection connection, Async done) {
     Promise<AmqpReceiver> future = Promise.promise();
     connection.createDynamicReceiver(rec -> {
       context.assertTrue(rec.succeeded());
       AmqpReceiver receiver = rec.result();
       context.assertNotNull(receiver.address());
       receiver.handler(message -> {
-        context.assertEquals(message.bodyAsString(), "my name is Neo");
+        context.assertEquals(message.bodyAsString(), RESPONSE);
         done.complete();
       });
       future.complete(receiver);
@@ -77,15 +72,14 @@ public class RequestReplyTest extends ArtemisTestBase {
     return future.future();
   }
 
-  private Future<Void> getSenderAndSendInitialMessage(TestContext context, AmqpConnection connection, String address,
-    String replyAddress) {
+  private Future<Void> prepareSenderAndSendRequestMessage(TestContext context, AmqpConnection connection, String address, String replyAddress) {
     Promise<Void> future = Promise.promise();
     connection.createSender(address, ar -> {
       context.assertTrue(ar.succeeded());
       ar.result().sendWithAck(
-        AmqpMessage.create().address(address)
+        AmqpMessage.create()
           .replyTo(replyAddress)
-          .withBody("what's your name?").build(),
+          .withBody(REQUEST).build(),
         ack -> future.handle(ack.mapEmpty())
       );
     });
@@ -93,18 +87,192 @@ public class RequestReplyTest extends ArtemisTestBase {
   }
 
   @Test
-  public void testRequestReply(TestContext context) {
-    String queue = UUID.randomUUID().toString();
-    Async done = context.async();
-    client = AmqpClient.create(vertx, new AmqpClientOptions()
-      .setHost(host).setPort(port).setPassword(password).setUsername(username))
-      .connect(conn -> {
-        context.assertTrue(conn.succeeded());
+  public void testRequesting(TestContext context) throws Exception {
+    final String requestQueue = "requestQueue";
+    final String dynamicResponseAddress = UUID.randomUUID() + "dynamicAddress";
 
-        prepareReceiver(context, conn.result(), queue)
-          .compose(x -> prepareReplyReceiver(context, conn.result(), done))
-          .compose(dr -> getSenderAndSendInitialMessage(context, conn.result(), queue, dr.address()));
-      });
+    MockServer server = createServerForRequestorTestImpl(context, requestQueue, dynamicResponseAddress);
+
+    try {
+      Async done = context.async();
+
+      client = AmqpClient.create(vertx, new AmqpClientOptions()
+        .setHost("localhost").setPort(server.actualPort()))
+        .connect(conn -> {
+          context.assertTrue(conn.succeeded());
+
+          prepareDynamicReplyReceiver(context, conn.result(), done)
+            .compose(dr -> prepareSenderAndSendRequestMessage(context, conn.result(), requestQueue, dr.address()));
+        });
+
+      done.awaitSuccess();
+    } finally {
+      server.close();
+    }
   }
 
+
+  private MockServer createServerForRequestorTestImpl(TestContext context, String requestQueue, String dynamicResponseAddress) throws Exception {
+    AtomicReference<ProtonSender> senderRef = new AtomicReference<>();
+    MockServer server = new MockServer(vertx, serverConnection -> {
+
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      serverConnection.sessionOpenHandler(serverSession -> {
+        serverSession.closeHandler(x -> serverSession.close());
+        serverSession.open();
+      });
+
+      serverConnection.senderOpenHandler(serverSender -> {
+        serverSender.closeHandler(res -> {
+          serverSender.close();
+        });
+
+        // Verify the remote terminus details used were as expected
+        context.assertNotNull(serverSender.getRemoteSource(), "source should not be null");
+        Source remoteSource = (org.apache.qpid.proton.amqp.messaging.Source) serverSender.getRemoteSource();
+        context.assertTrue(remoteSource.getDynamic(), "expected dynamic source to be requested");
+        context.assertNull(remoteSource.getAddress(), "expected no source address to be set");
+
+        // Set the local terminus details
+        Source source = (org.apache.qpid.proton.amqp.messaging.Source) remoteSource.copy();
+        source.setAddress(dynamicResponseAddress);
+        serverSender.setSource(source);
+
+        serverSender.open();
+
+        senderRef.set(serverSender);
+      });
+
+      serverConnection.receiverOpenHandler(serverReceiver -> {
+        serverReceiver.closeHandler(res -> {
+          serverReceiver.close();
+        });
+
+        // Verify the remote terminus details used were as expected
+        context.assertNotNull(serverReceiver.getRemoteTarget(), "target should not be null");
+        Target remoteTarget = (org.apache.qpid.proton.amqp.messaging.Target) serverReceiver.getRemoteTarget();
+        context.assertFalse(remoteTarget.getDynamic(), "should not be requested to be dynamic target");
+        context.assertEquals(requestQueue, remoteTarget.getAddress(), "expected request queue address to be set");
+
+        // Set the local terminus details
+        Target target = (org.apache.qpid.proton.amqp.messaging.Target) remoteTarget.copy();
+        target.setAddress(requestQueue);
+        serverReceiver.setTarget(target);
+
+        serverReceiver.handler((delivery, msg) -> {
+          Section body = msg.getBody();
+
+          context.assertNotNull(body);
+          context.assertTrue(body instanceof AmqpValue);
+          context.assertEquals(REQUEST, ((AmqpValue) body).getValue());
+
+          Message replyMsg = Message.Factory.create();
+          replyMsg.setBody(new AmqpValue(RESPONSE));
+
+          senderRef.get().send(replyMsg);
+        });
+
+        serverReceiver.open();
+      });
+    });
+    return server;
+  }
+
+  @Test
+  public void testResponder(TestContext context) throws Exception {
+    final String requestQueue = "requestQueue";
+    final String responseAddress = UUID.randomUUID() + "replyToAddress";
+    Async done = context.async();
+    MockServer server = createServerForResponderTestImpl(context, requestQueue, responseAddress, done);
+
+    try {
+      client = AmqpClient.create(vertx, new AmqpClientOptions()
+        .setHost("localhost").setPort(server.actualPort()))
+        .connect(conn -> {
+          context.assertTrue(conn.succeeded());
+
+          prepareRequestReceiverAndAnonymousSenderResponder(context, conn.result(), requestQueue, responseAddress);
+        });
+
+      done.awaitSuccess();
+    } finally {
+      server.close();
+    }
+  }
+
+  private MockServer createServerForResponderTestImpl(TestContext context, String requestQueue, String replyToAddress, Async done) throws Exception {
+    MockServer server = new MockServer(vertx, serverConnection -> {
+
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      serverConnection.sessionOpenHandler(serverSession -> {
+        serverSession.closeHandler(x -> serverSession.close());
+        serverSession.open();
+      });
+
+      serverConnection.receiverOpenHandler(serverReceiver -> {
+        serverReceiver.closeHandler(res -> {
+          serverReceiver.close();
+        });
+
+        // Verify the remote terminus details used were as expected
+        context.assertNotNull(serverReceiver.getRemoteTarget(), "target should not be null");
+        Target remoteTarget = (org.apache.qpid.proton.amqp.messaging.Target) serverReceiver.getRemoteTarget();
+        context.assertFalse(remoteTarget.getDynamic(), "should not be requested to be dynamic target");
+        context.assertNull(remoteTarget.getAddress(), "expected address to be null, to reflect using the anonymous terminus");
+
+        // Set the local terminus details
+        Target target = (org.apache.qpid.proton.amqp.messaging.Target) remoteTarget.copy();
+        serverReceiver.setTarget(target);
+
+        serverReceiver.handler((delivery, msg) -> {
+          Section body = msg.getBody();
+
+          context.assertNotNull(body);
+          context.assertTrue(body instanceof AmqpValue);
+          context.assertEquals(RESPONSE, ((AmqpValue) body).getValue());
+          context.assertEquals(replyToAddress, msg.getAddress());
+
+          done.complete();
+        });
+
+        serverReceiver.open();
+      });
+
+      serverConnection.senderOpenHandler(serverSender -> {
+        serverSender.closeHandler(res -> {
+          serverSender.close();
+        });
+
+        // Verify the remote terminus details used were as expected
+        context.assertNotNull(serverSender.getRemoteSource(), "source should not be null");
+        Source remoteSource = (org.apache.qpid.proton.amqp.messaging.Source) serverSender.getRemoteSource();
+        context.assertFalse(remoteSource.getDynamic(), "should not be requesting dynamic source");
+        context.assertEquals(requestQueue, remoteSource.getAddress(), "expected source address to be request queue");
+
+        // Set the local terminus details
+        Source source = (org.apache.qpid.proton.amqp.messaging.Source) remoteSource.copy();
+        source.setAddress(requestQueue);
+        serverSender.setSource(source);
+
+        serverSender.open();
+
+        // Just buffer a send of a request message
+        Message requestMsg = Message.Factory.create();
+        requestMsg.setBody(new AmqpValue(REQUEST));
+        requestMsg.setReplyTo(replyToAddress);
+
+        serverSender.send(requestMsg);
+      });
+
+    });
+    return server;
+  }
 }
