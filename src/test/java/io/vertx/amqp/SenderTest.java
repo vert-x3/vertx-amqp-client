@@ -172,7 +172,7 @@ public class SenderTest extends BareTestBase {
 
     // === Server handling ====
 
-    MockServer server = new MockServer(vertx, serverConnection -> {
+    server = new MockServer(vertx, serverConnection -> {
       // Expect a connection
       serverConnection.openHandler(serverSender -> {
         // Add a close handler
@@ -261,11 +261,7 @@ public class SenderTest extends BareTestBase {
       asyncSendInitialCredit.complete();
     });
 
-    try {
-      asyncShutdown.awaitSuccess();
-    } finally {
-      server.close();
-    }
+    asyncShutdown.awaitSuccess();
   }
 
   @Test(timeout = 20000)
@@ -288,7 +284,7 @@ public class SenderTest extends BareTestBase {
 
     // === Server handling ====
 
-    MockServer server = new MockServer(vertx, serverConnection -> {
+    server = new MockServer(vertx, serverConnection -> {
       // Expect a connection
       serverConnection.openHandler(serverSender -> {
         // Add a close handler
@@ -360,12 +356,8 @@ public class SenderTest extends BareTestBase {
       });
     });
 
-    try {
-      asyncExceptionHandlerCalled.awaitSuccess();
-      asyncShutdown.awaitSuccess();
-    } finally {
-      server.close();
-    }
+    asyncExceptionHandlerCalled.awaitSuccess();
+    asyncShutdown.awaitSuccess();
   }
 
   @Test(timeout = 20000)
@@ -375,7 +367,7 @@ public class SenderTest extends BareTestBase {
 
     Async serverLinkOpenAsync = context.async();
 
-    MockServer server = new MockServer(vertx, serverConnection -> {
+    server = new MockServer(vertx, serverConnection -> {
       serverConnection.openHandler(result -> serverConnection.open());
 
       serverConnection.sessionOpenHandler(ProtonSession::open);
@@ -421,7 +413,7 @@ public class SenderTest extends BareTestBase {
     serverLinkOpenAsync.awaitSuccess();
   }
 
-  @Test
+  @Test(timeout = 10000)
   public void testAcknowledgementHandling(TestContext context) throws Exception {
     String queue = UUID.randomUUID().toString();
     List<Object> recieved = new CopyOnWriteArrayList<>();
@@ -538,7 +530,7 @@ public class SenderTest extends BareTestBase {
     });
   }
 
-  @Test
+  @Test(timeout = 10000)
   public void testCreatingSenderWithoutCreatingConnectionFirst(TestContext context) throws Exception {
     String queue = UUID.randomUUID().toString();
     List<Object> recieved = new CopyOnWriteArrayList<>();
@@ -568,7 +560,7 @@ public class SenderTest extends BareTestBase {
     assertThat(recieved).containsExactly(message);
   }
 
-  @Test
+  @Test(timeout = 10000)
   public void testCreatingSenderWithOptionsWithoutCreatingConnectionFirst(TestContext context) throws Exception {
     String senderLinkName = "notUsuallyExplicitlySetForSendersButEasilyVerified";
     String queue = UUID.randomUUID().toString();

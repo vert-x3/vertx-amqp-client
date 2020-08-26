@@ -86,7 +86,7 @@ public class RequestReplyTest extends BareTestBase {
     return future.future();
   }
 
-  @Test
+  @Test(timeout = 10000)
   public void testRequesting(TestContext context) throws Exception {
     final String requestQueue = "requestQueue";
     final String dynamicResponseAddress = UUID.randomUUID() + "dynamicAddress";
@@ -182,7 +182,7 @@ public class RequestReplyTest extends BareTestBase {
     return server;
   }
 
-  @Test
+  @Test(timeout = 10000)
   public void testResponder(TestContext context) throws Exception {
     final String requestQueue = "requestQueue";
     final String responseAddress = UUID.randomUUID() + "replyToAddress";
