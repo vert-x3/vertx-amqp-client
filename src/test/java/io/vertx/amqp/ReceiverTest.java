@@ -21,24 +21,31 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.proton.ProtonDelivery;
+import io.vertx.proton.ProtonSession;
 
 import org.apache.qpid.proton.Proton;
+import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
 import org.apache.qpid.proton.amqp.messaging.Modified;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
+import org.apache.qpid.proton.amqp.messaging.Source;
+import org.apache.qpid.proton.amqp.messaging.TerminusDurability;
+import org.apache.qpid.proton.amqp.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.proton.amqp.transport.DeliveryState;
 import org.apache.qpid.proton.message.Message;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -493,5 +500,98 @@ public class ReceiverTest extends BareTestBase {
     assertThat(msgsAcked.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly("0", "1", "2", "3", "4");
     assertThat(acks).containsExactly(0, 1, 2, 3, 4);
+  }
+
+  @Test(timeout = 10000)
+  public void testNonDurable(TestContext context) throws ExecutionException, InterruptedException {
+    doDurableReceiverTestImpl(context, false, "not-normally-configured-unless-shared-sub", null);
+  }
+
+  @Test(timeout = 10000)
+  public void testNonDurableReceiverWithAddedSourceCapability(TestContext context) throws ExecutionException, InterruptedException {
+    doDurableReceiverTestImpl(context, false, "my-subscription-name", "shared");
+  }
+
+  @Test(timeout = 10000)
+  public void testDurableSubscriptionReciever(TestContext context) throws ExecutionException, InterruptedException {
+    doDurableReceiverTestImpl(context, true, "my-durable-subscription-name", null);
+  }
+
+  @Test(timeout = 10000)
+  public void testDurableReceiverWithAddedSourceCapability(TestContext context) throws ExecutionException, InterruptedException {
+    doDurableReceiverTestImpl(context, true, "my-durable-subscription-name", "shared");
+  }
+
+  private void doDurableReceiverTestImpl(TestContext context, boolean durable, String linkName, String sourceCapability)
+    throws InterruptedException, ExecutionException {
+
+    final Async clientLinkOpenAsync = context.async();
+    final Async serverLinkOpenAsync = context.async();
+
+    server = new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(result -> serverConnection.open());
+      serverConnection.sessionOpenHandler(ProtonSession::open);
+
+      serverConnection.senderOpenHandler(serverSender -> {
+        serverSender.closeHandler(res -> {
+          context.assertFalse(durable, "unexpected link close for durable sub");
+          serverSender.close();
+        });
+
+        serverSender.detachHandler(res -> {
+          context.assertTrue(durable, "unexpected link detach for non-durable sub");
+          serverSender.detach();
+        });
+
+        serverSender.open();
+
+        // Verify the link details used were as expected
+        context.assertEquals(linkName, serverSender.getName(), "unexpected link name");
+
+        context.assertNotNull(serverSender.getRemoteSource(), "source should not be null");
+        Source source = (org.apache.qpid.proton.amqp.messaging.Source) serverSender.getRemoteSource();
+        if (durable) {
+          context.assertEquals(TerminusExpiryPolicy.NEVER, source.getExpiryPolicy(), "unexpected expiry");
+          context.assertEquals(TerminusDurability.UNSETTLED_STATE, source.getDurable(), "unexpected durability");
+        }
+
+        if (sourceCapability != null) {
+          Symbol[] expectedSourceCapabilities = new Symbol[] { Symbol.valueOf(sourceCapability) };
+          Symbol[] capabilities = source.getCapabilities();
+          context.assertTrue(Arrays.equals(expectedSourceCapabilities, capabilities), "Unexpected capabilities: " + Arrays.toString(capabilities));
+        }
+
+        serverLinkOpenAsync.complete();
+      });
+    });
+
+
+    // ===== Client Handling =====
+
+    AmqpClient client = AmqpClient.create(vertx,
+      new AmqpClientOptions().setPort(server.actualPort()).setHost("localhost"));
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+      AmqpConnection connection = res.result();
+
+      // Create publisher with given link name
+      AmqpReceiverOptions options = new AmqpReceiverOptions();
+      options.setLinkName(linkName);
+
+      if (durable) {
+        options.setDurable(true);
+      }
+      if (sourceCapability != null) {
+        options.addCapability(sourceCapability);
+      }
+
+      connection.createReceiver("myAddress", options, receiver -> {
+        context.assertTrue(receiver.succeeded());
+        clientLinkOpenAsync.complete();
+      });
+    });
+
+    serverLinkOpenAsync.awaitSuccess();
+    clientLinkOpenAsync.awaitSuccess();
   }
 }
