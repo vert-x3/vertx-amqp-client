@@ -49,6 +49,10 @@ public class SenderTest extends BareTestBase {
   private static final String MODIFY_FAILED_U_H = "modify-failed-u-h";
   private static final String REJECT = "reject";
 
+  private static final String DEFAULT = "default";
+  private static final String DURABLE = "durable";
+  private static final String NON_DURABLE = "non-durable";
+
   private MockServer server;
 
   @After
@@ -172,7 +176,7 @@ public class SenderTest extends BareTestBase {
 
     // === Server handling ====
 
-    MockServer server = new MockServer(vertx, serverConnection -> {
+    server = new MockServer(vertx, serverConnection -> {
       // Expect a connection
       serverConnection.openHandler(serverSender -> {
         // Add a close handler
@@ -261,11 +265,7 @@ public class SenderTest extends BareTestBase {
       asyncSendInitialCredit.complete();
     });
 
-    try {
-      asyncShutdown.awaitSuccess();
-    } finally {
-      server.close();
-    }
+    asyncShutdown.awaitSuccess();
   }
 
   @Test(timeout = 20000)
@@ -288,7 +288,7 @@ public class SenderTest extends BareTestBase {
 
     // === Server handling ====
 
-    MockServer server = new MockServer(vertx, serverConnection -> {
+    server = new MockServer(vertx, serverConnection -> {
       // Expect a connection
       serverConnection.openHandler(serverSender -> {
         // Add a close handler
@@ -360,12 +360,8 @@ public class SenderTest extends BareTestBase {
       });
     });
 
-    try {
-      asyncExceptionHandlerCalled.awaitSuccess();
-      asyncShutdown.awaitSuccess();
-    } finally {
-      server.close();
-    }
+    asyncExceptionHandlerCalled.awaitSuccess();
+    asyncShutdown.awaitSuccess();
   }
 
   @Test(timeout = 20000)
@@ -375,7 +371,7 @@ public class SenderTest extends BareTestBase {
 
     Async serverLinkOpenAsync = context.async();
 
-    MockServer server = new MockServer(vertx, serverConnection -> {
+    server = new MockServer(vertx, serverConnection -> {
       serverConnection.openHandler(result -> serverConnection.open());
 
       serverConnection.sessionOpenHandler(ProtonSession::open);
@@ -421,7 +417,7 @@ public class SenderTest extends BareTestBase {
     serverLinkOpenAsync.awaitSuccess();
   }
 
-  @Test
+  @Test(timeout = 10000)
   public void testAcknowledgementHandling(TestContext context) throws Exception {
     String queue = UUID.randomUUID().toString();
     List<Object> recieved = new CopyOnWriteArrayList<>();
@@ -538,7 +534,7 @@ public class SenderTest extends BareTestBase {
     });
   }
 
-  @Test
+  @Test(timeout = 10000)
   public void testCreatingSenderWithoutCreatingConnectionFirst(TestContext context) throws Exception {
     String queue = UUID.randomUUID().toString();
     List<Object> recieved = new CopyOnWriteArrayList<>();
@@ -568,7 +564,7 @@ public class SenderTest extends BareTestBase {
     assertThat(recieved).containsExactly(message);
   }
 
-  @Test
+  @Test(timeout = 10000)
   public void testCreatingSenderWithOptionsWithoutCreatingConnectionFirst(TestContext context) throws Exception {
     String senderLinkName = "notUsuallyExplicitlySetForSendersButEasilyVerified";
     String queue = UUID.randomUUID().toString();
@@ -631,4 +627,85 @@ public class SenderTest extends BareTestBase {
     });
   }
 
+  @Test(timeout = 10000)
+  public void testMessageDurability(TestContext context) throws Exception {
+    List<Object> payloads = new CopyOnWriteArrayList<>();
+    CountDownLatch recieved = new CountDownLatch(3);
+
+    server = setupMockServerForDurabilityHandling(context, recieved, payloads);
+
+    client = AmqpClient.create(new AmqpClientOptions()
+      .setHost("localhost")
+      .setPort(server.actualPort()))
+      .connect(connResult -> {
+        context.assertTrue(connResult.succeeded());
+
+        AmqpConnection connection = connResult.result();
+        connection.createSender(UUID.randomUUID().toString(), senderRes -> {
+          if (senderRes.failed()) {
+            senderRes.cause().printStackTrace();
+          }
+
+          context.assertTrue(senderRes.succeeded());
+          AmqpSender sender = senderRes.result();
+
+          AmqpMessage msgDefault = AmqpMessage.create().withBody(DEFAULT).build(); //non-durable by omission
+          sender.send(msgDefault);
+
+          AmqpMessage msgDurable = AmqpMessage.create().withBody(DURABLE).durable(true).build();
+          sender.send(msgDurable);
+
+          AmqpMessage msgNonDurable = AmqpMessage.create().withBody(NON_DURABLE).durable(false).build();
+          sender.send(msgNonDurable);
+        });
+      });
+
+    assertThat(recieved.await(6, TimeUnit.SECONDS)).isTrue();
+    assertThat(payloads).containsExactly(DEFAULT, DURABLE, NON_DURABLE);
+  }
+
+  private MockServer setupMockServerForDurabilityHandling(TestContext context, CountDownLatch recieved, List<Object> payloads) throws Exception {
+    return new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      serverConnection.sessionOpenHandler(serverSession -> {
+        serverSession.closeHandler(x -> serverSession.close());
+        serverSession.open();
+      });
+
+      serverConnection.receiverOpenHandler(serverReceiver-> {
+        serverReceiver.handler((delivery, message) -> {
+          Section section = message.getBody();
+          context.assertTrue(section instanceof AmqpValue);
+          context.assertNotNull(((AmqpValue) section).getValue());
+          context.assertTrue(((AmqpValue) section).getValue() instanceof String);
+
+          String payload = (String) ((AmqpValue) section).getValue();
+
+          switch(payload) {
+            case DEFAULT:
+              context.assertNull(message.getProperties());
+              context.assertFalse(message.isDurable());
+              break;
+            case DURABLE:
+              context.assertTrue(message.isDurable());
+              break;
+            case NON_DURABLE:
+              context.assertFalse(message.isDurable());
+              break;
+            default:
+              context.fail("Unexpected message payload recieved");
+          }
+
+          payloads.add(payload);
+          recieved.countDown();
+        });
+
+        serverReceiver.open();
+      });
+    });
+  }
 }
