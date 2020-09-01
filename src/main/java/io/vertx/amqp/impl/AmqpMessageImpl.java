@@ -34,10 +34,12 @@ import java.util.UUID;
 public class AmqpMessageImpl implements AmqpMessage {
   private final Message message;
   private final ProtonDelivery delivery;
+  private AmqpConnectionImpl connection;
 
-  public AmqpMessageImpl(Message message, ProtonDelivery delivery) {
+  public AmqpMessageImpl(Message message, ProtonDelivery delivery, AmqpConnectionImpl connection) {
     this.message = message;
     this.delivery = delivery;
+    this.connection = connection;
   }
 
   public AmqpMessageImpl(Message message) {
@@ -284,7 +286,7 @@ public class AmqpMessageImpl implements AmqpMessage {
   @Override
   public AmqpMessage accepted() {
     if (delivery != null) {
-      ProtonHelper.accepted(delivery, true);
+      connection.runWithTrampoline(v -> ProtonHelper.accepted(delivery, true));
     } else {
       throw new IllegalStateException("The message is not a received message");
     }
@@ -294,7 +296,7 @@ public class AmqpMessageImpl implements AmqpMessage {
   @Override
   public AmqpMessage rejected() {
     if (delivery != null) {
-      ProtonHelper.rejected(delivery, true);
+      connection.runWithTrampoline(v -> ProtonHelper.rejected(delivery, true));
     } else {
       throw new IllegalStateException("The message is not a received message");
     }
@@ -304,7 +306,7 @@ public class AmqpMessageImpl implements AmqpMessage {
   @Override
   public AmqpMessage released() {
     if (delivery != null) {
-      ProtonHelper.released(delivery, true);
+      connection.runWithTrampoline(v -> ProtonHelper.released(delivery, true));
     } else {
       throw new IllegalStateException("The message is not a received message");
     }
@@ -314,7 +316,7 @@ public class AmqpMessageImpl implements AmqpMessage {
   @Override
   public AmqpMessage modified(boolean deliveryFailed, boolean undeliverableHere) {
     if (delivery != null) {
-      ProtonHelper.modified(delivery, true, deliveryFailed, undeliverableHere);
+      connection.runWithTrampoline(v -> ProtonHelper.modified(delivery, true, deliveryFailed, undeliverableHere));
     } else {
       throw new IllegalStateException("The message is not a received message");
     }
