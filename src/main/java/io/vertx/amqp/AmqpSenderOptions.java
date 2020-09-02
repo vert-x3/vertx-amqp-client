@@ -15,6 +15,10 @@
  */
 package io.vertx.amqp;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
@@ -27,6 +31,7 @@ public class AmqpSenderOptions {
   private String linkName;
   private boolean dynamic;
   private boolean autoDrained = true;
+  private List<String> capabilities = new ArrayList<>();
 
   public AmqpSenderOptions() {
 
@@ -102,6 +107,44 @@ public class AmqpSenderOptions {
    */
   public AmqpSenderOptions setAutoDrained(boolean autoDrained) {
     this.autoDrained = autoDrained;
+    return this;
+  }
+
+  /**
+   * Gets the list of capabilities to be set on the sender target terminus.
+   *
+   * @return the list of capabilities, empty if none.
+   */
+  public List<String> getCapabilities() {
+    if (capabilities == null) {
+      return new ArrayList<>();
+    }
+    return capabilities;
+  }
+
+  /**
+   * Sets the list of capabilities to be set on the sender target terminus.
+   *
+   * @param capabilities the set of target capabilities.
+   * @return the options
+   */
+  public AmqpSenderOptions setCapabilities(List<String> capabilities) {
+    this.capabilities = capabilities;
+    return this;
+  }
+
+  /**
+   * Adds a capability to be set on the sender target terminus.
+   *
+   * @param capability the target capability to add, must not be {@code null}
+   * @return the options
+   */
+  public AmqpSenderOptions addCapability(String capability) {
+    Objects.requireNonNull(capability, "The capability must not be null");
+    if (this.capabilities == null) {
+      this.capabilities = new ArrayList<>();
+    }
+    this.capabilities.add(capability);
     return this;
   }
 }
