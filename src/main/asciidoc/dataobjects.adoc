@@ -139,14 +139,10 @@ Sets the auto-acknowledgement.
  link.
 +++
 |[[capabilities]]`@capabilities`|`Array of String`|+++
-Sets the list of desired capabilities
- A registry of commonly defined source capabilities and their meanings is maintained at
- <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
+Sets the list of capabilities to be set on the receiver source terminus.
 +++
 |[[capabilitys]]`@capabilitys`|`Array of String`|+++
-Adds a desired capability.
- A registry of commonly defined source capabilities and their meanings is maintained at
- <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
+Adds a capability to be set on the receiver source terminus.
 +++
 |[[durable]]`@durable`|`Boolean`|+++
 Sets the durability.
@@ -155,8 +151,8 @@ Sets the durability.
  to <code>UNSETTLED_STATE</code>.
 +++
 |[[dynamic]]`@dynamic`|`Boolean`|+++
-Sets whether the link remote terminus to be used should indicate it is
- 'dynamic', requesting the peer names it with a dynamic address.
+Sets whether the Source terminus to be used should specify it is 'dynamic',
+ requesting the peer creates a node and names it with a generated address.
  <p>
  The address provided by the peer can then be inspected using the
  link method on the link received once opened.
@@ -174,7 +170,7 @@ Sets the local QOS config.
 == AmqpSenderOptions
 
 ++++
- Configures the AMQP Receiver.
+ Configures the AMQP Sender.
 ++++
 '''
 
@@ -189,8 +185,8 @@ Sets whether the link is automatically marked drained after the send queue drain
  <code>true</code> by default.
 +++
 |[[dynamic]]`@dynamic`|`Boolean`|+++
-Sets whether the link remote terminus to be used should indicate it is
- 'dynamic', requesting the peer names it with a dynamic address.
+Sets whether the Target terminus to be used should specify it is 'dynamic',
+ requesting the peer creates a node and names it with a generated address.
  <p>
  The address provided by the peer can then be inspected using the
  link method on the link received once opened.
