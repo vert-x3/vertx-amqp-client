@@ -19,7 +19,7 @@ import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
 /**
- * Configures the AMQP Receiver.
+ * Configures the AMQP Sender.
  */
 @DataObject(generateConverter = true)
 public class AmqpSenderOptions {
@@ -60,20 +60,20 @@ public class AmqpSenderOptions {
   }
 
   /**
-   * @return whether the receiver is using a dynamic address.
+   * @return whether the sender is using a dynamic address.
    */
   public boolean isDynamic() {
     return dynamic;
   }
 
   /**
-   * Sets whether the link remote terminus to be used should indicate it is
-   * 'dynamic', requesting the peer names it with a dynamic address.
+   * Sets whether the Target terminus to be used should specify it is 'dynamic',
+   * requesting the peer creates a node and names it with a generated address.
    * <p>
    * The address provided by the peer can then be inspected using the
    * {@link AmqpSender#address()} method on the {@link AmqpSender} received once opened.
    *
-   * @param dynamic true if the link should request a dynamic terminus address
+   * @param dynamic true if the sender should request dynamic creation of a node and address to send to
    * @return the options
    */
   public AmqpSenderOptions setDynamic(boolean dynamic) {

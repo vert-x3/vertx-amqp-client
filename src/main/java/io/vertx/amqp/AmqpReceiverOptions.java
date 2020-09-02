@@ -77,13 +77,13 @@ public class AmqpReceiverOptions {
   }
 
   /**
-   * Sets whether the link remote terminus to be used should indicate it is
-   * 'dynamic', requesting the peer names it with a dynamic address.
+   * Sets whether the Source terminus to be used should specify it is 'dynamic',
+   * requesting the peer creates a node and names it with a generated address.
    * <p>
    * The address provided by the peer can then be inspected using the
    * {@link AmqpReceiver#address()} method on the {@link AmqpReceiver} received once opened.
    *
-   * @param dynamic true if the link should request a dynamic terminus address
+   * @param dynamic true if the receiver should request dynamic creation of a node and address to consume from
    * @return the options
    */
   public AmqpReceiverOptions setDynamic(boolean dynamic) {
@@ -112,9 +112,7 @@ public class AmqpReceiverOptions {
   }
 
   /**
-   * Gets the list of desired capabilities for the source.
-   * A registry of commonly defined source capabilities and their meanings is maintained at
-   * <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
+   * Gets the list of capabilities to be set on the receiver source terminus.
    *
    * @return the list of capabilities, empty if none.
    */
@@ -126,11 +124,9 @@ public class AmqpReceiverOptions {
   }
 
   /**
-   * Sets the list of desired capabilities
-   * A registry of commonly defined source capabilities and their meanings is maintained at
-   * <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
+   * Sets the list of capabilities to be set on the receiver source terminus.
    *
-   * @param capabilities the set of capabilities.
+   * @param capabilities the set of source capabilities.
    * @return the options
    */
   public AmqpReceiverOptions setCapabilities(List<String> capabilities) {
@@ -139,11 +135,9 @@ public class AmqpReceiverOptions {
   }
 
   /**
-   * Adds a desired capability.
-   * A registry of commonly defined source capabilities and their meanings is maintained at
-   * <a href="http://www.amqp.org/specification/1.0/source-capabilities">AMQP Source Capabilities</a>.
+   * Adds a capability to be set on the receiver source terminus.
    *
-   * @param capability the capability to add, must not be {@code null}
+   * @param capability the source capability to add, must not be {@code null}
    * @return the options
    */
   public AmqpReceiverOptions addCapability(String capability) {
