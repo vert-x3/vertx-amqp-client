@@ -367,9 +367,9 @@ public class SenderTest extends BareTestBase {
   @Test(timeout = 20000)
   public void testDynamicSenderWithOptions(TestContext context) throws ExecutionException, InterruptedException {
     String address = UUID.randomUUID().toString();
-    String sentContent = "myMessageContent-" + address;
 
     Async serverLinkOpenAsync = context.async();
+    Async clientLinkOpenAsync = context.async();
 
     server = new MockServer(vertx, serverConnection -> {
       serverConnection.openHandler(result -> serverConnection.open());
@@ -380,11 +380,11 @@ public class SenderTest extends BareTestBase {
         serverReceiver.closeHandler(res -> serverReceiver.close());
 
         // Verify the remote terminus details used were as expected
-        context.assertNotNull(serverReceiver.getRemoteTarget(), "source should not be null");
+        context.assertNotNull(serverReceiver.getRemoteTarget(), "target should not be null");
         org.apache.qpid.proton.amqp.messaging.Target remoteTarget =
           (org.apache.qpid.proton.amqp.messaging.Target) serverReceiver.getRemoteTarget();
-        context.assertTrue(remoteTarget.getDynamic(), "expected dynamic source to be requested");
-        context.assertNull(remoteTarget.getAddress(), "expected no source address to be set");
+        context.assertTrue(remoteTarget.getDynamic(), "expected dynamic target to be requested");
+        context.assertNull(remoteTarget.getAddress(), "expected no target address to be set");
 
         // Set the local terminus details
         org.apache.qpid.proton.amqp.messaging.Target target =
@@ -410,11 +410,13 @@ public class SenderTest extends BareTestBase {
         sender -> {
           context.assertTrue(sender.succeeded());
           context.assertNotNull(sender.result().address());
-          sender.result().send(AmqpMessage.create().withBody(sentContent).build());
+
+          clientLinkOpenAsync.complete();
         });
     });
 
     serverLinkOpenAsync.awaitSuccess();
+    clientLinkOpenAsync.awaitSuccess();
   }
 
   @Test(timeout = 10000)
