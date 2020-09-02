@@ -184,6 +184,12 @@ Sets whether the link is automatically marked drained after the send queue drain
  <p>
  <code>true</code> by default.
 +++
+|[[capabilities]]`@capabilities`|`Array of String`|+++
+Sets the list of capabilities to be set on the sender target terminus.
++++
+|[[capabilitys]]`@capabilitys`|`Array of String`|+++
+Adds a capability to be set on the sender target terminus.
++++
 |[[dynamic]]`@dynamic`|`Boolean`|+++
 Sets whether the Target terminus to be used should specify it is 'dynamic',
  requesting the peer creates a node and names it with a generated address.
