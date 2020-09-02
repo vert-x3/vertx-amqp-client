@@ -20,6 +20,7 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonSession;
 
+import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Modified;
@@ -33,6 +34,7 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -362,6 +364,64 @@ public class SenderTest extends BareTestBase {
 
     asyncExceptionHandlerCalled.awaitSuccess();
     asyncShutdown.awaitSuccess();
+  }
+
+  @Test(timeout = 20000)
+  public void testSenderWithTargetCapability(TestContext context) throws ExecutionException, InterruptedException {
+    String targetCapability = "queue";
+
+    Async serverLinkOpenAsync = context.async();
+    Async clientLinkOpenAsync = context.async();
+
+    server = new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(result -> serverConnection.open());
+
+      serverConnection.sessionOpenHandler(ProtonSession::open);
+      serverConnection.closeHandler(x -> serverConnection.close());
+      serverConnection.receiverOpenHandler(serverReceiver -> {
+        serverReceiver.closeHandler(res -> serverReceiver.close());
+
+        // Verify the remote terminus details used were as expected
+        context.assertNotNull(serverReceiver.getRemoteTarget(), "target should not be null");
+        org.apache.qpid.proton.amqp.messaging.Target remoteTarget =
+          (org.apache.qpid.proton.amqp.messaging.Target) serverReceiver.getRemoteTarget();
+        context.assertFalse(remoteTarget.getDynamic(), "dynamic target should not be requested");
+        context.assertEquals(name.getMethodName(), remoteTarget.getAddress(), "expected target address to be set");
+
+        Symbol[] expectedSourceCapabilities = new Symbol[] { Symbol.valueOf(targetCapability) };
+        Symbol[] capabilities = remoteTarget.getCapabilities();
+        context.assertTrue(Arrays.equals(expectedSourceCapabilities, capabilities), "Unexpected capabilities: " + Arrays.toString(capabilities));
+
+        // Set the local terminus details
+        org.apache.qpid.proton.amqp.messaging.Target target =
+          (org.apache.qpid.proton.amqp.messaging.Target) remoteTarget.copy();
+        serverReceiver.setTarget(target);
+
+        serverReceiver.open();
+
+        serverLinkOpenAsync.complete();
+      });
+    });
+
+    client = AmqpClient.create(vertx,
+      new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
+
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+
+      AmqpSenderOptions options = new AmqpSenderOptions().addCapability(targetCapability);
+
+      res.result().createSender(name.getMethodName(), options,
+        sender -> {
+          context.assertTrue(sender.succeeded());
+
+          clientLinkOpenAsync.complete();
+        });
+    });
+
+    serverLinkOpenAsync.awaitSuccess();
+    clientLinkOpenAsync.awaitSuccess();
+
   }
 
   @Test(timeout = 20000)

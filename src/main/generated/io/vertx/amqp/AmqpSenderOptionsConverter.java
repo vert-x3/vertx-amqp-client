@@ -35,6 +35,24 @@ public class AmqpSenderOptionsConverter {
             obj.setAutoDrained((Boolean)member.getValue());
           }
           break;
+        case "capabilities":
+          if (member.getValue() instanceof JsonArray) {
+            java.util.ArrayList<java.lang.String> list =  new java.util.ArrayList<>();
+            ((Iterable<Object>)member.getValue()).forEach( item -> {
+              if (item instanceof String)
+                list.add((String)item);
+            });
+            obj.setCapabilities(list);
+          }
+          break;
+        case "capabilitys":
+          if (member.getValue() instanceof JsonArray) {
+            ((Iterable<Object>)member.getValue()).forEach( item -> {
+              if (item instanceof String)
+                obj.addCapability((String)item);
+            });
+          }
+          break;
         case "dynamic":
           if (member.getValue() instanceof Boolean) {
             obj.setDynamic((Boolean)member.getValue());
@@ -55,6 +73,11 @@ public class AmqpSenderOptionsConverter {
 
   public static void toJson(AmqpSenderOptions obj, java.util.Map<String, Object> json) {
     json.put("autoDrained", obj.isAutoDrained());
+    if (obj.getCapabilities() != null) {
+      JsonArray array = new JsonArray();
+      obj.getCapabilities().forEach(item -> array.add(item));
+      json.put("capabilities", array);
+    }
     json.put("dynamic", obj.isDynamic());
     if (obj.getLinkName() != null) {
       json.put("linkName", obj.getLinkName());

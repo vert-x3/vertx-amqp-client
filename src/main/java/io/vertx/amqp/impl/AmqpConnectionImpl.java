@@ -20,10 +20,12 @@ import io.vertx.core.*;
 import io.vertx.proton.*;
 import io.vertx.proton.impl.ProtonConnectionImpl;
 import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.messaging.Target;
 import org.apache.qpid.proton.amqp.messaging.TerminusDurability;
 import org.apache.qpid.proton.amqp.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.proton.engine.EndpointState;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -379,16 +381,25 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
           sender = conn.createSender(address, opts);
           sender.setAutoDrained(options.isAutoDrained());
+
+          configureTheTarget(options, sender);
         } else {
           sender = conn.createSender(address);
         }
-
-        // TODO durable?
 
         AmqpSenderImpl.create(sender, this, completionHandler);
       }
     });
     return this;
+  }
+
+  private void configureTheTarget(AmqpSenderOptions senderOptions, ProtonSender sender) {
+    Target target = (org.apache.qpid.proton.amqp.messaging.Target) sender.getTarget();
+
+    List<String> capabilities = senderOptions.getCapabilities();
+    if (!capabilities.isEmpty()) {
+      target.setCapabilities(capabilities.stream().map(Symbol::valueOf).toArray(Symbol[]::new));
+    }
   }
 
   @Override
