@@ -1,6 +1,6 @@
 = Vert.x AMQP Client
 
-image:https://travis-ci.org/vert-x3/vertx-amqp-client.svg?branch=master["Build Status", link="https://travis-ci.org/vert-x3/vertx-amqp-client"]
+image:https://github.com/vert-x3/vertx-amqp-client/workflows/CI/badge.svg?branch=master["Build Status", link="https://github.com/vert-x3/vertx-amqp-client/actions?query=workflow%3ACI"]
 
 == Build
 
