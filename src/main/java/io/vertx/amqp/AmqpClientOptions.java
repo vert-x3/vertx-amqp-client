@@ -23,6 +23,7 @@ import io.vertx.proton.ProtonClientOptions;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Configures the AMQP Client.
@@ -250,11 +251,38 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
+   * @see ProtonClientOptions#setSslHandshakeTimeout(boolean)
+   */
+  @Override
+  public AmqpClientOptions setSslHandshakeTimeout(long sslHandshakeTimeout) {
+    super.setSslHandshakeTimeout(sslHandshakeTimeout);
+    return this;
+  }
+
+  /**
+   * @see ProtonClientOptions#setSslHandshakeTimeoutUnit(TimeUnit)
+   */
+  @Override
+  public AmqpClientOptions setSslHandshakeTimeoutUnit(TimeUnit sslHandshakeTimeoutUnit) {
+    super.setSslHandshakeTimeoutUnit(sslHandshakeTimeoutUnit);
+    return this;
+  }
+
+  /**
    * @see ProtonClientOptions#setKeyStoreOptions(JksOptions)
    */
   @Override
   public AmqpClientOptions setKeyStoreOptions(JksOptions options) {
     super.setKeyStoreOptions(options);
+    return this;
+  }
+
+  /**
+   * @see ProtonClientOptions#setKeyCertOptions(PfxOptions)
+   */
+  @Override
+  public AmqpClientOptions setKeyCertOptions(KeyCertOptions options) {
+    super.setKeyCertOptions(options);
     return this;
   }
 
@@ -276,6 +304,15 @@ public class AmqpClientOptions extends ProtonClientOptions {
     return this;
   }
 
+  /**
+   * @see ProtonClientOptions#setTrustStoreOptions(TrustOptions)
+   */
+  @Override
+  public AmqpClientOptions setTrustOptions(TrustOptions options) {
+    super.setTrustOptions(options);
+    return this;
+  }
+  
   /**
    * @see ProtonClientOptions#setTrustStoreOptions(JksOptions)
    */
