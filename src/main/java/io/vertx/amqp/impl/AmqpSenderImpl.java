@@ -27,6 +27,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonSender;
 import io.vertx.proton.impl.ProtonSenderImpl;
+import org.apache.qpid.proton.amqp.messaging.Rejected;
 
 public class AmqpSenderImpl implements AmqpSender {
   private static final Logger LOGGER = LoggerFactory.getLogger(AmqpSender.class);
@@ -155,7 +156,7 @@ public class AmqpSenderImpl implements AmqpSender {
 
       switch (delivery.getRemoteState().getType()) {
         case Rejected:
-          handler.handle(Future.failedFuture("message rejected (REJECTED"));
+          handler.handle(Future.failedFuture("message rejected (REJECTED): " + ((Rejected) delivery.getRemoteState()).getError()));
           break;
         case Modified:
           handler.handle(Future.failedFuture("message rejected (MODIFIED)"));
