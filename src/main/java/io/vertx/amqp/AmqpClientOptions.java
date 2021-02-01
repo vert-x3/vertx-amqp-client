@@ -242,6 +242,15 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
+   * @see ProtonClientOptions#setIdleTimeoutUnit(TimeUnit)
+   */
+  @Override
+  public AmqpClientOptions setIdleTimeoutUnit(TimeUnit idleTimeoutUnit) {
+    super.setIdleTimeoutUnit(idleTimeoutUnit);
+    return this;
+  }
+
+  /**
    * @see ProtonClientOptions#setSsl(boolean)
    */
   @Override
