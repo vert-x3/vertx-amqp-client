@@ -180,10 +180,8 @@ public class AmqpMessageImpl implements AmqpMessage {
     throw new IllegalStateException("Expected a Symbol, got a " + value.getClass());
   }
 
-  /**
-   * @noinspection unchecked
-   */
   @Override
+  @SuppressWarnings("unchecked")
   public <T> List<T> bodyAsList() {
     Section body = message.getBody();
     if (body.getType() == Section.SectionType.AmqpSequence) {
@@ -197,10 +195,8 @@ public class AmqpMessageImpl implements AmqpMessage {
     }
   }
 
-  /**
-   * @noinspection unchecked
-   */
   @Override
+  @SuppressWarnings("unchecked")
   public <K, V> Map<K, V> bodyAsMap() {
     Object value = getAmqpValue();
     if (value instanceof Map) {
