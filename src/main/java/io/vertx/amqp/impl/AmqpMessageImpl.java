@@ -90,13 +90,19 @@ public class AmqpMessageImpl implements AmqpMessage {
     return null;
   }
 
+  private boolean isBodyAmqpValue() {
+    final Section body = message.getBody();
+    return body != null && body.getType() == Section.SectionType.AmqpValue;
+  }
+
   @Override
   public boolean isBodyNull() {
-    return message.getBody() == null || getAmqpValue() == null;
+    final Section body = message.getBody();
+    return body == null || isBodyAmqpValue() && ((AmqpValue) body).getValue() == null;
   }
 
   private Object getAmqpValue() {
-    if (message.getBody().getType() != Section.SectionType.AmqpValue) {
+    if (!isBodyAmqpValue()) {
       throw new IllegalStateException("The body is not an AMQP Value");
     }
     return ((AmqpValue) message.getBody()).getValue();
