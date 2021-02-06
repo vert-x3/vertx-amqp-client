@@ -205,9 +205,9 @@ public class AmqpConnectionImpl implements AmqpConnection {
           done.handle(Future.succeededFuture());
         }
         return;
-      } else {
-        closed.set(true);
       }
+      
+      closed.set(true);
 
       Promise<Void> future = Promise.promise();
       if (done != null) {
@@ -220,10 +220,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
           actualConnection
             .disconnectHandler(con -> {
               future.tryFail(getErrorMessage(con));
-              closed.set(true);
             })
             .closeHandler(res -> {
-              closed.set(true);
               if (res.succeeded()) {
                 future.tryComplete();
               } else {
