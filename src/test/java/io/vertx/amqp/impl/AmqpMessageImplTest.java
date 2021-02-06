@@ -15,8 +15,11 @@
  */
 package io.vertx.amqp.impl;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
+import org.apache.qpid.proton.amqp.Binary;
+import org.apache.qpid.proton.amqp.messaging.AmqpValue;
+import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.message.Message;
 import org.junit.Test;
 
@@ -31,6 +34,22 @@ public class AmqpMessageImplTest {
 
     AmqpMessageImpl message = new AmqpMessageImpl(protonMsg);
     assertEquals(contentEncoding, message.contentEncoding());
+  }
+
+  @Test
+  public void testIsBodyNull() {
+
+    Message protonMsg = Message.Factory.create();
+    AmqpMessageImpl message = new AmqpMessageImpl(protonMsg);
+
+    protonMsg.setBody(null);
+    assertTrue(message.isBodyNull());
+
+    protonMsg.setBody(new AmqpValue(null));
+    assertTrue(message.isBodyNull());
+
+    protonMsg.setBody(new Data(new Binary(new byte[0])));
+    assertFalse(message.isBodyNull());
   }
 
 }
