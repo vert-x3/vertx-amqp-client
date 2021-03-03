@@ -36,6 +36,11 @@ public class AmqpClientOptionsConverter {
             obj.setConnectTimeout(((Number)member.getValue()).intValue());
           }
           break;
+        case "connectionHostname":
+          if (member.getValue() instanceof String) {
+            obj.setConnectionHostname((String)member.getValue());
+          }
+          break;
         case "containerId":
           if (member.getValue() instanceof String) {
             obj.setContainerId((String)member.getValue());
@@ -298,6 +303,9 @@ public class AmqpClientOptionsConverter {
 
   public static void toJson(AmqpClientOptions obj, java.util.Map<String, Object> json) {
     json.put("connectTimeout", obj.getConnectTimeout());
+    if (obj.getConnectionHostname() != null) {
+      json.put("connectionHostname", obj.getConnectionHostname());
+    }
     if (obj.getContainerId() != null) {
       json.put("containerId", obj.getContainerId());
     }

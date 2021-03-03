@@ -180,6 +180,50 @@ public class ConnectionTest extends BareTestBase {
     }
   }
 
+  @Test(timeout = 10000)
+  public void testConnectionWithAmqpOpenHostnameOverride() throws Exception {
+    CountDownLatch done = new CountDownLatch(1);
+    AtomicReference<ProtonConnection> serverConnectionRef = new AtomicReference<>();
+
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(x -> {
+        serverConnectionRef.set(serverConnection);
+        serverConnection.closeHandler(y -> serverConnection.close());
+        serverConnection.open();
+      });
+    });
+
+    String serverDnsHost = "localhost";
+    String connectionHostname = "some-other-hostname";
+
+    assertThat(serverDnsHost).isNotEqualTo(connectionHostname);
+
+    try {
+      AmqpClientOptions options = new AmqpClientOptions()
+          .setHost(serverDnsHost)
+          .setPort(server.actualPort())
+          .setConnectionHostname(connectionHostname);
+
+      client = AmqpClient.create(vertx, options);
+
+      client.connect(ar -> {
+        if (ar.failed()) {
+          ar.cause().printStackTrace();
+        } else {
+          done.countDown();
+        }
+      });
+
+      assertThat(done.await(5, TimeUnit.SECONDS)).isTrue();
+      ProtonConnection serverConnection = serverConnectionRef.get();
+
+      assertThat(serverConnection).isNotNull();
+      assertThat(serverConnection.getRemoteHostname()).isEqualTo(connectionHostname);
+    } finally {
+      server.close();
+    }
+  }
+
   private static byte[] getPlainInitialResponse(String username, String password) {
     Objects.requireNonNull(username);
     Objects.requireNonNull(password);
