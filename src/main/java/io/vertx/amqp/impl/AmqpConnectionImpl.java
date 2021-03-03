@@ -82,8 +82,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
               this.connection.get().setContainer(options.getContainerId());
             }
 
-            if (options.getVirtualHost() != null) {
-              this.connection.get().setHostname(options.getVirtualHost());
+            if (options.getConnectionHostname() != null) {
+              this.connection.get().setHostname(options.getConnectionHostname());
             }
 
             this.connection.get()

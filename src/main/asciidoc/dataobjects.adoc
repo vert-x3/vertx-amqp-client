@@ -16,6 +16,11 @@
 |[[connectTimeout]]`@connectTimeout`|`Number (int)`|+++
 
 +++
+|[[connectionHostname]]`@connectionHostname`|`String`|+++
+Explicitly override the hostname value used for the AMQP Open frame.
+
+ The host connected to as per link will be used in the Open frame by default.
++++
 |[[containerId]]`@containerId`|`String`|+++
 Sets the container id.
 +++

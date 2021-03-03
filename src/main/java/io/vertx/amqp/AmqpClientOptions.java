@@ -40,6 +40,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
   private String password = getFromSysOrEnv("amqp-client-password");
 
   private String containerId = UUID.randomUUID().toString();
+  private String connectionHostname = null;
 
   public AmqpClientOptions() {
     super();
@@ -57,6 +58,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
     this.username = other.username;
     this.port = other.port;
     this.containerId = other.containerId;
+    this.connectionHostname = other.connectionHostname;
   }
 
   public JsonObject toJson() {
@@ -156,6 +158,28 @@ public class AmqpClientOptions extends ProtonClientOptions {
    */
   public AmqpClientOptions setContainerId(String containerId) {
     this.containerId = containerId;
+    return this;
+  }
+
+  /**
+   * Get the connection hostname override for the AMQP Open frame hostname
+   *
+   * @return the hostname override
+   */
+  public String getConnectionHostname() {
+    return connectionHostname;
+  }
+
+  /**
+   * Explicitly override the hostname value used for the AMQP Open frame.
+   *
+   * The host connected to as per {@link #setHost(String)} will be used in the Open frame by default.
+   *
+   * @param hostname the hostname override value to use as the Open frame hostname
+   * @return  current AmqpClientOptions instance
+   */
+  public AmqpClientOptions setConnectionHostname(String hostname) {
+    connectionHostname = hostname;
     return this;
   }
 
