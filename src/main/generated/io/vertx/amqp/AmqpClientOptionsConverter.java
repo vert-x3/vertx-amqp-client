@@ -153,6 +153,16 @@ public class AmqpClientOptionsConverter {
             obj.setMetricsName((String)member.getValue());
           }
           break;
+        case "nonProxyHosts":
+          if (member.getValue() instanceof JsonArray) {
+            java.util.ArrayList<java.lang.String> list =  new java.util.ArrayList<>();
+            ((Iterable<Object>)member.getValue()).forEach( item -> {
+              if (item instanceof String)
+                list.add((String)item);
+            });
+            obj.setNonProxyHosts(list);
+          }
+          break;
         case "openSslEngineOptions":
           if (member.getValue() instanceof JsonObject) {
             obj.setOpenSslEngineOptions(new io.vertx.core.net.OpenSSLEngineOptions((io.vertx.core.json.JsonObject)member.getValue()));
@@ -373,6 +383,11 @@ public class AmqpClientOptionsConverter {
     json.put("maxFrameSize", obj.getMaxFrameSize());
     if (obj.getMetricsName() != null) {
       json.put("metricsName", obj.getMetricsName());
+    }
+    if (obj.getNonProxyHosts() != null) {
+      JsonArray array = new JsonArray();
+      obj.getNonProxyHosts().forEach(item -> array.add(item));
+      json.put("nonProxyHosts", array);
     }
     if (obj.getOpenSslEngineOptions() != null) {
       json.put("openSslEngineOptions", obj.getOpenSslEngineOptions().toJson());
