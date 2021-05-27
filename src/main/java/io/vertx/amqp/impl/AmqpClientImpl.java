@@ -48,7 +48,17 @@ public class AmqpClientImpl implements AmqpClient {
   public AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     Objects.requireNonNull(options.getHost(), "Host must be set");
     Objects.requireNonNull(connectionHandler, "Handler must not be null");
-    new AmqpConnectionImpl(vertx.getOrCreateContext(), this, options, proton, connectionHandler);
+    Promise<AmqpConnection> promise = Promise.promise();
+    Future<AmqpConnection> fut = promise.future();
+    fut.onSuccess(c -> {
+      AmqpConnectionImpl conn = (AmqpConnectionImpl) c;
+      connections.add(conn);
+      conn.closeFuture().onComplete(ar2 -> {
+        connections.remove(conn);
+      });
+    });
+    fut.onComplete(connectionHandler);
+    new AmqpConnectionImpl(vertx.getOrCreateContext(), options, proton, promise);
     return this;
   }
 
@@ -129,5 +139,9 @@ public class AmqpClientImpl implements AmqpClient {
 
   synchronized void register(AmqpConnectionImpl connection) {
     connections.add(connection);
+  }
+
+  public int numConnections() {
+    return connections.size();
   }
 }
