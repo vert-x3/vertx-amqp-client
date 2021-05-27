@@ -17,6 +17,8 @@ package io.vertx.amqp.impl;
 
 import io.vertx.amqp.*;
 import io.vertx.core.*;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.proton.ProtonClient;
 
 import java.util.ArrayList;
@@ -46,17 +48,25 @@ public class AmqpClientImpl implements AmqpClient {
 
   @Override
   public AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler) {
-    Objects.requireNonNull(options.getHost(), "Host must be set");
     Objects.requireNonNull(connectionHandler, "Handler must not be null");
-    new AmqpConnectionImpl(vertx.getOrCreateContext(), this, options, proton, connectionHandler);
+    connect().onComplete(connectionHandler);
     return this;
   }
 
   @Override
   public Future<AmqpConnection> connect() {
-    Promise<AmqpConnection> promise = Promise.promise();
-    connect(promise);
-    return promise.future();
+    Objects.requireNonNull(options.getHost(), "Host must be set");
+    ContextInternal ctx = (ContextInternal) vertx.getOrCreateContext();
+    PromiseInternal<AmqpConnection> promise = ctx.promise();
+    new AmqpConnectionImpl(ctx, options, proton, promise);
+    Future<AmqpConnection> future = promise.future();
+    future.onSuccess(conn -> {
+      connections.add(conn);
+      conn.closeFuture().onComplete(ar -> {
+        connections.remove(conn);
+      });
+    });
+    return future;
   }
 
   @Override
@@ -169,7 +179,7 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  synchronized void register(AmqpConnectionImpl connection) {
-    connections.add(connection);
+  public int numConnections() {
+    return connections.size();
   }
 }

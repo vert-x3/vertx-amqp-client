@@ -17,6 +17,7 @@ package io.vertx.amqp.impl;
 
 import io.vertx.amqp.*;
 import io.vertx.core.*;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.proton.*;
 import io.vertx.proton.impl.ProtonConnectionImpl;
 import org.apache.qpid.proton.amqp.Symbol;
@@ -42,6 +43,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
   private final AtomicBoolean closed = new AtomicBoolean();
   private final AtomicReference<ProtonConnection> connection = new AtomicReference<>();
   private final Context context;
+  private final Promise<Void> closePromise;
 
   private final List<AmqpSender> senders = new CopyOnWriteArrayList<>();
   private final List<AmqpReceiver> receivers = new CopyOnWriteArrayList<>();
@@ -50,19 +52,20 @@ public class AmqpConnectionImpl implements AmqpConnection {
    */
   private Handler<Throwable> exceptionHandler;
 
-  AmqpConnectionImpl(Context context, AmqpClientImpl client, AmqpClientOptions options,
-    ProtonClient proton, Handler<AsyncResult<AmqpConnection>> connectionHandler) {
+  AmqpConnectionImpl(Context context, AmqpClientOptions options,
+                     ProtonClient proton, Promise<AmqpConnection> connectionHandler) {
     this.options = options;
     this.context = context;
+    this.closePromise = ((ContextInternal) context).promise();
 
-    runOnContext(x -> connect(client,
+    runOnContext(x -> connect(
       Objects.requireNonNull(proton, "proton cannot be `null`"),
       Objects.requireNonNull(connectionHandler, "connection handler cannot be `null`"))
     );
   }
 
-  private void connect(AmqpClientImpl client, ProtonClient proton,
-    Handler<AsyncResult<AmqpConnection>> connectionHandler) {
+  private void connect(ProtonClient proton,
+                       Promise<AmqpConnection> connectionPromise) {
     proton
       .connect(options, options.getHost(), options.getPort(), options.getUsername(), options.getPassword(),
         ar -> {
@@ -71,7 +74,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
           if (ar.succeeded()) {
             ProtonConnection result = ar.result();
             if (!this.connection.compareAndSet(null, result)) {
-              connectionHandler.handle(Future.failedFuture("Unable to connect - already holding a connection"));
+              connectionPromise.fail("Unable to connect - already holding a connection");
               return;
             }
 
@@ -92,6 +95,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
                   onDisconnect();
                 } finally {
                   closed.set(true);
+                  closePromise.tryComplete();
                 }
               })
               .closeHandler(x -> {
@@ -107,22 +111,23 @@ public class AmqpConnectionImpl implements AmqpConnection {
                   });
                 } finally {
                   closed.set(true);
+                  closePromise.tryComplete();
                 }
               })
               .openHandler(conn -> {
                 if (conn.succeeded()) {
-                  client.register(this);
                   closed.set(false);
-                  connectionHandler.handle(Future.succeededFuture(this));
+                  connectionPromise.complete(this);
                 } else {
                   closed.set(true);
-                  connectionHandler.handle(conn.mapEmpty());
+                  closePromise.tryComplete();
+                  connectionPromise.fail(conn.cause());
                 }
               });
 
             this.connection.get().open();
           } else {
-            connectionHandler.handle(ar.mapEmpty());
+            connectionPromise.fail(ar.cause());
           }
         });
   }
@@ -205,8 +210,9 @@ public class AmqpConnectionImpl implements AmqpConnection {
         }
         return;
       }
-      
+
       closed.set(true);
+      closePromise.tryComplete();
 
       Promise<Void> future = Promise.promise();
       if (done != null) {
@@ -436,6 +442,11 @@ public class AmqpConnectionImpl implements AmqpConnection {
     } else {
       return true;
     }
+  }
+
+  @Override
+  public Future<Void> closeFuture() {
+    return closePromise.future();
   }
 
   /**

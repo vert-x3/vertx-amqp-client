@@ -160,4 +160,9 @@ public interface AmqpConnection {
    */
   boolean isDisconnected();
 
+  /**
+   * @return a future completed when the connection is closed
+   */
+  Future<Void> closeFuture();
+
 }
