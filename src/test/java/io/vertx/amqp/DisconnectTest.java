@@ -17,6 +17,7 @@ package io.vertx.amqp;
 
 import java.util.UUID;
 
+import io.vertx.amqp.impl.AmqpClientImpl;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,6 +60,33 @@ public class DisconnectTest extends BareTestBase {
         handlerFired.complete();
       });
 
+      server.close();
+    }));
+
+    handlerFired.awaitSuccess();
+  }
+
+  @Test(timeout = 20000)
+  public void testConnectionsCleanupOnDisconnect(TestContext ctx) throws Exception {
+    MockServer server = new MockServer(vertx, serverConnection -> {
+      // Expect a connection
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.open();
+      });
+    });
+
+    client = AmqpClient.create(vertx, new AmqpClientOptions()
+      .setHost("localhost")
+      .setPort(server.actualPort()));
+
+    Async handlerFired = ctx.async();
+    client.connect(ctx.asyncAssertSuccess(conn -> {
+      conn.exceptionHandler(err -> {
+        vertx.setTimer(5, id -> {
+          ctx.assertEquals(0, ((AmqpClientImpl)client).numConnections());
+          handlerFired.complete();
+        });
+      });
       server.close();
     }));
 
