@@ -203,6 +203,11 @@ public class AmqpClientOptionsConverter {
             obj.setProxyOptions(new io.vertx.core.net.ProxyOptions((io.vertx.core.json.JsonObject)member.getValue()));
           }
           break;
+        case "readIdleTimeout":
+          if (member.getValue() instanceof Number) {
+            obj.setReadIdleTimeout(((Number)member.getValue()).intValue());
+          }
+          break;
         case "receiveBufferSize":
           if (member.getValue() instanceof Number) {
             obj.setReceiveBufferSize(((Number)member.getValue()).intValue());
@@ -313,6 +318,11 @@ public class AmqpClientOptionsConverter {
             obj.setVirtualHost((String)member.getValue());
           }
           break;
+        case "writeIdleTimeout":
+          if (member.getValue() instanceof Number) {
+            obj.setWriteIdleTimeout(((Number)member.getValue()).intValue());
+          }
+          break;
       }
     }
   }
@@ -411,6 +421,7 @@ public class AmqpClientOptionsConverter {
     if (obj.getProxyOptions() != null) {
       json.put("proxyOptions", obj.getProxyOptions().toJson());
     }
+    json.put("readIdleTimeout", obj.getReadIdleTimeout());
     json.put("receiveBufferSize", obj.getReceiveBufferSize());
     json.put("reconnectAttempts", obj.getReconnectAttempts());
     json.put("reconnectInterval", obj.getReconnectInterval());
@@ -443,5 +454,6 @@ public class AmqpClientOptionsConverter {
     if (obj.getVirtualHost() != null) {
       json.put("virtualHost", obj.getVirtualHost());
     }
+    json.put("writeIdleTimeout", obj.getWriteIdleTimeout());
   }
 }
