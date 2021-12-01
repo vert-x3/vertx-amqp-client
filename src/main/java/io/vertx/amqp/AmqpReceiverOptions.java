@@ -35,6 +35,8 @@ public class AmqpReceiverOptions {
   private boolean durable;
   private int maxBufferedMessages;
   private boolean autoAcknowledgement = true;
+  private boolean noLocal;
+  private String selector;
 
   public AmqpReceiverOptions() {
 
@@ -47,6 +49,8 @@ public class AmqpReceiverOptions {
     setCapabilities(other.getCapabilities());
     setDurable(other.isDurable());
     setMaxBufferedMessages(other.maxBufferedMessages);
+    setNoLocal(other.noLocal);
+    setSelector(other.selector);
   }
 
   public AmqpReceiverOptions(JsonObject json) {
@@ -206,6 +210,40 @@ public class AmqpReceiverOptions {
    */
   public AmqpReceiverOptions setAutoAcknowledgement(boolean auto) {
     this.autoAcknowledgement = auto;
+    return this;
+  }
+
+  /**
+   * @return the message filter/selector
+   */
+  public String getSelector() {
+    return selector;
+  }
+
+  /**
+   * Sets a message filter/selector. See https://www.amqp.org/specification/1.0/filters
+   * @param selector the selector string to set.
+   */
+  public AmqpReceiverOptions setSelector(final String selector) {
+    this.selector = selector;
+    return this;
+  }
+
+  /**
+   * @return whether this receiver shall receive messages sent from senders using the same underlying connection
+   */
+  public boolean isNoLocal() {
+    return noLocal;
+  }
+
+  /**
+   * Sets whether this receiver shall receive messages sent from senders using the same underlying connection.
+   * See https://www.amqp.org/specification/1.0/filters
+   *
+   * @param noLocal true if this receiver shall not receive messages sent from senders using the same underlying connection
+   */
+  public AmqpReceiverOptions setNoLocal(final boolean noLocal) {
+    this.noLocal = noLocal;
     return this;
   }
 }

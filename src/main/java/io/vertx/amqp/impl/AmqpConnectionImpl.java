@@ -20,7 +20,7 @@ import io.vertx.core.*;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.proton.*;
 import io.vertx.proton.impl.ProtonConnectionImpl;
-import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.*;
 import org.apache.qpid.proton.amqp.messaging.Target;
 import org.apache.qpid.proton.amqp.messaging.TerminusDurability;
 import org.apache.qpid.proton.amqp.messaging.TerminusExpiryPolicy;
@@ -38,6 +38,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
   public static final String PRODUCT = "vertx-amqp-client";
   public static final Symbol PRODUCT_KEY = Symbol.valueOf("product");
+
+  public static final UnsignedLong NO_LOCAL_CODE = UnsignedLong.valueOf(0x0000_468C_0000_0003L);
+  public static final Symbol NO_LOCAL_NAME = Symbol.valueOf("apache.org:no-local-filter:list");
+  public static final DescribedType NO_LOCAL_TYPE = new UnknownDescribedType(NO_LOCAL_CODE, "NoLocalFilter{}");
+
+  public static final UnsignedLong SELECTOR_CODE = UnsignedLong.valueOf(0x0000_468C_0000_0004L);
+  public static final Symbol SELECTOR_NAME = Symbol.valueOf("apache.org:selector-filter:string");
 
   private final AmqpClientOptions options;
   private final AtomicBoolean closed = new AtomicBoolean();
@@ -346,6 +353,21 @@ public class AmqpConnectionImpl implements AmqpConnection {
     if (receiverOptions.isDurable()) {
       source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
       source.setDurable(TerminusDurability.UNSETTLED_STATE);
+    }
+
+    final Map<Symbol, DescribedType> filters = new HashMap<>();
+
+    if (receiverOptions.isNoLocal()) {
+      filters.put(NO_LOCAL_NAME, NO_LOCAL_TYPE);
+    }
+
+    final String selector = receiverOptions.getSelector();
+    if (selector != null && !selector.trim().isEmpty()) {
+      filters.put(SELECTOR_NAME, new UnknownDescribedType(SELECTOR_CODE, selector));
+    }
+
+    if(!filters.isEmpty()) {
+      source.setFilter(filters);
     }
   }
 
