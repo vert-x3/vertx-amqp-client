@@ -78,9 +78,19 @@ public class AmqpReceiverOptionsConverter {
             obj.setMaxBufferedMessages(((Number)member.getValue()).intValue());
           }
           break;
+        case "noLocal":
+          if (member.getValue() instanceof Boolean) {
+            obj.setNoLocal((Boolean)member.getValue());
+          }
+          break;
         case "qos":
           if (member.getValue() instanceof String) {
             obj.setQos((String)member.getValue());
+          }
+          break;
+        case "selector":
+          if (member.getValue() instanceof String) {
+            obj.setSelector((String)member.getValue());
           }
           break;
       }
@@ -104,8 +114,12 @@ public class AmqpReceiverOptionsConverter {
       json.put("linkName", obj.getLinkName());
     }
     json.put("maxBufferedMessages", obj.getMaxBufferedMessages());
+    json.put("noLocal", obj.isNoLocal());
     if (obj.getQos() != null) {
       json.put("qos", obj.getQos());
+    }
+    if (obj.getSelector() != null) {
+      json.put("selector", obj.getSelector());
     }
   }
 }

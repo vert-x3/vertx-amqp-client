@@ -39,12 +39,14 @@ public class AmqpConnectionImpl implements AmqpConnection {
   public static final String PRODUCT = "vertx-amqp-client";
   public static final Symbol PRODUCT_KEY = Symbol.valueOf("product");
 
-  public static final UnsignedLong NO_LOCAL_CODE = UnsignedLong.valueOf(0x0000_468C_0000_0003L);
-  public static final Symbol NO_LOCAL_NAME = Symbol.valueOf("apache.org:no-local-filter:list");
-  public static final DescribedType NO_LOCAL_TYPE = new UnknownDescribedType(NO_LOCAL_CODE, "NoLocalFilter{}");
+  // For the "apache.org:no-local-filter:list" filter
+  private static final Symbol NO_LOCAL_KEY = Symbol.valueOf("no-local");
+  private static final UnsignedLong NO_LOCAL_DESCRIPTOR = UnsignedLong.valueOf(0x0000_468C_0000_0003L);
+  private static final DescribedType NO_LOCAL_FILTER = new UnknownDescribedType(NO_LOCAL_DESCRIPTOR, "NoLocalFilter{}");
 
-  public static final UnsignedLong SELECTOR_CODE = UnsignedLong.valueOf(0x0000_468C_0000_0004L);
-  public static final Symbol SELECTOR_NAME = Symbol.valueOf("apache.org:selector-filter:string");
+  // For the "apache.org:selector-filter:string" filter
+  private static final Symbol SELECTOR_KEY = Symbol.valueOf("selector");
+  private static final UnsignedLong SELECTOR_DESCRIPTOR = UnsignedLong.valueOf(0x0000_468C_0000_0004L);
 
   private final AmqpClientOptions options;
   private final AtomicBoolean closed = new AtomicBoolean();
@@ -358,12 +360,12 @@ public class AmqpConnectionImpl implements AmqpConnection {
     final Map<Symbol, DescribedType> filters = new HashMap<>();
 
     if (receiverOptions.isNoLocal()) {
-      filters.put(NO_LOCAL_NAME, NO_LOCAL_TYPE);
+      filters.put(NO_LOCAL_KEY, NO_LOCAL_FILTER);
     }
 
     final String selector = receiverOptions.getSelector();
     if (selector != null && !selector.trim().isEmpty()) {
-      filters.put(SELECTOR_NAME, new UnknownDescribedType(SELECTOR_CODE, selector));
+      filters.put(SELECTOR_KEY, new UnknownDescribedType(SELECTOR_DESCRIPTOR, selector));
     }
 
     if(!filters.isEmpty()) {

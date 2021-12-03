@@ -24,7 +24,9 @@ import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonSession;
 
 import org.apache.qpid.proton.Proton;
+import org.apache.qpid.proton.amqp.DescribedType;
 import org.apache.qpid.proton.amqp.Symbol;
+import org.apache.qpid.proton.amqp.UnsignedLong;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
@@ -50,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -593,5 +596,144 @@ public class ReceiverTest extends BareTestBase {
 
     serverLinkOpenAsync.awaitSuccess();
     clientLinkOpenAsync.awaitSuccess();
+  }
+
+  @Test(timeout = 10000)
+  public void testReceiverWithSelectorFilter(TestContext context) throws Exception {
+    String testName = name.getMethodName();
+    String selector = "myProperty = '" + testName + "'";
+
+    Async asyncClientLinkOpenComplete = context.async();
+    Async asyncServerFilterCheckComplete = context.async();
+
+    server = setupSourceFilterCheckServer(context,
+        new FilterCheck(context, asyncServerFilterCheckComplete, Symbol.valueOf("selector"), UnsignedLong.valueOf(0x0000468C00000004L), selector));
+
+    client = AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+
+      AmqpReceiverOptions options = new AmqpReceiverOptions();
+      options.setSelector(selector);
+
+      res.result().createReceiver(testName, options, recvRes -> {
+        context.assertTrue(recvRes.succeeded());
+        asyncClientLinkOpenComplete.complete();
+      });
+    });
+
+    asyncClientLinkOpenComplete.awaitSuccess();
+    asyncServerFilterCheckComplete.awaitSuccess();
+  }
+
+  @Test(timeout = 10000)
+  public void testReceiverWithNoLocalFilter(TestContext context) throws Exception {
+    String testName = name.getMethodName();
+
+    Async asyncClientLinkOpenComplete = context.async();
+    Async asyncServerFilterCheckComplete = context.async();
+
+    server = setupSourceFilterCheckServer(context,
+        new FilterCheck(context, asyncServerFilterCheckComplete, Symbol.valueOf("no-local"), UnsignedLong.valueOf(0x0000468C00000003L), "NoLocalFilter{}"));
+
+    client = AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+
+      AmqpReceiverOptions options = new AmqpReceiverOptions();
+      options.setNoLocal(true);
+
+      res.result().createReceiver(testName, options, recvRes -> {
+        context.assertTrue(recvRes.succeeded());
+        asyncClientLinkOpenComplete.complete();
+      });
+    });
+
+    asyncClientLinkOpenComplete.awaitSuccess();
+    asyncServerFilterCheckComplete.awaitSuccess();
+  }
+
+  @Test(timeout = 10000)
+  public void testReceiverWithoutFilter(TestContext context) throws Exception {
+    String testName = name.getMethodName();
+
+    Async asyncClientLinkOpenComplete = context.async();
+    Async asyncServerFilterCheckComplete = context.async();
+
+    server = setupSourceFilterCheckServer(context, filters -> {
+      context.assertNull(filters, "expected link to have no filters");
+      asyncServerFilterCheckComplete.complete();
+    });
+
+    client = AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
+    client.connect(res -> {
+      context.assertTrue(res.succeeded());
+
+      res.result().createReceiver(testName, recvRes -> {
+        context.assertTrue(recvRes.succeeded());
+        asyncClientLinkOpenComplete.complete();
+      });
+    });
+
+    asyncClientLinkOpenComplete.awaitSuccess();
+    asyncServerFilterCheckComplete.awaitSuccess();
+  }
+
+  @SuppressWarnings("unchecked")
+  private MockServer setupSourceFilterCheckServer(TestContext context, Consumer<Map<Symbol, Object>> consumer)
+      throws ExecutionException, InterruptedException {
+    return new MockServer(vertx, serverConnection -> {
+      serverConnection.openHandler(serverSender -> {
+        serverConnection.closeHandler(x -> serverConnection.close());
+        serverConnection.open();
+      });
+
+      serverConnection.sessionOpenHandler(serverSession -> {
+        serverSession.closeHandler(x -> serverSession.close());
+        serverSession.open();
+      });
+
+      serverConnection.senderOpenHandler(serverSender-> {
+        serverSender.open();
+
+        // Verify the filter details used were as expected
+        context.assertNotNull(serverSender.getRemoteSource(), "source should not be null");
+        Source source = (org.apache.qpid.proton.amqp.messaging.Source) serverSender.getRemoteSource();
+
+        consumer.accept(source.getFilter());
+      });
+    });
+  }
+
+  private static final class FilterCheck implements Consumer<Map<Symbol, Object>> {
+    private final TestContext context;
+    private final Symbol expectedKey;
+    private final UnsignedLong expectedDescriptor;
+    private final Object expectedDescribedValue;
+    private final Async asyncFilterCheck;
+
+    private FilterCheck(TestContext context, Async asyncFilterCheck, Symbol key, UnsignedLong descriptor, Object describedValue) {
+      this.expectedDescriptor = descriptor;
+      this.asyncFilterCheck = asyncFilterCheck;
+      this.context = context;
+      this.expectedDescribedValue = describedValue;
+      this.expectedKey = key;
+    }
+
+    @Override
+    public void accept(Map<Symbol, Object> filters) {
+      context.assertNotNull(filters, "link has no filters");
+      context.assertEquals(1, filters.size(), "unexpected count");
+
+      context.assertTrue(filters.containsKey(expectedKey), "key not found");
+
+      Object object = filters.get(expectedKey);
+      context.assertTrue(object instanceof DescribedType, "unexpected type found: " + (object == null ? null : object.getClass().getName()));
+
+      context.assertEquals(expectedDescriptor, ((DescribedType) object).getDescriptor(), "unexpected descriptor found");
+      context.assertEquals(expectedDescribedValue, ((DescribedType) object).getDescribed(), "unexpected filter value");
+
+      asyncFilterCheck.complete();
+    }
   }
 }

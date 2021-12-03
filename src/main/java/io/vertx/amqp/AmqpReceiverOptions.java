@@ -214,14 +214,19 @@ public class AmqpReceiverOptions {
   }
 
   /**
-   * @return the message filter/selector
+   * @return the message selector String
    */
   public String getSelector() {
     return selector;
   }
 
   /**
-   * Sets a message filter/selector. See https://www.amqp.org/specification/1.0/filters
+   * Sets a message selector string.
+   *
+   * Used to define an "apache.org:selector-filter:string" filter on the source terminus, using SQL-based syntax to request
+   * the server filters which messages are delivered to the receiver (if supported by the server in question). Precise
+   * functionality supported and syntax needed can vary depending on the server.
+   *
    * @param selector the selector string to set.
    */
   public AmqpReceiverOptions setSelector(final String selector) {
@@ -230,17 +235,20 @@ public class AmqpReceiverOptions {
   }
 
   /**
-   * @return whether this receiver shall receive messages sent from senders using the same underlying connection
+   * @return whether this receiver should not receive messages that were sent on the same underlying connection
    */
   public boolean isNoLocal() {
     return noLocal;
   }
 
   /**
-   * Sets whether this receiver shall receive messages sent from senders using the same underlying connection.
-   * See https://www.amqp.org/specification/1.0/filters
+   * Sets whether this receiver should not receive messages that were sent using the same underlying connection.
    *
-   * @param noLocal true if this receiver shall not receive messages sent from senders using the same underlying connection
+   * Used to determine whether to define an "apache.org:no-local-filter:list" filter on the source terminus, requesting
+   * that the server filters which messages are delivered to the receiver so that they do not include messages sent on
+   * the same underlying connection (if supported by the server in question).
+   *
+   * @param noLocal true if this receiver shall not receive messages that were sent on the same underlying connection
    */
   public AmqpReceiverOptions setNoLocal(final boolean noLocal) {
     this.noLocal = noLocal;
