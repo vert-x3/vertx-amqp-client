@@ -182,7 +182,7 @@ public class SenderTypeTest extends BareTestBase {
   @Test(timeout = 10000)
   public void testLong(TestContext context) throws Exception {
     long valueA = Long.MAX_VALUE;
-    long valueB = Long.MIN_VALUE;;
+    long valueB = Long.MIN_VALUE;
 
     CountDownLatch msgsRecieved = new CountDownLatch(2);
     msgCheckRef.set(msg -> {
