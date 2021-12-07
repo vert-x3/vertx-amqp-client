@@ -285,7 +285,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
-   * @see ProtonClientOptions#setSslHandshakeTimeout(boolean)
+   * @see ProtonClientOptions#setSslHandshakeTimeout(long)
    */
   @Override
   public AmqpClientOptions setSslHandshakeTimeout(long sslHandshakeTimeout) {
@@ -312,7 +312,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
-   * @see ProtonClientOptions#setKeyCertOptions(PfxOptions)
+   * @see ProtonClientOptions#setKeyCertOptions(KeyCertOptions)
    */
   @Override
   public AmqpClientOptions setKeyCertOptions(KeyCertOptions options) {
@@ -339,7 +339,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
-   * @see ProtonClientOptions#setTrustStoreOptions(TrustOptions)
+   * @see NetClientOptions#setTrustOptions(TrustOptions)
    */
   @Override
   public AmqpClientOptions setTrustOptions(TrustOptions options) {
