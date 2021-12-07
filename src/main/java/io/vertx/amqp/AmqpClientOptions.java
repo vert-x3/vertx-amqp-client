@@ -44,7 +44,6 @@ public class AmqpClientOptions extends ProtonClientOptions {
   private String connectionHostname = null;
 
   public AmqpClientOptions() {
-    super();
   }
 
   public AmqpClientOptions(JsonObject json) {

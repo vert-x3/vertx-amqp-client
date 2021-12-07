@@ -39,11 +39,9 @@ public class AmqpReceiverOptions {
   private String selector;
 
   public AmqpReceiverOptions() {
-
   }
 
   public AmqpReceiverOptions(AmqpReceiverOptions other) {
-    this();
     setDynamic(other.isDynamic());
     setLinkName(other.getLinkName());
     setCapabilities(other.getCapabilities());
@@ -54,7 +52,6 @@ public class AmqpReceiverOptions {
   }
 
   public AmqpReceiverOptions(JsonObject json) {
-    super();
     AmqpReceiverOptionsConverter.fromJson(json, this);
   }
 
