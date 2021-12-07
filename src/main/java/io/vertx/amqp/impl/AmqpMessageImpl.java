@@ -191,7 +191,7 @@ public class AmqpMessageImpl implements AmqpMessage {
   public <T> List<T> bodyAsList() {
     Section body = message.getBody();
     if (body.getType() == Section.SectionType.AmqpSequence) {
-      return (List<T>) ((AmqpSequence) message.getBody()).getValue();
+      return ((AmqpSequence) message.getBody()).getValue();
     } else {
       Object value = getAmqpValue();
       if (value instanceof List) {
