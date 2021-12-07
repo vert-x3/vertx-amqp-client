@@ -77,6 +77,7 @@ public class SenderTypeTest extends BareTestBase {
   }
 
   @After
+  @Override
   public void tearDown() throws InterruptedException {
     super.tearDown();
     server.close();

@@ -62,6 +62,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
     this.connectionHostname = other.connectionHostname;
   }
 
+  @Override
   public JsonObject toJson() {
     JsonObject json = super.toJson();
     AmqpClientOptionsConverter.toJson(this, json);
@@ -345,7 +346,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
     super.setTrustOptions(options);
     return this;
   }
-  
+
   /**
    * @see ProtonClientOptions#setTrustStoreOptions(JksOptions)
    */

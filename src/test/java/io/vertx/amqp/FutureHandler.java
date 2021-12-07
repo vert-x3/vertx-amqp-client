@@ -53,6 +53,7 @@ abstract public class FutureHandler<T, X> implements Future<T>, Handler<X> {
   @Override
   abstract public void handle(X t);
 
+  @Override
   public T get() throws InterruptedException, ExecutionException {
     latch.await();
     return result();
@@ -67,6 +68,7 @@ abstract public class FutureHandler<T, X> implements Future<T>, Handler<X> {
     }
   }
 
+  @Override
   public T get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException, ExecutionException {
     if (latch.await(timeout, unit)) {
       return result();

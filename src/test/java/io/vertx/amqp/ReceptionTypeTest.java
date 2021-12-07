@@ -69,6 +69,7 @@ public class ReceptionTypeTest extends BareTestBase {
   }
 
   @After
+  @Override
   public void tearDown() throws InterruptedException {
     super.tearDown();
     if(server != null) {
