@@ -681,7 +681,6 @@ public class ReceiverTest extends BareTestBase {
     asyncServerFilterCheckComplete.awaitSuccess();
   }
 
-  @SuppressWarnings("unchecked")
   private MockServer setupSourceFilterCheckServer(TestContext context, Consumer<Map<Symbol, Object>> consumer)
       throws ExecutionException, InterruptedException {
     return new MockServer(vertx, serverConnection -> {
