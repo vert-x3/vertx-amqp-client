@@ -137,13 +137,6 @@ public class AmqpSenderImpl implements AmqpSender {
   }
 
   private AmqpSender doSend(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgmentHandler) {
-    AmqpMessage updated;
-    if (message.address() == null) {
-      updated = AmqpMessage.create(message).address(address()).build();
-    } else {
-      updated = message;
-    }
-
     Handler<ProtonDelivery> ack = delivery -> {
       Handler<AsyncResult<Void>> handler = acknowledgmentHandler;
       if (acknowledgmentHandler == null) {
@@ -180,6 +173,13 @@ public class AmqpSenderImpl implements AmqpSender {
     }
 
     connection.runWithTrampoline(x -> {
+      AmqpMessage updated;
+      if (message.address() == null) {
+        updated = AmqpMessage.create(message).address(address()).build();
+      } else {
+        updated = message;
+      }
+
       sender.send(updated.unwrap(), ack);
 
       synchronized (AmqpSenderImpl.this) {
