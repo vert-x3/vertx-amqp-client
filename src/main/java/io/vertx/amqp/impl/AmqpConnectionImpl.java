@@ -178,7 +178,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   void runWithTrampoline(Handler<Void> action) {
-    if (Vertx.currentContext() == context) {
+    // Check that we have the same context and that we are on an event loop
+    if (Vertx.currentContext() == context  && ((ContextInternal) context).nettyEventLoop().inEventLoop()) {
       action.handle(null);
     } else {
       runOnContext(action);
