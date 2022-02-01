@@ -163,6 +163,8 @@ public class ReceiverTest extends BareTestBase {
         context.assertTrue(recResult.succeeded());
         AmqpReceiver receiver = recResult.result();
 
+        context.assertNotNull(receiver.unwrap());
+
         receiver.handler(message -> list.add(message.bodyAsString()));
       });
     });

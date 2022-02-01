@@ -357,6 +357,11 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     return promise.future();
   }
 
+  @Override
+  public ProtonReceiver unwrap() {
+    return receiver;
+  }
+
   private synchronized boolean isDurable() {
     return durable;
   }

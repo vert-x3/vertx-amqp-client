@@ -479,6 +479,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
    *
    * @return the underlying connection
    */
+  @Override
   public ProtonConnection unwrap() {
     return this.connection.get();
   }

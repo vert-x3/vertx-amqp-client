@@ -290,4 +290,9 @@ public class AmqpSenderImpl implements AmqpSender {
   public long remainingCredits() {
     return ((ProtonSenderImpl) sender).getRemoteCredit();
   }
+
+  @Override
+  public ProtonSender unwrap() {
+    return sender;
+  }
 }
