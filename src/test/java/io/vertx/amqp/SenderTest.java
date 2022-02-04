@@ -242,6 +242,10 @@ public class SenderTest extends BareTestBase {
         sender.drainHandler(x -> {
           context
             .assertTrue(asyncSendInitialCredit.isSucceeded(), "should have been called after initial credit delay");
+
+          context.assertTrue(sender.remainingCredits() > 0);
+          context.assertNotNull(sender.unwrap());
+
           context.assertFalse(sender.writeQueueFull(), "expected write queue not to be full, we just granted credit");
 
           // Send message using the credit

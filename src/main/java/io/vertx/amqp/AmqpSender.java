@@ -16,11 +16,15 @@
 package io.vertx.amqp;
 
 import io.vertx.codegen.annotations.Fluent;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.WriteStream;
+import io.vertx.proton.ProtonSender;
+
+import static io.vertx.codegen.annotations.GenIgnore.PERMITTED_TYPE;
 
 /**
  * AMQP Sender interface used to send messages.
@@ -88,4 +92,10 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
    * @return the remaining credit, 0 is none.
    */
   long remainingCredits();
+
+  /**
+   * @return the underlying ProtonSender.
+   */
+  @GenIgnore(PERMITTED_TYPE)
+  ProtonSender unwrap();
 }

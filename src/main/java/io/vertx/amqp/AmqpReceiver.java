@@ -16,12 +16,17 @@
 package io.vertx.amqp;
 
 import io.vertx.codegen.annotations.CacheReturn;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
+import io.vertx.proton.ProtonReceiver;
+import io.vertx.proton.ProtonSender;
+
+import static io.vertx.codegen.annotations.GenIgnore.PERMITTED_TYPE;
 
 /**
  * Interface used to consume AMQP message as a stream of message.
@@ -74,4 +79,10 @@ public interface AmqpReceiver extends ReadStream<AmqpMessage> {
    * @return the connection having created the receiver.
    */
   AmqpConnection connection();
+
+  /**
+   * @return the underlying ProtonReceiver.
+   */
+  @GenIgnore(PERMITTED_TYPE)
+  ProtonReceiver unwrap();
 }
