@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2018-2019 The original author or authors
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *        The Eclipse Public License is available at
+ *        http://www.eclipse.org/legal/epl-v10.html
+ *
+ *        The Apache License v2.0 is available at
+ *        http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ */
 package io.vertx.amqp;
 
 import io.vertx.core.json.JsonObject;
@@ -20,6 +35,11 @@ public class AmqpClientOptionsConverter {
   public static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, AmqpClientOptions obj) {
     for (java.util.Map.Entry<String, Object> member : json) {
       switch (member.getKey()) {
+        case "activityLogDataFormat":
+          if (member.getValue() instanceof String) {
+            obj.setActivityLogDataFormat(io.netty.handler.logging.ByteBufFormat.valueOf((String)member.getValue()));
+          }
+          break;
         case "applicationLayerProtocols":
           if (member.getValue() instanceof JsonArray) {
             java.util.ArrayList<java.lang.String> list =  new java.util.ArrayList<>();
@@ -321,6 +341,9 @@ public class AmqpClientOptionsConverter {
   }
 
   public static void toJson(AmqpClientOptions obj, java.util.Map<String, Object> json) {
+    if (obj.getActivityLogDataFormat() != null) {
+      json.put("activityLogDataFormat", obj.getActivityLogDataFormat().name());
+    }
     if (obj.getApplicationLayerProtocols() != null) {
       JsonArray array = new JsonArray();
       obj.getApplicationLayerProtocols().forEach(item -> array.add(item));
