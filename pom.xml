@@ -25,12 +25,12 @@
   </parent>
 
   <artifactId>vertx-amqp-client</artifactId>
-  <version>4.3.3-SNAPSHOT</version>
+  <version>4.3.3</version>
 
   <name>Eclipse Vert.x AMQP 1.0 Client</name>
 
   <properties>
-    <stack.version>4.3.3-SNAPSHOT</stack.version>
+    <stack.version>4.3.3</stack.version>
     <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
     <log4j2.version>2.17.1</log4j2.version>
   </properties>
