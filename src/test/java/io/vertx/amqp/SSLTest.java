@@ -15,6 +15,7 @@
  */
 package io.vertx.amqp;
 
+import io.vertx.amqp.impl.AmqpClientImpl;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.ext.unit.Async;
@@ -27,6 +28,14 @@ import org.apache.qpid.proton.amqp.transport.Target;
 import org.junit.After;
 import org.junit.Test;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.security.KeyStore;
 import java.util.concurrent.ExecutionException;
 
 public class SSLTest extends BareTestBase {
@@ -72,6 +81,52 @@ public class SSLTest extends BareTestBase {
       context.assertTrue(res.succeeded(), "expected start to succeed");
       async.complete();
     });
+
+    async.awaitSuccess();
+  }
+
+  // This test is here to cover a WildFly use case for passing in an SSLContext for which there are no
+  // configuration options.
+  // This is currently done by casing to AmqpClientImpl and calling setSuppliedSSLContext().
+  @Test(timeout = 20000)
+  public void testConnectWithSuppliedSslContextSucceeds(TestContext context) throws Exception {
+    Async async = context.async();
+
+    ProtonServerOptions serverOptions = new ProtonServerOptions();
+    serverOptions.setSsl(true);
+    PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
+    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+
+    server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
+
+    AmqpClientOptions options = new AmqpClientOptions()
+      .setSsl(true)
+      .setHost("localhost")
+      .setPort(server.actualPort());
+
+    Path tsPath = Paths.get(".").resolve(TRUSTSTORE);
+    TrustManagerFactory tmFactory;
+    try (InputStream trustStoreStream = Files.newInputStream(tsPath, StandardOpenOption.READ)){
+      KeyStore trustStore = KeyStore.getInstance("pkcs12");
+      trustStore.load(trustStoreStream, PASSWORD.toCharArray());
+      tmFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      tmFactory.init(trustStore);
+    }
+
+    SSLContext sslContext = SSLContext.getInstance("TLS");
+    sslContext.init(
+      null,
+      tmFactory.getTrustManagers(),
+      null
+    );
+
+    AmqpClient client = AmqpClient.create(vertx, options);
+    ((AmqpClientImpl) client).setSuppliedSSLContext(sslContext);
+    client.connect(res -> {
+        // Expect start to succeed
+        context.assertTrue(res.succeeded(), "expected start to succeed");
+        async.complete();
+      });
 
     async.awaitSuccess();
   }
