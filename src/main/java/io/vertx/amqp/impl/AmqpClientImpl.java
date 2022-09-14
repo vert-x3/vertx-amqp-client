@@ -19,20 +19,14 @@ import io.vertx.amqp.*;
 import io.vertx.core.*;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.future.PromiseInternal;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.core.net.impl.NetClientImpl;
 import io.vertx.proton.ProtonClient;
-import io.vertx.proton.impl.ProtonClientImpl;
 
-import javax.net.ssl.SSLContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AmqpClientImpl implements AmqpClient {
-  private static final Logger LOG = LoggerFactory.getLogger(AmqpClientImpl.class);
 
   private final Vertx vertx;
   private final ProtonClient proton;
@@ -50,21 +44,6 @@ public class AmqpClientImpl implements AmqpClient {
     }
     this.proton = ProtonClient.create(vertx);
     this.mustCloseVertxOnClose = mustCloseVertxOnClose;
-  }
-
-  /**
-   * Must be called before calling connect()
-   * @deprecated Internal use only
-   */
-  @Deprecated
-  public void setSuppliedSSLContext(SSLContext suppliedSslContext) {
-    Objects.requireNonNull(suppliedSslContext, "suppliedSslContext should not be null");
-
-    if (proton instanceof ProtonClientImpl) {
-      ((ProtonClientImpl)proton).setSuppliedSSLContext(suppliedSslContext);
-    } else {
-      LOG.warn("proton is not an instance of " + ProtonClientImpl.class.getName());
-    }
   }
 
   @Override

@@ -15,9 +15,14 @@
  */
 package io.vertx.amqp;
 
-import io.vertx.amqp.impl.AmqpClientImpl;
+import io.netty.handler.ssl.ApplicationProtocolConfig;
+import io.netty.handler.ssl.IdentityCipherSuiteFilter;
+import io.netty.handler.ssl.JdkSslContext;
+import io.netty.handler.ssl.SslContext;
 import io.vertx.core.http.ClientAuth;
+import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.PfxOptions;
+import io.vertx.core.spi.tls.SslContextFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.proton.ProtonConnection;
@@ -29,6 +34,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -99,11 +105,6 @@ public class SSLTest extends BareTestBase {
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
-    AmqpClientOptions options = new AmqpClientOptions()
-      .setSsl(true)
-      .setHost("localhost")
-      .setPort(server.actualPort());
-
     Path tsPath = Paths.get(".").resolve(TRUSTSTORE);
     TrustManagerFactory tmFactory;
     try (InputStream trustStoreStream = Files.newInputStream(tsPath, StandardOpenOption.READ)){
@@ -120,8 +121,31 @@ public class SSLTest extends BareTestBase {
       null
     );
 
+    AmqpClientOptions options = new AmqpClientOptions()
+      .setSsl(true)
+      .setHost("localhost")
+      .setPort(server.actualPort())
+      .setSslEngineOptions(new JdkSSLEngineOptions() {
+        @Override
+        public SslContextFactory sslContextFactory() {
+          return new SslContextFactory() {
+            @Override
+            public SslContext create() throws SSLException {
+              return new JdkSslContext(
+                sslContext,
+                true,
+                null,
+                IdentityCipherSuiteFilter.INSTANCE,
+                ApplicationProtocolConfig.DISABLED,
+                io.netty.handler.ssl.ClientAuth.NONE,
+                null,
+                false);
+            }
+          };
+        }
+      });
+
     AmqpClient client = AmqpClient.create(vertx, options);
-    ((AmqpClientImpl) client).setSuppliedSSLContext(sslContext);
     client.connect(res -> {
         // Expect start to succeed
         context.assertTrue(res.succeeded(), "expected start to succeed");
