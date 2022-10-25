@@ -132,6 +132,7 @@ Sets the port.
 |[[tcpQuickAck]]`@tcpQuickAck`|`Boolean`|+++
 
 +++
+|[[tcpUserTimeout]]`@tcpUserTimeout`|`Number (int)`|-
 |[[trafficClass]]`@trafficClass`|`Number (int)`|+++
 
 +++
