@@ -22,7 +22,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.proton.ProtonConnection;
-import io.vertx.proton.ProtonSender;
 
 import static io.vertx.codegen.annotations.GenIgnore.PERMITTED_TYPE;
 

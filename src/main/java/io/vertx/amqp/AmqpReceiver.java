@@ -24,7 +24,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.proton.ProtonReceiver;
-import io.vertx.proton.ProtonSender;
 
 import static io.vertx.codegen.annotations.GenIgnore.PERMITTED_TYPE;
 
