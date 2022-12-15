@@ -592,8 +592,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
     String s = getFromSysOrEnv("amqp-client-port");
     if (s == null) {
       return 5672;
-    } else {
-      return Integer.parseInt(s);
     }
+    return Integer.parseInt(s);
   }
 }
