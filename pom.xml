@@ -31,13 +31,13 @@
 
     <artifactId>vertx-amqp-client</artifactId>
 
-    <version>3.9.15</version>
+    <version>3.9.16-SNAPSHOT</version>
 
     <name>Eclipse Vert.x AMQP 1.0 Client</name>
 
     <properties>
 
-        <stack.version>3.9.15</stack.version>
+        <stack.version>3.9.16-SNAPSHOT</stack.version>
 
         <log4j2.version>2.17.1</log4j2.version>
     </properties>
