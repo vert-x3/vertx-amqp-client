@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2018-2019 The original author or authors
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *        The Eclipse Public License is available at
+ *        http://www.eclipse.org/legal/epl-v10.html
+ *
+ *        The Apache License v2.0 is available at
+ *        http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ */
 package io.vertx.amqp;
 
 import io.vertx.core.json.JsonObject;
@@ -217,6 +232,11 @@ public class AmqpClientOptionsConverter {
             obj.setReconnectInterval(((Number)member.getValue()).longValue());
           }
           break;
+        case "registerWriteHandler":
+          if (member.getValue() instanceof Boolean) {
+            obj.setRegisterWriteHandler((Boolean)member.getValue());
+          }
+          break;
         case "reuseAddress":
           if (member.getValue() instanceof Boolean) {
             obj.setReuseAddress((Boolean)member.getValue());
@@ -427,6 +447,7 @@ public class AmqpClientOptionsConverter {
     json.put("receiveBufferSize", obj.getReceiveBufferSize());
     json.put("reconnectAttempts", obj.getReconnectAttempts());
     json.put("reconnectInterval", obj.getReconnectInterval());
+    json.put("registerWriteHandler", obj.isRegisterWriteHandler());
     json.put("reuseAddress", obj.isReuseAddress());
     json.put("reusePort", obj.isReusePort());
     json.put("sendBufferSize", obj.getSendBufferSize());
