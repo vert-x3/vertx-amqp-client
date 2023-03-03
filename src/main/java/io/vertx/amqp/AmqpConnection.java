@@ -48,6 +48,7 @@ public interface AmqpConnection {
    * @return the connection
    */
   @Fluent
+  @Deprecated
   AmqpConnection close(Handler<AsyncResult<Void>> done);
 
   /**
@@ -64,6 +65,7 @@ public interface AmqpConnection {
    * @return the connection.
    */
   @Fluent
+  @Deprecated
   AmqpConnection createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
@@ -81,6 +83,7 @@ public interface AmqpConnection {
    * @return the connection.
    */
   @Fluent
+  @Deprecated
   AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
@@ -98,6 +101,7 @@ public interface AmqpConnection {
    * @return the connection.
    */
   @Fluent
+  @Deprecated
   AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
@@ -115,6 +119,7 @@ public interface AmqpConnection {
    * @see #createAnonymousSender(Handler)
    */
   @Fluent
+  @Deprecated
   AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
 
   /**
@@ -134,6 +139,7 @@ public interface AmqpConnection {
    * @see #createAnonymousSender(Handler)
    */
   @Fluent
+  @Deprecated
   AmqpConnection createSender(String address, AmqpSenderOptions options,
     Handler<AsyncResult<AmqpSender>> completionHandler);
 
@@ -153,6 +159,7 @@ public interface AmqpConnection {
    * @return the connection.
    */
   @Fluent
+  @Deprecated
   AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler);
 
   /**

@@ -64,6 +64,7 @@ public interface AmqpClient {
    *                          not be {@code null}.
    */
   @Fluent
+  @Deprecated
   AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler);
 
   /**
@@ -77,6 +78,7 @@ public interface AmqpClient {
    *
    * @param closeHandler the close handler notified when the operation completes. It can be {@code null}.
    */
+  @Deprecated
   void close(@Nullable Handler<AsyncResult<Void>> closeHandler);
 
   /**
@@ -94,6 +96,7 @@ public interface AmqpClient {
    * @return the client.
    */
   @Fluent
+  @Deprecated
   AmqpClient createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
   /**
@@ -112,6 +115,7 @@ public interface AmqpClient {
    * @return the connection.
    */
   @Fluent
+  @Deprecated
   AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AsyncResult<AmqpReceiver>> completionHandler);
 
@@ -128,6 +132,7 @@ public interface AmqpClient {
    * @return the client.
    */
   @Fluent
+  @Deprecated
   AmqpClient createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
 
   /**
@@ -144,6 +149,7 @@ public interface AmqpClient {
    * @return the client.
    */
   @Fluent
+  @Deprecated
   AmqpClient createSender(String address, AmqpSenderOptions options,
                           Handler<AsyncResult<AmqpSender>> completionHandler);
 

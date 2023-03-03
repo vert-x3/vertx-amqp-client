@@ -57,6 +57,7 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
    * @return the current sender
    */
   @Fluent
+  @Deprecated
   AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler);
 
   /**
@@ -69,6 +70,7 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
    *
    * @param handler called when the sender has been closed, must not be {@code null}
    */
+  @Deprecated
   void close(Handler<AsyncResult<Void>> handler);
 
   /**

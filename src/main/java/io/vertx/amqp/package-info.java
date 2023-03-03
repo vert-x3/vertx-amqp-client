@@ -13,7 +13,7 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-@ModuleGen(name = "vertx-amqp-client", groupPackage = "io.vertx")
+@ModuleGen(name = "vertx-amqp-client", groupPackage = "io.vertx", checkCallbackDeprecation = true)
 package io.vertx.amqp;
 
 import io.vertx.codegen.annotations.ModuleGen;
