@@ -66,6 +66,7 @@ public interface AmqpReceiver extends ReadStream<AmqpMessage> {
    *
    * @param handler handler called when the receiver has been closed, can be {@code null}
    */
+  @Deprecated
   void close(Handler<AsyncResult<Void>> handler);
 
   /**
