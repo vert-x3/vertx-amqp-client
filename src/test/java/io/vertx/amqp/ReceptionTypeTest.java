@@ -54,8 +54,10 @@ public class ReceptionTypeTest extends BareTestBase {
     AtomicReference<AmqpConnection> reference = new AtomicReference<>();
     client = AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort()))
-      .connect(connection -> {
+      .setPort(server.actualPort()));
+    client
+      .connect()
+      .onComplete(connection -> {
         reference.set(connection.result());
         if (connection.failed()) {
           connection.cause().printStackTrace();
@@ -81,7 +83,7 @@ public class ReceptionTypeTest extends BareTestBase {
     CountDownLatch latch = new CountDownLatch(1);
     List<T> list = new CopyOnWriteArrayList<>();
 
-    connection.createReceiver(UUID.randomUUID().toString(), done -> {
+    connection.createReceiver(UUID.randomUUID().toString()).onComplete(done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }

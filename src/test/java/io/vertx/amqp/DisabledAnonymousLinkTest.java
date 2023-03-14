@@ -53,13 +53,12 @@ public class DisabledAnonymousLinkTest extends BareTestBase {
       .setHost("localhost")
       .setPort(server.actualPort());
 
-    this.client = AmqpClient.create(vertx, options).connect(res -> {
-      context.assertTrue(res.succeeded(), "Expected start to succeed");
-      res.result().close(shutdownRes -> {
-        context.assertTrue(shutdownRes.succeeded());
+    this.client = AmqpClient.create(vertx, options);
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
         asyncShutdown.complete();
-      });
-    });
+      }));
+    }));
 
     try {
       asyncShutdown.awaitSuccess();

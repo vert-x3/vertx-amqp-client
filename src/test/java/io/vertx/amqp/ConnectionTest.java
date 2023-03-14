@@ -75,7 +75,7 @@ public class ConnectionTest extends BareTestBase {
           .setUsername(USER)
           .setPassword(password));
 
-      client.connect(ar -> {
+      client.connect().onComplete(ar -> {
         if (ar.failed() && succeed) {
           ar.cause().printStackTrace();
         } else {
@@ -127,7 +127,7 @@ public class ConnectionTest extends BareTestBase {
     try {
       client = AmqpClient.create(vertx, new AmqpClientOptions());
 
-      client.connect(ar -> {
+      client.connect().onComplete(ar -> {
         if (ar.failed() && succeed) {
           ar.cause().printStackTrace();
         } else {
@@ -167,7 +167,7 @@ public class ConnectionTest extends BareTestBase {
           .setHost("org.acme")
           .setPort(server.actualPort()));
 
-      client.connect(ar -> {
+      client.connect().onComplete(ar -> {
         failure.set(ar.cause());
         done.countDown();
       });
@@ -206,7 +206,7 @@ public class ConnectionTest extends BareTestBase {
 
       client = AmqpClient.create(vertx, options);
 
-      client.connect(ar -> {
+      client.connect().onComplete(ar -> {
         if (ar.failed()) {
           ar.cause().printStackTrace();
         } else {

@@ -73,15 +73,15 @@ public class AmqpClientImpl implements AmqpClient {
   public void close(Handler<AsyncResult<Void>> handler) {
     List<Future> actions = new ArrayList<>();
     for (AmqpConnection connection : connections) {
-      Promise<Void> future = Promise.promise();
-      connection.close(future);
-      actions.add(future.future());
+      actions.add(connection.close());
     }
 
     CompositeFuture.join(actions).onComplete(done -> {
       connections.clear();
       if (mustCloseVertxOnClose) {
-        vertx.close(x -> {
+        vertx
+          .close()
+          .onComplete(x -> {
           if (done.succeeded() && x.succeeded()) {
             if (handler != null) {
               handler.handle(Future.succeededFuture());
@@ -112,7 +112,7 @@ public class AmqpClientImpl implements AmqpClient {
       if (res.failed()) {
         completionHandler.handle(res.mapEmpty());
       } else {
-        res.result().createReceiver(address, completionHandler);
+        res.result().createReceiver(address).onComplete(completionHandler);
       }
     });
   }
@@ -130,7 +130,7 @@ public class AmqpClientImpl implements AmqpClient {
       if (res.failed()) {
         completionHandler.handle(res.mapEmpty());
       } else {
-        res.result().createReceiver(address, receiverOptions, completionHandler);
+        res.result().createReceiver(address, receiverOptions).onComplete(completionHandler);
       }
     });
   }
@@ -148,7 +148,7 @@ public class AmqpClientImpl implements AmqpClient {
       if (res.failed()) {
         completionHandler.handle(res.mapEmpty());
       } else {
-        res.result().createSender(address, completionHandler);
+        res.result().createSender(address).onComplete(completionHandler);
       }
     });
   }
@@ -167,7 +167,7 @@ public class AmqpClientImpl implements AmqpClient {
       if (res.failed()) {
         completionHandler.handle(res.mapEmpty());
       } else {
-        res.result().createSender(address, options, completionHandler);
+        res.result().createSender(address, options).onComplete(completionHandler);
       }
     });
   }

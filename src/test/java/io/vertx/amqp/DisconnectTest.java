@@ -44,17 +44,17 @@ public class DisconnectTest extends BareTestBase {
         .setPort(server.actualPort()));
 
     Async handlerFired = ctx.async();
-    client.connect(ctx.asyncAssertSuccess(conn -> {
+    client.connect().onComplete(ctx.asyncAssertSuccess(conn -> {
       conn.exceptionHandler(err -> {
-        conn.createSender(queue, ctx.asyncAssertFailure(sender -> {
+        conn.createSender(queue).onComplete(ctx.asyncAssertFailure(sender -> {
         }));
-        conn.createAnonymousSender(ctx.asyncAssertFailure(sender -> {
+        conn.createAnonymousSender().onComplete(ctx.asyncAssertFailure(sender -> {
         }));
-        conn.createReceiver("some-address", ctx.asyncAssertFailure(sender -> {
+        conn.createReceiver("some-address").onComplete(ctx.asyncAssertFailure(sender -> {
         }));
-        conn.createReceiver("some-address", new AmqpReceiverOptions(), ctx.asyncAssertFailure(sender -> {
+        conn.createReceiver("some-address", new AmqpReceiverOptions()).onComplete(ctx.asyncAssertFailure(sender -> {
         }));
-        conn.createDynamicReceiver(ctx.asyncAssertFailure(sender -> {
+        conn.createDynamicReceiver().onComplete(ctx.asyncAssertFailure(sender -> {
         }));
 
         handlerFired.complete();
@@ -80,7 +80,7 @@ public class DisconnectTest extends BareTestBase {
       .setPort(server.actualPort()));
 
     Async handlerFired = ctx.async();
-    client.connect(ctx.asyncAssertSuccess(conn -> {
+    client.connect().onComplete(ctx.asyncAssertSuccess(conn -> {
       conn.closeFuture().onComplete(ar -> {
         ctx.assertEquals(0, ((AmqpClientImpl)client).numConnections());
         handlerFired.complete();

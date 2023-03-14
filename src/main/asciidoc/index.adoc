@@ -137,7 +137,7 @@ provides a few examples:
 Once you have the sender and created the message, you can send it using:
 
 * {@link io.vertx.amqp.AmqpSender#send(AmqpMessage)} - send the message
-* {@link io.vertx.amqp.AmqpSender#sendWithAck(AmqpMessage, io.vertx.core.Handler)} - send the message and monitor its acknowledgment
+* {@link io.vertx.amqp.AmqpSender#sendWithAck(AmqpMessage)} - send the message and monitor its acknowledgment
 
 The simplest way to send a message is the following:
 

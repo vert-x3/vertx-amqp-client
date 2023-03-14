@@ -82,11 +82,10 @@ public class SSLTest extends BareTestBase {
       .setPort(server.actualPort())
       .setPfxTrustOptions(clientPfxOptions);
 
-    AmqpClient.create(vertx, options).connect(res -> {
+    AmqpClient.create(vertx, options).connect().onComplete(context.asyncAssertSuccess(res -> {
       // Expect start to succeed
-      context.assertTrue(res.succeeded(), "expected start to succeed");
       async.complete();
-    });
+    }));
 
     async.awaitSuccess();
   }
@@ -146,11 +145,10 @@ public class SSLTest extends BareTestBase {
       });
 
     AmqpClient client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
         // Expect start to succeed
-        context.assertTrue(res.succeeded(), "expected start to succeed");
         async.complete();
-      });
+      }));
 
     async.awaitSuccess();
   }
@@ -172,10 +170,9 @@ public class SSLTest extends BareTestBase {
       .setPort(server.actualPort())
       .setPfxTrustOptions(clientPfxOptions);
 
-    AmqpClient.create(vertx, options).connect(res -> {
-      context.assertTrue(res.failed());
+    AmqpClient.create(vertx, options).connect().onComplete(context.asyncAssertFailure(err -> {
       async.complete();
-    });
+    }));
 
     async.awaitSuccess();
   }
@@ -199,11 +196,10 @@ public class SSLTest extends BareTestBase {
       .setPfxTrustOptions(pfxOptions);
 
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
+    client.connect().onComplete(context.asyncAssertFailure(err -> {
       // Expect start to fail due to remote peer not being trusted
-      context.assertFalse(res.succeeded(), "expected start to fail due to untrusted server");
       async.complete();
-    });
+    }));
 
     async.awaitSuccess();
   }
@@ -226,11 +222,10 @@ public class SSLTest extends BareTestBase {
       .setTrustAll(true);
 
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
       // Expect start to succeed
-      context.assertTrue(res.succeeded(), "expected start to succeed due to trusting all certs");
       async.complete();
-    });
+    }));
 
     async.awaitSuccess();
   }
@@ -306,7 +301,7 @@ public class SSLTest extends BareTestBase {
     }
 
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
+    client.connect().onComplete(res -> {
       if (supplyClientCert) {
         // Expect start to succeed
         context.assertTrue(res.succeeded(), "expected start to succeed due to supplying client certs");
@@ -357,8 +352,8 @@ public class SSLTest extends BareTestBase {
       options.setHostnameVerificationAlgorithm(NO_VERIFY);
     }
 
-    client = AmqpClient.create(vertx, options)
-      .connect(res -> {
+    client = AmqpClient.create(vertx, options);
+    client.connect().onComplete(res -> {
         if (verifyHost) {
           // Expect start to fail
           context.assertFalse(res.succeeded(), "expected start to fail due to server cert not matching hostname");
