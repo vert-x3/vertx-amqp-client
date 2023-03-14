@@ -35,7 +35,9 @@ public class AmqpClientExamples {
   }
 
   public void connect(AmqpClient client) {
-    client.connect(ar -> {
+    client
+      .connect()
+      .onComplete(ar -> {
       if (ar.failed()) {
         System.out.println("Unable to connect to the broker");
       } else {
@@ -46,7 +48,9 @@ public class AmqpClientExamples {
   }
 
   public void receiver1(AmqpConnection connection) {
-    connection.createReceiver("my-queue",
+    connection
+      .createReceiver("my-queue")
+      .onComplete(
       done -> {
         if (done.failed()) {
           System.out.println("Unable to create receiver");
@@ -62,8 +66,9 @@ public class AmqpClientExamples {
   }
 
   public void receiverFromClient(AmqpClient client) {
-    client.createReceiver("my-queue"
-      ,
+    client
+      .createReceiver("my-queue")
+      .onComplete(
       done -> {
         if (done.failed()) {
           System.out.println("Unable to create receiver");
@@ -79,13 +84,17 @@ public class AmqpClientExamples {
   }
 
   public void senderFromClient(AmqpClient client) {
-    client.createSender("my-queue", maybeSender -> {
+    client
+      .createSender("my-queue")
+      .onComplete(maybeSender -> {
       //...
     });
   }
 
   public void receiver2(AmqpConnection connection) {
-    connection.createReceiver("my-queue",
+    connection
+      .createReceiver("my-queue")
+      .onComplete(
       done -> {
         if (done.failed()) {
           System.out.println("Unable to create receiver");
@@ -104,7 +113,9 @@ public class AmqpClientExamples {
   }
 
   public void sender(AmqpConnection connection) {
-    connection.createSender("my-queue", done -> {
+    connection
+      .createSender("my-queue")
+      .onComplete(done -> {
       if (done.failed()) {
         System.out.println("Unable to create a sender");
       } else {
@@ -137,7 +148,9 @@ public class AmqpClientExamples {
   }
 
   public void sendWithAck(AmqpSender sender) {
-    sender.sendWithAck(AmqpMessage.create().withBody("hello").build(), acked -> {
+    sender
+      .sendWithAck(AmqpMessage.create().withBody("hello").build())
+      .onComplete(acked -> {
       if (acked.succeeded()) {
         System.out.println("Message accepted");
       } else {
@@ -148,10 +161,14 @@ public class AmqpClientExamples {
 
   public void requestReply(AmqpConnection connection) {
     // On the receiver side (receiving the initial request and replying)
-    connection.createAnonymousSender(responseSender -> {
+    connection
+      .createAnonymousSender()
+      .onComplete(responseSender -> {
       // You got an anonymous sender, used to send the reply
       // Now register the main receiver:
-      connection.createReceiver("my-queue", done -> {
+      connection
+        .createReceiver("my-queue")
+        .onComplete(done -> {
         if (done.failed()) {
           System.out.println("Unable to create receiver");
         } else {
@@ -170,7 +187,9 @@ public class AmqpClientExamples {
     });
 
     // On the sender side (sending the initial request and expecting a reply)
-    connection.createDynamicReceiver(replyReceiver -> {
+    connection
+      .createDynamicReceiver()
+      .onComplete(replyReceiver -> {
       // We got a receiver, the address is provided by the broker
       String replyToAddress = replyReceiver.result().address();
 
@@ -180,7 +199,9 @@ public class AmqpClientExamples {
       });
 
       // Create a sender and send the message:
-      connection.createSender("my-queue", sender -> {
+      connection
+        .createSender("my-queue")
+        .onComplete(sender -> {
         sender.result().send(AmqpMessage.create()
           .replyTo(replyToAddress)
           .id("my-message-id")
