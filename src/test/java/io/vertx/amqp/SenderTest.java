@@ -132,29 +132,23 @@ public class SenderTest extends BareTestBase {
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     AmqpClient client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
       // Set up a producer using the client, use it, close it.
-      context.assertTrue(res.succeeded());
-
-      res.result().createSender(testName, done -> {
-        AmqpSender sender = done.result();
+      res.createSender(testName).onComplete(context.asyncAssertSuccess(sender -> {
         sender.exceptionHandler(x -> exceptionHandlerCalled.set(true));
-        sender.sendWithAck(AmqpMessage.create().withBody(sentContent).build(), x -> {
-          context.assertTrue(x.succeeded());
-
+        sender.sendWithAck(AmqpMessage.create().withBody(sentContent).build()).onComplete(context.asyncAssertSuccess(x -> {
           if (callEnd) {
             sender.end();
           } else {
-            sender.close(null);
+            sender.close();
           }
 
-          client.close(shutdownRes -> {
-            context.assertTrue(shutdownRes.succeeded());
+          client.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
             asyncShutdown.complete();
-          });
-        });
-      });
-    });
+          }));
+        }));
+      }));
+    }));
 
     try {
       asyncReceiveMsg.awaitSuccess();
@@ -233,11 +227,8 @@ public class SenderTest extends BareTestBase {
       .setHost("localhost")
       .setPort(server.actualPort());
     AmqpClient client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      res.result().createSender(testName, done -> {
-        context.assertTrue(done.succeeded());
-        AmqpSender sender = done.result();
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.createSender(testName).onComplete(context.asyncAssertSuccess(sender -> {
         context.assertTrue(sender.writeQueueFull(), "expected write queue to be full, we have not yet granted credit");
         sender.drainHandler(x -> {
           context
@@ -258,18 +249,17 @@ public class SenderTest extends BareTestBase {
               .assertTrue(asyncSendSubsequentCredit.isSucceeded(), "should have been called after 2nd credit delay");
             context.assertFalse(sender.writeQueueFull(), "expected write queue not to be full, we just granted credit");
 
-            client.close(shutdownRes -> {
-              context.assertTrue(shutdownRes.succeeded());
+            client.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
               asyncShutdown.complete();
-            });
+            }));
           });
           // Now allow server to send the subsequent credit
           asyncSendSubsequentCredit.complete();
         });
-      });
+      }));
       // Now allow to send initial credit. Things will kick off again in the drain handler.
       asyncSendInitialCredit.complete();
-    });
+    }));
 
     asyncShutdown.awaitSuccess();
   }
@@ -339,11 +329,8 @@ public class SenderTest extends BareTestBase {
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      res.result().createSender(testName, done -> {
-        context.assertTrue(done.succeeded());
-        AmqpSender sender = done.result();
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.createSender(testName).onComplete(context.asyncAssertSuccess(sender -> {
         sender.exceptionHandler(ex -> {
           context.assertNotNull(ex, "expected exception");
           context.assertTrue(ex instanceof Exception, "expected vertx exception");
@@ -354,17 +341,13 @@ public class SenderTest extends BareTestBase {
           }
           asyncExceptionHandlerCalled.complete();
 
-          client.close(shutdownRes -> {
-            if (shutdownRes.failed()) {
-              shutdownRes.cause().printStackTrace();
-            }
-            context.assertTrue(shutdownRes.succeeded());
+          client.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
             asyncShutdown.complete();
-          });
+          }));
         });
         sender.send(AmqpMessage.create().withBody(sentContent).build());
-      });
-    });
+      }));
+    }));
 
     asyncExceptionHandlerCalled.awaitSuccess();
     asyncShutdown.awaitSuccess();
@@ -410,18 +393,15 @@ public class SenderTest extends BareTestBase {
     client = AmqpClient.create(vertx,
       new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
 
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
 
       AmqpSenderOptions options = new AmqpSenderOptions().addCapability(targetCapability);
 
-      res.result().createSender(name.getMethodName(), options,
+      res.createSender(name.getMethodName(), options).onComplete(context.asyncAssertSuccess(
         sender -> {
-          context.assertTrue(sender.succeeded());
-
           clientLinkOpenAsync.complete();
-        });
-    });
+        }));
+    }));
 
     serverLinkOpenAsync.awaitSuccess();
     clientLinkOpenAsync.awaitSuccess();
@@ -465,19 +445,17 @@ public class SenderTest extends BareTestBase {
     client = AmqpClient.create(vertx,
       new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
 
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
 
-      res.result().createSender(null,
+      res.createSender(null,
         new AmqpSenderOptions()
-          .setDynamic(true),
+          .setDynamic(true)).onComplete(context.asyncAssertSuccess(
         sender -> {
-          context.assertTrue(sender.succeeded());
-          context.assertNotNull(sender.result().address());
+          context.assertNotNull(sender.address());
 
           clientLinkOpenAsync.complete();
-        });
-    });
+        }));
+    }));
 
     serverLinkOpenAsync.awaitSuccess();
     clientLinkOpenAsync.awaitSuccess();
@@ -493,54 +471,42 @@ public class SenderTest extends BareTestBase {
 
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort()))
-      .connect(connResult -> {
-        context.assertTrue(connResult.succeeded());
+      .setPort(server.actualPort()));
+    client.connect()
+      .onComplete(context.asyncAssertSuccess(connection -> {
 
-        AmqpConnection connection = connResult.result();
-        connection.createSender(queue, senderRes -> {
-          if (senderRes.failed()) {
-            senderRes.cause().printStackTrace();
-          }
-
-          context.assertTrue(senderRes.succeeded());
-          AmqpSender sender = senderRes.result();
+        connection.createSender(queue).onComplete(context.asyncAssertSuccess(sender -> {
 
           AmqpMessage msgAccept = AmqpMessage.create().withBody(ACCEPT).build();
-          sender.sendWithAck(msgAccept, ack -> {
-            context.assertTrue(ack.succeeded());
+          sender.sendWithAck(msgAccept).onComplete(context.asyncAssertSuccess(ack -> {
             acksRecieved.countDown();
-          });
+          }));
 
           AmqpMessage msgRelease = AmqpMessage.create().withBody(RELEASE).build();
-          sender.sendWithAck(msgRelease, ack -> {
-            context.assertFalse(ack.succeeded());
-            context.assertTrue(ack.cause().getMessage().contains("RELEASED"));
+          sender.sendWithAck(msgRelease).onComplete(context.asyncAssertFailure(err -> {
+            context.assertTrue(err.getMessage().contains("RELEASED"));
             acksRecieved.countDown();
-          });
+          }));
 
           AmqpMessage msgModifyFailed = AmqpMessage.create().withBody(MODIFY_FAILED).build();
-          sender.sendWithAck(msgModifyFailed, ack -> {
-            context.assertFalse(ack.succeeded());
-            context.assertTrue(ack.cause().getMessage().contains("MODIFIED"));
+          sender.sendWithAck(msgModifyFailed).onComplete(context.asyncAssertFailure(err -> {
+            context.assertTrue(err.getMessage().contains("MODIFIED"));
             acksRecieved.countDown();
-          });
+          }));
 
           AmqpMessage msgModifyFailedUH = AmqpMessage.create().withBody(MODIFY_FAILED_U_H).build();
-          sender.sendWithAck(msgModifyFailedUH, ack -> {
-            context.assertFalse(ack.succeeded());
-            context.assertTrue(ack.cause().getMessage().contains("MODIFIED"));
+          sender.sendWithAck(msgModifyFailedUH).onComplete(context.asyncAssertFailure(err -> {
+            context.assertTrue(err.getMessage().contains("MODIFIED"));
             acksRecieved.countDown();
-          });
+          }));
 
           AmqpMessage msgRejected = AmqpMessage.create().withBody(REJECT).build();
-          sender.sendWithAck(msgRejected, ack -> {
-            context.assertFalse(ack.succeeded());
-            context.assertTrue(ack.cause().getMessage().contains("REJECTED"));
+          sender.sendWithAck(msgRejected).onComplete(context.asyncAssertFailure(err -> {
+            context.assertTrue(err.getMessage().contains("REJECTED"));
             acksRecieved.countDown();
-          });
-        });
-      });
+          }));
+        }));
+      }));
 
     assertThat(acksRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(recieved).containsExactly(ACCEPT, RELEASE, MODIFY_FAILED, MODIFY_FAILED_U_H, REJECT);
@@ -610,21 +576,13 @@ public class SenderTest extends BareTestBase {
 
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort()))
-      .createSender(queue, senderRes -> {
-        if (senderRes.failed()) {
-          senderRes.cause().printStackTrace();
-        }
-
-        context.assertTrue(senderRes.succeeded());
-        AmqpSender sender = senderRes.result();
-
+      .setPort(server.actualPort()));
+    client.createSender(queue).onComplete(context.asyncAssertSuccess(sender -> {
         AmqpMessage msgAccept = AmqpMessage.create().withBody(message).build();
-        sender.sendWithAck(msgAccept, ack -> {
-          context.assertTrue(ack.succeeded());
+        sender.sendWithAck(msgAccept).onComplete(context.asyncAssertSuccess(ack -> {
           ackRecieved.countDown();
-        });
-      });
+        }));
+      }));
 
     assertThat(ackRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(recieved).containsExactly(message);
@@ -642,21 +600,15 @@ public class SenderTest extends BareTestBase {
 
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort()))
-      .createSender(queue, new AmqpSenderOptions().setLinkName(senderLinkName), senderRes -> {
-        if (senderRes.failed()) {
-          senderRes.cause().printStackTrace();
-        }
-
-        context.assertTrue(senderRes.succeeded());
-        AmqpSender sender = senderRes.result();
+      .setPort(server.actualPort()));
+    client.createSender(queue, new AmqpSenderOptions().setLinkName(senderLinkName))
+      .onComplete(context.asyncAssertSuccess(sender -> {
 
         AmqpMessage msgAccept = AmqpMessage.create().withBody(message).build();
-        sender.sendWithAck(msgAccept, ack -> {
-          context.assertTrue(ack.succeeded());
+        sender.sendWithAck(msgAccept).onComplete(context.asyncAssertSuccess(ack -> {
           ackRecieved.countDown();
-        });
-      });
+        }));
+      }));
 
     assertThat(ackRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(recieved).containsExactly(message);
@@ -702,18 +654,9 @@ public class SenderTest extends BareTestBase {
 
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort()))
-      .connect(connResult -> {
-        context.assertTrue(connResult.succeeded());
-
-        AmqpConnection connection = connResult.result();
-        connection.createSender(UUID.randomUUID().toString(), senderRes -> {
-          if (senderRes.failed()) {
-            senderRes.cause().printStackTrace();
-          }
-
-          context.assertTrue(senderRes.succeeded());
-          AmqpSender sender = senderRes.result();
+      .setPort(server.actualPort()));
+    client.connect().onComplete(context.asyncAssertSuccess(connection -> {
+        connection.createSender(UUID.randomUUID().toString()).onComplete(context.asyncAssertSuccess(sender -> {
 
           AmqpMessage msgDefault = AmqpMessage.create().withBody(DEFAULT).build(); //non-durable by omission
           sender.send(msgDefault);
@@ -723,8 +666,8 @@ public class SenderTest extends BareTestBase {
 
           AmqpMessage msgNonDurable = AmqpMessage.create().withBody(NON_DURABLE).durable(false).build();
           sender.send(msgNonDurable);
-        });
-      });
+        }));
+      }));
 
     assertThat(recieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(payloads).containsExactly(DEFAULT, DURABLE, NON_DURABLE);

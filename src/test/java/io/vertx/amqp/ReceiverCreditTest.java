@@ -105,22 +105,19 @@ public class ReceiverCreditTest extends BareTestBase {
       .setPort(server.actualPort());
 
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
       AmqpReceiverOptions recOpts = new AmqpReceiverOptions();
       if (setMaxBuffered) {
         recOpts.setMaxBufferedMessages(initialCredit);
       }
-      res.result().createReceiver(testName, recOpts, done -> {
-        context.assertTrue(done.succeeded());
-        AmqpReceiver consumer = done.result();
+      res.createReceiver(testName, recOpts).onComplete(context.asyncAssertSuccess(consumer -> {
         consumer.handler(msg -> {
           context.assertNotNull(msg.bodyAsString(), "amqp message body content was null");
           context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body not as expected");
           asyncCompletion.complete();
         });
-      });
-    });
+      }));
+    }));
 
     asyncInitialCredit.awaitSuccess();
     asyncCompletion.awaitSuccess();
@@ -161,14 +158,11 @@ public class ReceiverCreditTest extends BareTestBase {
     client = AmqpClient.create(vertx,
       new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
 
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-
-      res.result().createDynamicReceiver(rec -> {
-        context.assertTrue(rec.succeeded());
-        context.assertEquals(rec.result().address(), address);
-      });
-    });
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.createDynamicReceiver().onComplete(context.asyncAssertSuccess(rec -> {
+        context.assertEquals(rec.address(), address);
+      }));
+    }));
 
     serverLinkOpenAsync.awaitSuccess();
 

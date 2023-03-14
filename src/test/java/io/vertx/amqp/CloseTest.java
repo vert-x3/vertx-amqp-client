@@ -48,9 +48,9 @@ public class CloseTest extends BareTestBase {
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     AmqpClient client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
+    client.connect().onComplete(res -> {
       context.assertTrue(res.succeeded());
-      res.result().createReceiver(testName, done -> {
+      res.result().createReceiver(testName).onComplete(done -> {
         context.assertTrue(done.succeeded());
         AmqpReceiver receiver = done.result();
         receiver.exceptionHandler(x -> exceptionHandlerCalled.set(true));
@@ -59,15 +59,13 @@ public class CloseTest extends BareTestBase {
           context.assertNotNull(amqpBodyContent, "amqp message body content was null");
           context.assertEquals(sentContent, amqpBodyContent, "amqp message body not as expected");
 
-          receiver.close(x -> {
-            context.assertTrue(x.succeeded(), "Expected close to succeed");
+          receiver.close().onComplete(context.asyncAssertSuccess(x -> {
             asyncUnregister.complete();
 
-            client.close(shutdownRes -> {
-              context.assertTrue(shutdownRes.succeeded());
+            client.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
               asyncShutdown.complete();
-            });
-          });
+            }));
+          }));
         });
 
       });
@@ -179,12 +177,9 @@ public class CloseTest extends BareTestBase {
 
     AmqpClientOptions options = new AmqpClientOptions().setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
-    this.client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      res.result().createReceiver(testName,
-        done -> {
-          context.assertTrue(done.succeeded());
-          AmqpReceiver receiver = done.result();
+    this.client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.createReceiver(testName).onComplete(context.asyncAssertSuccess(
+        receiver -> {
           receiver.handler(msg -> {
             String content = msg.bodyAsString();
             context.assertNotNull(content, "amqp message body content was null");
@@ -203,13 +198,12 @@ public class CloseTest extends BareTestBase {
             context.assertTrue(msgReceived.get(), "expected msg to be received first");
             asyncExceptionHandlerCalled.complete();
 
-            client.close(shutdownRes -> {
-              context.assertTrue(shutdownRes.succeeded());
+            client.close().onComplete(context.asyncAssertSuccess(v -> {
               asyncShutdown.complete();
-            });
+            }));
           });
-        });
-    });
+        }));
+    }));
 
     try {
       asyncExceptionHandlerCalled.awaitSuccess();
@@ -275,12 +269,8 @@ public class CloseTest extends BareTestBase {
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      res.result().createReceiver(testName
-        , done -> {
-          context.assertTrue(done.succeeded());
-          AmqpReceiver consumer = done.result();
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.createReceiver(testName).onComplete(context.asyncAssertSuccess(consumer -> {
           consumer.handler(msg -> {
             context.assertNotNull(msg.bodyAsString(), "message body was null");
             String amqpBodyContent = msg.bodyAsString();
@@ -292,13 +282,12 @@ public class CloseTest extends BareTestBase {
           consumer.endHandler(x -> {
             context.assertTrue(msgReceived.get(), "expected msg to be received first");
             asyncEndHandlerCalled.complete();
-            client.close(shutdownRes -> {
-              context.assertTrue(shutdownRes.succeeded());
+            client.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
               asyncShutdown.complete();
-            });
+            }));
           });
-        });
-    });
+        }));
+    }));
 
     try {
       asyncEndHandlerCalled.awaitSuccess();
@@ -354,31 +343,26 @@ public class CloseTest extends BareTestBase {
     AmqpClientOptions options = new AmqpClientOptions()
       .setPort(server.actualPort()).setHost("localhost");
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      res.result().createReceiver(testName,
-        done -> {
-          context.assertTrue(done.succeeded());
-          AmqpReceiver consumer = done.result();
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.createReceiver(testName).onComplete(context.asyncAssertSuccess(
+        consumer -> {
           consumer.endHandler(x -> context.fail("should not call end handler"));
           // Attach handler.
           consumer.handler(msg -> {
             context.assertNotNull(msg.bodyAsString(), "message body was null");
             context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body not as expected");
 
-            consumer.close(x -> {
-              context.assertTrue(x.succeeded());
+            consumer.close().onComplete(context.asyncAssertSuccess(x -> {
               // closing complete, schedule shutdown, give chance for end handler to run, so we can verify it didn't.
               vertx.setTimer(50, y -> {
-                client.close(shutdownRes -> {
-                  context.assertTrue(shutdownRes.succeeded());
+                client.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
                   asyncShutdown.complete();
-                });
+                }));
               });
-            });
+            }));
           });
-        });
-    });
+        }));
+    }));
 
     try {
       asyncShutdown.awaitSuccess();
@@ -417,15 +401,12 @@ public class CloseTest extends BareTestBase {
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      AmqpConnection conn = res.result();
+    client.connect().onComplete(context.asyncAssertSuccess(conn -> {
 
-      conn.close(shutdownRes -> {
-        context.assertTrue(shutdownRes.succeeded());
+      conn.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
         asyncShutdown.complete();
-      });
-    });
+      }));
+    }));
 
     try {
       asyncCloseHandlerCalled.awaitSuccess();
@@ -459,19 +440,16 @@ public class CloseTest extends BareTestBase {
     AmqpClientOptions options = new AmqpClientOptions()
         .setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      AmqpConnection conn = res.result();
+    client.connect().onComplete(context.asyncAssertSuccess(conn -> {
       conn.exceptionHandler(
           x -> {
             latch.countDown();
           });
 
-      conn.close(shutdownRes -> {
-        context.assertTrue(shutdownRes.succeeded());
+      conn.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
         asyncShutdown.complete();
-      });
-    });
+      }));
+    }));
 
     try {
       asyncShutdown.awaitSuccess();
@@ -520,21 +498,19 @@ public class CloseTest extends BareTestBase {
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      res.result().exceptionHandler(
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.exceptionHandler(
         x -> {
           if(asyncEndHandlerCalled.isCompleted()) {
             latch.countDown();
           }
           asyncEndHandlerCalled.complete();
 
-          client.close(shutdownRes -> {
-            context.assertTrue(shutdownRes.succeeded());
+          client.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
             asyncShutdown.complete();
-          });
+          }));
         });
-    });
+    }));
 
     try {
       asyncEndHandlerCalled.awaitSuccess();
@@ -588,22 +564,18 @@ public class CloseTest extends BareTestBase {
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost").setPort(server.actualPort());
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      AmqpConnection conn = res.result();
-
+    client.connect().onComplete(context.asyncAssertSuccess(conn -> {
       conn.exceptionHandler(
         x -> {
           asyncExeptionHandlerCalled.complete();
           context.assertFalse(asyncCloseHandlerCalled.isCompleted());
           context.assertFalse(asyncDisconnectHandlerCalled.isCompleted());
 
-          client.close(shutdownRes -> {
-            context.assertTrue(shutdownRes.succeeded());
+          client.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
             asyncShutdown.complete();
-          });
+          }));
         });
-    });
+    }));
 
     try {
       asyncExeptionHandlerCalled.awaitSuccess();
@@ -620,10 +592,9 @@ public class CloseTest extends BareTestBase {
     Async async = context.async();
 
     AmqpClient client = AmqpClient.create(new AmqpClientOptions().setHost("unused"));
-    client.close(shutdownRes -> {
-      context.assertTrue(shutdownRes.succeeded());
+    client.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
       async.complete();
-    });
+    }));
 
     async.awaitSuccess();
   }

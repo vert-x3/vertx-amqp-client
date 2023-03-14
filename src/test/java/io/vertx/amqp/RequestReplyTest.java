@@ -45,11 +45,11 @@ public class RequestReplyTest extends BareTestBase {
 
   private Future<Void> prepareRequestReceiverAndAnonymousSenderResponder(TestContext context, AmqpConnection connection, String requestQueue, String replyAddress) {
     Promise<Void> future = Promise.promise();
-    connection.createReceiver(requestQueue, d -> {
+    connection.createReceiver(requestQueue).onComplete(d -> {
       d.result().handler(msg -> {
         context.assertEquals(REQUEST, msg.bodyAsString());
         context.assertEquals(replyAddress, msg.replyTo());
-        connection.createAnonymousSender(sender ->
+        connection.createAnonymousSender().onComplete(sender ->
           sender.result().send(AmqpMessage.create().address(msg.replyTo()).withBody(RESPONSE).build()));
       });
       future.handle(d.mapEmpty());
@@ -59,30 +59,25 @@ public class RequestReplyTest extends BareTestBase {
 
   private Future<AmqpReceiver> prepareDynamicReplyReceiver(TestContext context, AmqpConnection connection, Async done) {
     Promise<AmqpReceiver> future = Promise.promise();
-    connection.createDynamicReceiver(rec -> {
-      context.assertTrue(rec.succeeded());
-      AmqpReceiver receiver = rec.result();
+    connection.createDynamicReceiver().onComplete(context.asyncAssertSuccess(receiver -> {
       context.assertNotNull(receiver.address());
       receiver.handler(message -> {
         context.assertEquals(message.bodyAsString(), RESPONSE);
         done.complete();
       });
       future.complete(receiver);
-    });
+    }));
     return future.future();
   }
 
   private Future<Void> prepareSenderAndSendRequestMessage(TestContext context, AmqpConnection connection, String address, String replyAddress) {
     Promise<Void> future = Promise.promise();
-    connection.createSender(address, ar -> {
-      context.assertTrue(ar.succeeded());
-      ar.result().sendWithAck(
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(res -> {
+      res.sendWithAck(
         AmqpMessage.create()
           .replyTo(replyAddress)
-          .withBody(REQUEST).build(),
-        ack -> future.handle(ack.mapEmpty())
-      );
-    });
+          .withBody(REQUEST).build()).onComplete(future);
+    }));
     return future.future();
   }
 
@@ -97,13 +92,12 @@ public class RequestReplyTest extends BareTestBase {
       Async done = context.async();
 
       client = AmqpClient.create(vertx, new AmqpClientOptions()
-        .setHost("localhost").setPort(server.actualPort()))
-        .connect(conn -> {
-          context.assertTrue(conn.succeeded());
+        .setHost("localhost").setPort(server.actualPort()));
+      client.connect().onComplete(context.asyncAssertSuccess(conn -> {
 
-          prepareDynamicReplyReceiver(context, conn.result(), done)
-            .compose(dr -> prepareSenderAndSendRequestMessage(context, conn.result(), requestQueue, dr.address()));
-        });
+        prepareDynamicReplyReceiver(context, conn, done)
+          .compose(dr -> prepareSenderAndSendRequestMessage(context, conn, requestQueue, dr.address()));
+      }));
 
       done.awaitSuccess();
     } finally {
@@ -191,12 +185,11 @@ public class RequestReplyTest extends BareTestBase {
 
     try {
       client = AmqpClient.create(vertx, new AmqpClientOptions()
-        .setHost("localhost").setPort(server.actualPort()))
-        .connect(conn -> {
-          context.assertTrue(conn.succeeded());
+        .setHost("localhost").setPort(server.actualPort()));
 
-          prepareRequestReceiverAndAnonymousSenderResponder(context, conn.result(), requestQueue, responseAddress);
-        });
+      client.connect().onComplete(context.asyncAssertSuccess(conn -> {
+        prepareRequestReceiverAndAnonymousSenderResponder(context, conn, requestQueue, responseAddress);
+      }));
 
       done.awaitSuccess();
     } finally {
