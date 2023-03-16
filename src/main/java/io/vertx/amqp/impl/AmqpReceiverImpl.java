@@ -310,7 +310,6 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     return connection;
   }
 
-  @Override
   public void close(Handler<AsyncResult<Void>> handler) {
     Handler<AsyncResult<Void>> actualHandler;
     if (handler == null) {

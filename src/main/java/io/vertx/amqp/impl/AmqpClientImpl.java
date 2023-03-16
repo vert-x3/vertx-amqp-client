@@ -46,7 +46,6 @@ public class AmqpClientImpl implements AmqpClient {
     this.mustCloseVertxOnClose = mustCloseVertxOnClose;
   }
 
-  @Override
   public AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     Objects.requireNonNull(connectionHandler, "Handler must not be null");
     connect().onComplete(connectionHandler);
@@ -69,7 +68,6 @@ public class AmqpClientImpl implements AmqpClient {
     return future;
   }
 
-  @Override
   public void close(Handler<AsyncResult<Void>> handler) {
     List<Future> actions = new ArrayList<>();
     for (AmqpConnection connection : connections) {
@@ -105,7 +103,6 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  @Override
   public AmqpClient createReceiver(String address,
     Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     return connect(res -> {
@@ -124,7 +121,6 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  @Override
   public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
@@ -142,7 +138,6 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  @Override
   public AmqpClient createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
@@ -160,7 +155,6 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  @Override
   public AmqpClient createSender(String address, AmqpSenderOptions options,
                                  Handler<AsyncResult<AmqpSender>> completionHandler) {
     return connect(res -> {

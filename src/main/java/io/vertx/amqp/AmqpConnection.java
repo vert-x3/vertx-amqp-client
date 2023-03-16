@@ -18,11 +18,9 @@ package io.vertx.amqp;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.proton.ProtonConnection;
-import io.vertx.proton.ProtonSender;
 
 import static io.vertx.codegen.annotations.GenIgnore.PERMITTED_TYPE;
 
@@ -44,15 +42,8 @@ public interface AmqpConnection {
   /**
    * Closes the AMQP connection, i.e. allows the Close frame to be emitted.
    *
-   * @param done the close handler notified when the connection is closed. May be {@code null}.
+   * @return a future notified when the connection is closed
    * @return the connection
-   */
-  @Fluent
-  @Deprecated
-  AmqpConnection close(Handler<AsyncResult<Void>> done);
-
-  /**
-   * Like {@link #close(Handler)} but returns a {@code Future} of the asynchronous result
    */
   Future<Void> close();
 
@@ -61,15 +52,7 @@ public interface AmqpConnection {
    * start receiving messages until a handler is explicitly configured.
    *
    * @param address           The source address to attach the consumer to, must not be {@code null}
-   * @param completionHandler the handler called with the receiver. The receiver has been opened.
-   * @return the connection.
-   */
-  @Fluent
-  @Deprecated
-  AmqpConnection createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
-
-  /**
-   * Like {@link #createReceiver(String, Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified with the receiver. The receiver has been opened.
    */
   Future<AmqpReceiver> createReceiver(String address);
 
@@ -78,17 +61,8 @@ public interface AmqpConnection {
    *
    * @param address           The source address to attach the consumer to.
    * @param receiverOptions   The options for this receiver.
-   * @param completionHandler The handler called with the receiver, once opened. Note that the {@code messageHandler}
+   * @return a future notified with the receiver, once opened. Note that the {@code messageHandler}
    *                          can be called before the {@code completionHandler} if messages are awaiting delivery.
-   * @return the connection.
-   */
-  @Fluent
-  @Deprecated
-  AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler);
-
-  /**
-   * Like {@link #createReceiver(String, AmqpReceiverOptions, Handler)} but returns a {@code Future} of the asynchronous result
    */
   Future<AmqpReceiver> createReceiver(String address, AmqpReceiverOptions receiverOptions);
 
@@ -97,54 +71,29 @@ public interface AmqpConnection {
    * using the {@link AmqpReceiver#address()} method. this method is useful for request-reply to generate a unique
    * reply address.
    *
-   * @param completionHandler the completion handler, called when the receiver has been created and opened.
-   * @return the connection.
-   */
-  @Fluent
-  @Deprecated
-  AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler);
-
-  /**
-   * Like {@link #createDynamicReceiver(Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified when the receiver has been created and opened.
    */
   Future<AmqpReceiver> createDynamicReceiver();
 
   /**
    * Creates a sender used to send messages to the given address. The address must be set. For anonymous sender, check
-   * {@link #createAnonymousSender(Handler)}.
+   * {@link #createAnonymousSender()}.
    *
    * @param address           The target address to attach to, must not be {@code null}
-   * @param completionHandler The handler called with the sender, once opened
-   * @return the connection.
-   * @see #createAnonymousSender(Handler)
-   */
-  @Fluent
-  @Deprecated
-  AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
-
-  /**
-   * Like {@link #createSender(String, Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified with the sender, once opened
+   * @see #createAnonymousSender()
    */
   Future<AmqpSender> createSender(String address);
 
   /**
    * Creates a sender used to send messages to the given address. The address must be set. For anonymous sender, check
-   * {@link #createAnonymousSender(Handler)}.
+   * {@link #createAnonymousSender()}.
    *
    * @param address           The target address to attach to, allowed to be {@code null} if the {@code options}
    *                          configures the sender to be attached to a dynamic address (provided by the broker).
    * @param options           The AMQP sender options
-   * @param completionHandler The handler called with the sender, once opened
-   * @return the connection.
-   * @see #createAnonymousSender(Handler)
-   */
-  @Fluent
-  @Deprecated
-  AmqpConnection createSender(String address, AmqpSenderOptions options,
-    Handler<AsyncResult<AmqpSender>> completionHandler);
-
-  /**
-   * Like {@link #createSender(String, AmqpSenderOptions, Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified with the sender, once opened
+   * @see #createAnonymousSender()
    */
   Future<AmqpSender> createSender(String address, AmqpSenderOptions options);
 
@@ -155,15 +104,7 @@ public interface AmqpConnection {
    * an address. This method can be used in request-reply scenarios where you create a sender to send the reply,
    * but you don't know the address, as the reply address is passed into the message you are going to receive.
    *
-   * @param completionHandler The handler called with the created sender, once opened
-   * @return the connection.
-   */
-  @Fluent
-  @Deprecated
-  AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler);
-
-  /**
-   * Like {@link #createAnonymousSender(Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notifid with the created sender, once opened
    */
   Future<AmqpSender> createAnonymousSender();
 

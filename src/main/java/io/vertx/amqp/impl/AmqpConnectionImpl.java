@@ -210,7 +210,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return this;
   }
 
-  @Override
   public AmqpConnection close(Handler<AsyncResult<Void>> done) {
     context.runOnContext(ignored -> {
       ProtonConnection actualConnection = connection.get();
@@ -269,7 +268,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     receivers.remove(receiver);
   }
 
-  @Override
   public AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     return createReceiver(null, new AmqpReceiverOptions().setDynamic(true), completionHandler);
   }
@@ -281,7 +279,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return promise.future();
   }
 
-  @Override
   public AmqpConnection createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
 
@@ -307,7 +304,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return promise.future();
   }
 
-  @Override
   public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
     Handler<AsyncResult<AmqpReceiver>> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
@@ -374,7 +370,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     }
   }
 
-  @Override
   public AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
     Objects.requireNonNull(address, "The address must be set");
     return createSender(address, new AmqpSenderOptions(), completionHandler);
@@ -387,7 +382,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return promise.future();
   }
 
-  @Override
   public AmqpConnection createSender(String address, AmqpSenderOptions options,
     Handler<AsyncResult<AmqpSender>> completionHandler) {
     if (address == null && !options.isDynamic()) {
@@ -437,7 +431,6 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return promise.future();
   }
 
-  @Override
   public AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler) {
     Objects.requireNonNull(completionHandler, "The completion handler must be set");
     runWithTrampoline(x -> {

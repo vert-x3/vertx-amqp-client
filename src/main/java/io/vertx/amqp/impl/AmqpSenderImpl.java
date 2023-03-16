@@ -225,7 +225,6 @@ public class AmqpSenderImpl implements AmqpSender {
     return this;
   }
 
-  @Override
   public AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler) {
     return doSend(message, acknowledgementHandler);
   }
@@ -237,7 +236,6 @@ public class AmqpSenderImpl implements AmqpSender {
     return promise.future();
   }
 
-  @Override
   public void close(Handler<AsyncResult<Void>> handler) {
     Handler<AsyncResult<Void>> actualHandler;
     if (handler == null) {
