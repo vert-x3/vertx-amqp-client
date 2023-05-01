@@ -69,7 +69,7 @@ public class AmqpClientImpl implements AmqpClient {
   }
 
   public void close(Handler<AsyncResult<Void>> handler) {
-    List<Future> actions = new ArrayList<>();
+    List<Future<Void>> actions = new ArrayList<>();
     for (AmqpConnection connection : connections) {
       actions.add(connection.close());
     }
