@@ -457,9 +457,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
     ProtonConnection current = this.connection.get();
     if (current != null) {
       return current.isDisconnected();
-    } else {
-      return true;
     }
+    return true;
   }
 
   @Override

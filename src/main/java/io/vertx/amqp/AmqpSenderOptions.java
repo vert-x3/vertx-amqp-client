@@ -34,18 +34,15 @@ public class AmqpSenderOptions {
   private List<String> capabilities = new ArrayList<>();
 
   public AmqpSenderOptions() {
-
   }
 
   public AmqpSenderOptions(AmqpSenderOptions other) {
-    this();
     setDynamic(other.isDynamic());
     setLinkName(other.getLinkName());
     setAutoDrained(other.isAutoDrained());
   }
 
   public AmqpSenderOptions(JsonObject json) {
-    super();
     AmqpSenderOptionsConverter.fromJson(json, this);
   }
 

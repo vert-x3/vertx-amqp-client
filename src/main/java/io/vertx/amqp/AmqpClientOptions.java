@@ -44,7 +44,6 @@ public class AmqpClientOptions extends ProtonClientOptions {
   private String connectionHostname = null;
 
   public AmqpClientOptions() {
-    super();
   }
 
   public AmqpClientOptions(JsonObject json) {
@@ -62,6 +61,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
     this.connectionHostname = other.connectionHostname;
   }
 
+  @Override
   public JsonObject toJson() {
     JsonObject json = super.toJson();
     AmqpClientOptionsConverter.toJson(this, json);
@@ -284,7 +284,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
-   * @see ProtonClientOptions#setSslHandshakeTimeout(boolean)
+   * @see ProtonClientOptions#setSslHandshakeTimeout(long)
    */
   @Override
   public AmqpClientOptions setSslHandshakeTimeout(long sslHandshakeTimeout) {
@@ -311,7 +311,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
-   * @see ProtonClientOptions#setKeyCertOptions(PfxOptions)
+   * @see ProtonClientOptions#setKeyCertOptions(KeyCertOptions)
    */
   @Override
   public AmqpClientOptions setKeyCertOptions(KeyCertOptions options) {
@@ -338,14 +338,14 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
-   * @see ProtonClientOptions#setTrustStoreOptions(TrustOptions)
+   * @see NetClientOptions#setTrustOptions(TrustOptions)
    */
   @Override
   public AmqpClientOptions setTrustOptions(TrustOptions options) {
     super.setTrustOptions(options);
     return this;
   }
-  
+
   /**
    * @see ProtonClientOptions#setTrustStoreOptions(JksOptions)
    */
@@ -592,8 +592,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
     String s = getFromSysOrEnv("amqp-client-port");
     if (s == null) {
       return 5672;
-    } else {
-      return Integer.parseInt(s);
     }
+    return Integer.parseInt(s);
   }
 }

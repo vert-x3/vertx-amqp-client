@@ -191,14 +191,13 @@ public class AmqpMessageImpl implements AmqpMessage {
   public <T> List<T> bodyAsList() {
     Section body = message.getBody();
     if (body.getType() == Section.SectionType.AmqpSequence) {
-      return (List<T>) ((AmqpSequence) message.getBody()).getValue();
-    } else {
-      Object value = getAmqpValue();
-      if (value instanceof List) {
-        return (List<T>) value;
-      }
-      throw new IllegalStateException("Cannot extract a list from the message body");
+      return ((AmqpSequence) message.getBody()).getValue();
     }
+    Object value = getAmqpValue();
+    if (value instanceof List) {
+      return (List<T>) value;
+    }
+    throw new IllegalStateException("Cannot extract a list from the message body");
   }
 
   @Override
