@@ -302,16 +302,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
   }
 
   /**
-   * @see ProtonClientOptions#setKeyStoreOptions(JksOptions)
-   */
-  @Override
-  public AmqpClientOptions setKeyStoreOptions(JksOptions options) {
-    super.setKeyStoreOptions(options);
-    return this;
-  }
-
-  /**
-   * @see ProtonClientOptions#setKeyCertOptions(PfxOptions)
+   * @see ProtonClientOptions#setKeyCertOptions(KeyCertOptions)
    */
   @Override
   public AmqpClientOptions setKeyCertOptions(KeyCertOptions options) {
@@ -319,57 +310,13 @@ public class AmqpClientOptions extends ProtonClientOptions {
     return this;
   }
 
-  /**
-   * @see ProtonClientOptions#setPfxKeyCertOptions(PfxOptions)
-   */
-  @Override
-  public AmqpClientOptions setPfxKeyCertOptions(PfxOptions options) {
-    super.setPfxKeyCertOptions(options);
-    return this;
-  }
 
   /**
-   * @see ProtonClientOptions#setPemKeyCertOptions(PemKeyCertOptions)
-   */
-  @Override
-  public AmqpClientOptions setPemKeyCertOptions(PemKeyCertOptions options) {
-    super.setPemKeyCertOptions(options);
-    return this;
-  }
-
-  /**
-   * @see ProtonClientOptions#setTrustStoreOptions(TrustOptions)
+   * @see ProtonClientOptions#setTrustOptions(TrustOptions)
    */
   @Override
   public AmqpClientOptions setTrustOptions(TrustOptions options) {
     super.setTrustOptions(options);
-    return this;
-  }
-  
-  /**
-   * @see ProtonClientOptions#setTrustStoreOptions(JksOptions)
-   */
-  @Override
-  public AmqpClientOptions setTrustStoreOptions(JksOptions options) {
-    super.setTrustStoreOptions(options);
-    return this;
-  }
-
-  /**
-   * @see ProtonClientOptions#setPemTrustOptions(PemTrustOptions)
-   */
-  @Override
-  public AmqpClientOptions setPemTrustOptions(PemTrustOptions options) {
-    super.setPemTrustOptions(options);
-    return this;
-  }
-
-  /**
-   * @see ProtonClientOptions#setPfxTrustOptions(PfxOptions)
-   */
-  @Override
-  public AmqpClientOptions setPfxTrustOptions(PfxOptions options) {
-    super.setPfxTrustOptions(options);
     return this;
   }
 
@@ -451,24 +398,6 @@ public class AmqpClientOptions extends ProtonClientOptions {
   @Override
   public AmqpClientOptions setHostnameVerificationAlgorithm(String hostnameVerificationAlgorithm) {
     super.setHostnameVerificationAlgorithm(hostnameVerificationAlgorithm);
-    return this;
-  }
-
-  /**
-   * @see ProtonClientOptions#setJdkSslEngineOptions(JdkSSLEngineOptions)
-   */
-  @Override
-  public AmqpClientOptions setJdkSslEngineOptions(JdkSSLEngineOptions sslEngineOptions) {
-    super.setJdkSslEngineOptions(sslEngineOptions);
-    return this;
-  }
-
-  /**
-   * @see ProtonClientOptions#setOpenSslEngineOptions(OpenSSLEngineOptions)
-   */
-  @Override
-  public AmqpClientOptions setOpenSslEngineOptions(OpenSSLEngineOptions sslEngineOptions) {
-    super.setOpenSslEngineOptions(sslEngineOptions);
     return this;
   }
 

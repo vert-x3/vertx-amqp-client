@@ -71,7 +71,7 @@ public class SSLTest extends BareTestBase {
     ProtonServerOptions serverOptions = new ProtonServerOptions();
     serverOptions.setSsl(true);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
@@ -80,7 +80,7 @@ public class SSLTest extends BareTestBase {
       .setSsl(true)
       .setHost("localhost")
       .setPort(server.actualPort())
-      .setPfxTrustOptions(clientPfxOptions);
+      .setTrustOptions(clientPfxOptions);
 
     AmqpClient.create(vertx, options).connect().onComplete(context.asyncAssertSuccess(res -> {
       // Expect start to succeed
@@ -100,7 +100,7 @@ public class SSLTest extends BareTestBase {
     ProtonServerOptions serverOptions = new ProtonServerOptions();
     serverOptions.setSsl(true);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
@@ -168,7 +168,7 @@ public class SSLTest extends BareTestBase {
       .setSsl(true)
       .setHost("localhost")
       .setPort(server.actualPort())
-      .setPfxTrustOptions(clientPfxOptions);
+      .setTrustOptions(clientPfxOptions);
 
     AmqpClient.create(vertx, options).connect().onComplete(context.asyncAssertFailure(err -> {
       async.complete();
@@ -184,7 +184,7 @@ public class SSLTest extends BareTestBase {
     ProtonServerOptions serverOptions = new ProtonServerOptions();
     serverOptions.setSsl(true);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
@@ -193,7 +193,7 @@ public class SSLTest extends BareTestBase {
     options.setSsl(true)
       .setHost("localhost")
       .setPort(server.actualPort())
-      .setPfxTrustOptions(pfxOptions);
+      .setTrustOptions(pfxOptions);
 
     client = AmqpClient.create(vertx, options);
     client.connect().onComplete(context.asyncAssertFailure(err -> {
@@ -211,7 +211,7 @@ public class SSLTest extends BareTestBase {
     ProtonServerOptions serverOptions = new ProtonServerOptions();
     serverOptions.setSsl(true);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
@@ -282,10 +282,10 @@ public class SSLTest extends BareTestBase {
     serverOptions.setSsl(true);
     serverOptions.setClientAuth(ClientAuth.REQUIRED);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     PfxOptions pfxOptions = new PfxOptions().setPath(TRUSTSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxTrustOptions(pfxOptions);
+    serverOptions.setTrustOptions(pfxOptions);
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
@@ -293,11 +293,11 @@ public class SSLTest extends BareTestBase {
       .setHost("localhost")
       .setPort(server.actualPort())
       .setSsl(true)
-      .setPfxTrustOptions(pfxOptions);
+      .setTrustOptions(pfxOptions);
 
     if (supplyClientCert) {
       PfxOptions clientKeyPfxOptions = new PfxOptions().setPath(KEYSTORE_CLIENT).setPassword(PASSWORD);
-      options.setPfxKeyCertOptions(clientKeyPfxOptions);
+      options.setKeyCertOptions(clientKeyPfxOptions);
     }
 
     client = AmqpClient.create(vertx, options);
@@ -332,7 +332,7 @@ public class SSLTest extends BareTestBase {
     ProtonServerOptions serverOptions = new ProtonServerOptions();
     serverOptions.setSsl(true);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(WRONG_HOST_KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     server = new MockServer(vertx, conn -> {
       handleStartupProcess(conn, context);
@@ -343,7 +343,7 @@ public class SSLTest extends BareTestBase {
       .setHost("localhost")
       .setPort(server.actualPort())
       .setSsl(true)
-      .setPfxTrustOptions(clientPfxOptions);
+      .setTrustOptions(clientPfxOptions);
 
     // Verify/update the hostname verification settings
     context.assertEquals(VERIFY_HTTPS, options.getHostnameVerificationAlgorithm(),

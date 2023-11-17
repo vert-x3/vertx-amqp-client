@@ -35,9 +35,19 @@ public class AmqpReceiverOptionsConverter {
   public static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, AmqpReceiverOptions obj) {
     for (java.util.Map.Entry<String, Object> member : json) {
       switch (member.getKey()) {
-        case "autoAcknowledgement":
+        case "linkName":
+          if (member.getValue() instanceof String) {
+            obj.setLinkName((String)member.getValue());
+          }
+          break;
+        case "dynamic":
           if (member.getValue() instanceof Boolean) {
-            obj.setAutoAcknowledgement((Boolean)member.getValue());
+            obj.setDynamic((Boolean)member.getValue());
+          }
+          break;
+        case "qos":
+          if (member.getValue() instanceof String) {
+            obj.setQos((String)member.getValue());
           }
           break;
         case "capabilities":
@@ -63,34 +73,24 @@ public class AmqpReceiverOptionsConverter {
             obj.setDurable((Boolean)member.getValue());
           }
           break;
-        case "dynamic":
-          if (member.getValue() instanceof Boolean) {
-            obj.setDynamic((Boolean)member.getValue());
-          }
-          break;
-        case "linkName":
-          if (member.getValue() instanceof String) {
-            obj.setLinkName((String)member.getValue());
-          }
-          break;
         case "maxBufferedMessages":
           if (member.getValue() instanceof Number) {
             obj.setMaxBufferedMessages(((Number)member.getValue()).intValue());
           }
           break;
-        case "noLocal":
+        case "autoAcknowledgement":
           if (member.getValue() instanceof Boolean) {
-            obj.setNoLocal((Boolean)member.getValue());
-          }
-          break;
-        case "qos":
-          if (member.getValue() instanceof String) {
-            obj.setQos((String)member.getValue());
+            obj.setAutoAcknowledgement((Boolean)member.getValue());
           }
           break;
         case "selector":
           if (member.getValue() instanceof String) {
             obj.setSelector((String)member.getValue());
+          }
+          break;
+        case "noLocal":
+          if (member.getValue() instanceof Boolean) {
+            obj.setNoLocal((Boolean)member.getValue());
           }
           break;
       }
@@ -102,24 +102,24 @@ public class AmqpReceiverOptionsConverter {
   }
 
   public static void toJson(AmqpReceiverOptions obj, java.util.Map<String, Object> json) {
-    json.put("autoAcknowledgement", obj.isAutoAcknowledgement());
+    if (obj.getLinkName() != null) {
+      json.put("linkName", obj.getLinkName());
+    }
+    json.put("dynamic", obj.isDynamic());
+    if (obj.getQos() != null) {
+      json.put("qos", obj.getQos());
+    }
     if (obj.getCapabilities() != null) {
       JsonArray array = new JsonArray();
       obj.getCapabilities().forEach(item -> array.add(item));
       json.put("capabilities", array);
     }
     json.put("durable", obj.isDurable());
-    json.put("dynamic", obj.isDynamic());
-    if (obj.getLinkName() != null) {
-      json.put("linkName", obj.getLinkName());
-    }
     json.put("maxBufferedMessages", obj.getMaxBufferedMessages());
-    json.put("noLocal", obj.isNoLocal());
-    if (obj.getQos() != null) {
-      json.put("qos", obj.getQos());
-    }
+    json.put("autoAcknowledgement", obj.isAutoAcknowledgement());
     if (obj.getSelector() != null) {
       json.put("selector", obj.getSelector());
     }
+    json.put("noLocal", obj.isNoLocal());
   }
 }
