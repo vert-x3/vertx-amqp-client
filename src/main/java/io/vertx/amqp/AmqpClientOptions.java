@@ -16,6 +16,7 @@
 package io.vertx.amqp;
 
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.annotations.JsonGen;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.*;
@@ -29,7 +30,8 @@ import java.util.concurrent.TimeUnit;
  * Configures the AMQP Client.
  * You can also configure the underlying Proton instance. Refer to {@link ProtonClientOptions} for details.
  */
-@DataObject(generateConverter = true, inheritConverter = true)
+@DataObject
+@JsonGen(publicConverter = false)
 public class AmqpClientOptions extends ProtonClientOptions {
 
   // TODO Capabilities and properties
@@ -345,7 +347,7 @@ public class AmqpClientOptions extends ProtonClientOptions {
     super.setTrustOptions(options);
     return this;
   }
-  
+
   /**
    * @see ProtonClientOptions#setTrustStoreOptions(JksOptions)
    */
