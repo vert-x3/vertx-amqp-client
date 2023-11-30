@@ -20,12 +20,14 @@ import java.util.List;
 import java.util.Objects;
 
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.core.json.JsonObject;
 
 /**
  * Configures the AMQP Sender.
  */
-@DataObject(generateConverter = true)
+@DataObject
+@JsonGen(publicConverter = false)
 public class AmqpSenderOptions {
 
   private String linkName;
