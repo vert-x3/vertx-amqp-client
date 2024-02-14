@@ -41,8 +41,9 @@ public class SenderUnknownAckStateTest extends BareTestBase {
     AtomicReference<AmqpConnection> reference = new AtomicReference<>();
     client = AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort()))
-      .connect(connection -> {
+      .setPort(server.actualPort()));
+    client.connect()
+      .onComplete(connection -> {
         reference.set(connection.result());
         if (connection.failed()) {
           connection.cause().printStackTrace();
@@ -64,14 +65,14 @@ public class SenderUnknownAckStateTest extends BareTestBase {
 
   @Test(timeout = 10000)
   public void test(TestContext context) throws Exception {
-    connection.createSender(address, context.asyncAssertSuccess(sender -> {
-      AmqpMessage msg = AmqpMessage.create().withBooleanAsBody(true).build();
-      sender
-        .write(msg)
-        .onComplete(context.asyncAssertFailure(expected -> {
+    connection.createSender(address)
+      .compose(sender -> {
+        AmqpMessage msg = AmqpMessage.create().withBooleanAsBody(true).build();
+        return sender
+          .write(msg);
+      }).onComplete(context.asyncAssertFailure(expected -> {
         // Expected
       }));
-    }));
   }
 
   private MockServer setupMockServer() throws Exception {
