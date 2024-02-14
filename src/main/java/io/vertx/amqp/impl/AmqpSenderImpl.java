@@ -28,6 +28,7 @@ import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonSender;
 import io.vertx.proton.impl.ProtonSenderImpl;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
+import org.apache.qpid.proton.amqp.transport.DeliveryState;
 
 public class AmqpSenderImpl implements AmqpSender {
   private static final Logger LOGGER = LoggerFactory.getLogger(AmqpSender.class);
@@ -138,6 +139,8 @@ public class AmqpSenderImpl implements AmqpSender {
 
   private AmqpSender doSend(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgmentHandler) {
     Handler<ProtonDelivery> ack = delivery -> {
+      DeliveryState remoteState = delivery.getRemoteState();
+
       Handler<AsyncResult<Void>> handler = acknowledgmentHandler;
       if (acknowledgmentHandler == null) {
         handler = ar -> {
@@ -147,9 +150,14 @@ public class AmqpSenderImpl implements AmqpSender {
         };
       }
 
-      switch (delivery.getRemoteState().getType()) {
+      if (remoteState == null) {
+        handler.handle(Future.failedFuture("Unknown message state"));
+        return;
+      }
+
+      switch (remoteState.getType()) {
         case Rejected:
-          handler.handle(Future.failedFuture("message rejected (REJECTED): " + ((Rejected) delivery.getRemoteState()).getError()));
+          handler.handle(Future.failedFuture("message rejected (REJECTED): " + ((Rejected) remoteState).getError()));
           break;
         case Modified:
           handler.handle(Future.failedFuture("message rejected (MODIFIED)"));
@@ -161,7 +169,7 @@ public class AmqpSenderImpl implements AmqpSender {
           handler.handle(Future.succeededFuture());
           break;
         default:
-          handler.handle(Future.failedFuture("Unsupported delivery type: " + delivery.getRemoteState().getType()));
+          handler.handle(Future.failedFuture("Unsupported delivery type: " + remoteState.getType()));
       }
     };
 
