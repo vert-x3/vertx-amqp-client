@@ -17,7 +17,7 @@ package io.vertx.amqp.impl;
 
 import io.vertx.amqp.*;
 import io.vertx.core.*;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.proton.*;
 import io.vertx.proton.impl.ProtonConnectionImpl;
 import org.apache.qpid.proton.amqp.*;
