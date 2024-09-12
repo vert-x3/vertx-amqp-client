@@ -18,10 +18,7 @@ package io.vertx.amqp.impl;
 import io.vertx.amqp.AmqpConnection;
 import io.vertx.amqp.AmqpMessage;
 import io.vertx.amqp.AmqpSender;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.core.internal.logging.Logger;
 import io.vertx.core.internal.logging.LoggerFactory;
 import io.vertx.proton.ProtonDelivery;
@@ -40,7 +37,7 @@ public class AmqpSenderImpl implements AmqpSender {
   private long remoteCredit = 0;
 
   private AmqpSenderImpl(ProtonSender sender, AmqpConnectionImpl connection,
-    Handler<AsyncResult<AmqpSender>> completionHandler) {
+                         Completable<AmqpSender> completionHandler) {
     this.sender = sender;
     this.connection = connection;
 
@@ -67,10 +64,10 @@ public class AmqpSenderImpl implements AmqpSender {
 
     sender.openHandler(done -> {
       if (done.failed()) {
-        completionHandler.handle(done.mapEmpty());
+        completionHandler.complete(null, done.cause());
       } else {
         connection.register(this);
-        completionHandler.handle(Future.succeededFuture(this));
+        completionHandler.succeed(this);
       }
     });
 
@@ -86,7 +83,7 @@ public class AmqpSenderImpl implements AmqpSender {
    * @param completionHandler the completion handler
    */
   static void create(ProtonSender sender, AmqpConnectionImpl connection,
-    Handler<AsyncResult<AmqpSender>> completionHandler) {
+                     Completable<AmqpSender> completionHandler) {
     new AmqpSenderImpl(sender, connection, completionHandler);
   }
 
@@ -137,39 +134,39 @@ public class AmqpSenderImpl implements AmqpSender {
     return doSend(message, null);
   }
 
-  private AmqpSender doSend(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgmentHandler) {
+  private AmqpSender doSend(AmqpMessage message, Completable<Void> acknowledgmentHandler) {
     Handler<ProtonDelivery> ack = delivery -> {
       DeliveryState remoteState = delivery.getRemoteState();
 
-      Handler<AsyncResult<Void>> handler = acknowledgmentHandler;
+      Completable<Void> handler = acknowledgmentHandler;
       if (acknowledgmentHandler == null) {
-        handler = ar -> {
-          if (ar.failed()) {
-            LOGGER.warn("Message rejected by remote peer", ar.cause());
+        handler = (res, err) -> {
+          if (err != null) {
+            LOGGER.warn("Message rejected by remote peer", err);
           }
         };
       }
 
       if (remoteState == null) {
-        handler.handle(Future.failedFuture("Unknown message state"));
+        handler.fail("Unknown message state");
         return;
       }
 
       switch (remoteState.getType()) {
         case Rejected:
-          handler.handle(Future.failedFuture("message rejected (REJECTED): " + ((Rejected) remoteState).getError()));
+          handler.fail("message rejected (REJECTED): " + ((Rejected) remoteState).getError());
           break;
         case Modified:
-          handler.handle(Future.failedFuture("message rejected (MODIFIED)"));
+          handler.fail("message rejected (MODIFIED)");
           break;
         case Released:
-          handler.handle(Future.failedFuture("message rejected (RELEASED)"));
+          handler.fail("message rejected (RELEASED)");
           break;
         case Accepted:
-          handler.handle(Future.succeededFuture());
+          handler.succeed();
           break;
         default:
-          handler.handle(Future.failedFuture("Unsupported delivery type: " + remoteState.getType()));
+          handler.fail("Unsupported delivery type: " + remoteState.getType());
       }
     };
 
@@ -233,7 +230,7 @@ public class AmqpSenderImpl implements AmqpSender {
     return this;
   }
 
-  public AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler) {
+  public AmqpSender sendWithAck(AmqpMessage message, Promise<Void> acknowledgementHandler) {
     return doSend(message, acknowledgementHandler);
   }
 
@@ -244,17 +241,17 @@ public class AmqpSenderImpl implements AmqpSender {
     return promise.future();
   }
 
-  public void close(Handler<AsyncResult<Void>> handler) {
-    Handler<AsyncResult<Void>> actualHandler;
+  public void close(Completable<Void> handler) {
+    Completable<Void> actualHandler;
     if (handler == null) {
-      actualHandler = x -> { /* NOOP */ };
+      actualHandler = (res, err) -> { /* NOOP */ };
     } else {
       actualHandler = handler;
     }
 
     synchronized (this) {
       if (closed) {
-        actualHandler.handle(Future.succeededFuture());
+        actualHandler.succeed();
         return;
       }
       closed = true;
@@ -265,14 +262,14 @@ public class AmqpSenderImpl implements AmqpSender {
       if (sender.isOpen()) {
         try {
           sender
-            .closeHandler(v -> actualHandler.handle(v.mapEmpty()))
+            .closeHandler(v -> actualHandler.complete(null, v.cause()))
             .close();
         } catch (Exception e) {
           // Somehow closed remotely
-          actualHandler.handle(Future.failedFuture(e));
+          actualHandler.fail(e);
         }
       } else {
-        actualHandler.handle(Future.succeededFuture());
+        actualHandler.succeed();
       }
     });
   }

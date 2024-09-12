@@ -68,7 +68,7 @@ public class AmqpClientImpl implements AmqpClient {
     return future;
   }
 
-  public void close(Handler<AsyncResult<Void>> handler) {
+  public void close(Completable<Void> handler) {
     List<Future<Void>> actions = new ArrayList<>();
     for (AmqpConnection connection : connections) {
       actions.add(connection.close());
@@ -82,16 +82,16 @@ public class AmqpClientImpl implements AmqpClient {
           .onComplete(x -> {
           if (done.succeeded() && x.succeeded()) {
             if (handler != null) {
-              handler.handle(Future.succeededFuture());
+              handler.succeed();
             }
           } else {
             if (handler != null) {
-              handler.handle(Future.failedFuture(done.failed() ? done.cause() : x.cause()));
+              handler.fail(done.failed() ? done.cause() : x.cause());
             }
           }
         });
       } else if (handler != null) {
-        handler.handle(done.mapEmpty());
+        handler.complete(null, done.cause());
       }
     });
   }
@@ -104,10 +104,10 @@ public class AmqpClientImpl implements AmqpClient {
   }
 
   public AmqpClient createReceiver(String address,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+                                   Completable<AmqpReceiver> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
-        completionHandler.handle(res.mapEmpty());
+        completionHandler.complete(null, res.cause());
       } else {
         res.result().createReceiver(address).onComplete(completionHandler);
       }
@@ -121,10 +121,10 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+  public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions, Completable<AmqpReceiver> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
-        completionHandler.handle(res.mapEmpty());
+        completionHandler.complete(null, res.cause());
       } else {
         res.result().createReceiver(address, receiverOptions).onComplete(completionHandler);
       }
@@ -138,10 +138,10 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  public AmqpClient createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
+  public AmqpClient createSender(String address, Completable<AmqpSender> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
-        completionHandler.handle(res.mapEmpty());
+        completionHandler.complete(null, res.cause());
       } else {
         res.result().createSender(address).onComplete(completionHandler);
       }
@@ -156,10 +156,10 @@ public class AmqpClientImpl implements AmqpClient {
   }
 
   public AmqpClient createSender(String address, AmqpSenderOptions options,
-                                 Handler<AsyncResult<AmqpSender>> completionHandler) {
+                                 Completable<AmqpSender> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
-        completionHandler.handle(res.mapEmpty());
+        completionHandler.complete(null, res.cause());
       } else {
         res.result().createSender(address, options).onComplete(completionHandler);
       }
