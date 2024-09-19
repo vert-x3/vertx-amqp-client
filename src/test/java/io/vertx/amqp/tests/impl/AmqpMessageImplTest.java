@@ -13,10 +13,11 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp.impl;
+package io.vertx.amqp.tests.impl;
 
 import static org.junit.Assert.*;
 
+import io.vertx.amqp.impl.AmqpMessageImpl;
 import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
 import org.apache.qpid.proton.amqp.messaging.Data;
