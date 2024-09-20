@@ -21,7 +21,6 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonSession;
-import io.vertx.proton.impl.ProtonServerImpl;
 import org.apache.qpid.proton.amqp.transport.AmqpError;
 import org.junit.Test;
 
@@ -49,7 +48,7 @@ public class DisabledAnonymousLinkTest extends BareTestBase {
         serverSender.close();
       });
     });
-    ((ProtonServerImpl) server.getProtonServer()).setAdvertiseAnonymousRelayCapability(false);
+    server.getProtonServer().setAdvertiseAnonymousRelayCapability(false);
 
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost")
