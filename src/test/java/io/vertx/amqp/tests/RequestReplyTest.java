@@ -13,8 +13,9 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
+import io.vertx.amqp.*;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.ext.unit.Async;

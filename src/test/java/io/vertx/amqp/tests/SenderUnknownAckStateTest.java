@@ -13,8 +13,12 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
+import io.vertx.amqp.AmqpClient;
+import io.vertx.amqp.AmqpClientOptions;
+import io.vertx.amqp.AmqpConnection;
+import io.vertx.amqp.AmqpMessage;
 import io.vertx.ext.unit.TestContext;
 import org.junit.After;
 import org.junit.Before;

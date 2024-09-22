@@ -19,7 +19,6 @@ import io.vertx.amqp.*;
 import io.vertx.core.*;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.proton.*;
-import io.vertx.proton.impl.ProtonConnectionImpl;
 import org.apache.qpid.proton.amqp.*;
 import org.apache.qpid.proton.amqp.messaging.Target;
 import org.apache.qpid.proton.amqp.messaging.TerminusDurability;
@@ -178,12 +177,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   void runWithTrampoline(Handler<Void> action) {
-    // Check that we have the same context and that we are on an event loop
-    if (Vertx.currentContext() == context  && ((ContextInternal) context).nettyEventLoop().inEventLoop()) {
-      action.handle(null);
-    } else {
-      runOnContext(action);
-    }
+    ((ContextInternal) context).emit(action);
   }
 
   /**
@@ -192,7 +186,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
   private boolean isLocalOpen() {
     ProtonConnection conn = this.connection.get();
     return conn != null
-      && ((ProtonConnectionImpl) conn).getLocalState() == EndpointState.ACTIVE;
+      && conn.getLocalState() == EndpointState.ACTIVE;
   }
 
   /**
@@ -200,8 +194,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
    */
   private boolean isRemoteOpen() {
     ProtonConnection conn = this.connection.get();
-    return conn != null
-      && ((ProtonConnectionImpl) conn).getRemoteState() == EndpointState.ACTIVE;
+    return conn != null && conn.getRemoteState() == EndpointState.ACTIVE;
   }
 
   @Override

@@ -23,7 +23,6 @@ import io.vertx.core.internal.logging.Logger;
 import io.vertx.core.internal.logging.LoggerFactory;
 import io.vertx.proton.ProtonDelivery;
 import io.vertx.proton.ProtonSender;
-import io.vertx.proton.impl.ProtonSenderImpl;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
 import org.apache.qpid.proton.amqp.transport.DeliveryState;
 
@@ -49,7 +48,7 @@ public class AmqpSenderImpl implements AmqpSender {
       Handler<Void> dh = null;
       synchronized (AmqpSenderImpl.this) {
         // Update current state of remote credit
-        remoteCredit = ((ProtonSenderImpl) sender).getRemoteCredit();
+        remoteCredit = sender.getRemoteCredit();
 
         // check the user drain handler, fire it outside synchronized block if not null
         if (drainHandler != null) {
@@ -192,7 +191,7 @@ public class AmqpSenderImpl implements AmqpSender {
         // a thread other than the client context, to ensure we didn't fall foul of a race between the above pre-send
         // update on that thread, the above send on the context thread, and the sendQueueDrainHandler based updates on
         // the context thread.
-        remoteCredit = ((ProtonSenderImpl) sender).getRemoteCredit();
+        remoteCredit = sender.getRemoteCredit();
       }
     });
     return this;
@@ -288,7 +287,7 @@ public class AmqpSenderImpl implements AmqpSender {
 
   @Override
   public long remainingCredits() {
-    return ((ProtonSenderImpl) sender).getRemoteCredit();
+    return sender.getRemoteCredit();
   }
 
   @Override

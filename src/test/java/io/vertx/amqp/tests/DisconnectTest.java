@@ -13,10 +13,13 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
 import java.util.UUID;
 
+import io.vertx.amqp.AmqpClient;
+import io.vertx.amqp.AmqpClientOptions;
+import io.vertx.amqp.AmqpReceiverOptions;
 import io.vertx.amqp.impl.AmqpClientImpl;
 import org.junit.Test;
 import org.junit.runner.RunWith;
