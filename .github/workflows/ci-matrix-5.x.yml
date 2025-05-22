@@ -1,0 +1,46 @@
+#
+# Copyright (c) 2018-2019 The original author or authors
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# and Apache License v2.0 which accompanies this distribution.
+#
+#        The Eclipse Public License is available at
+#        http://www.eclipse.org/legal/epl-v10.html
+#
+#        The Apache License v2.0 is available at
+#        http://www.opensource.org/licenses/apache2.0.php
+#
+# You may elect to redistribute this code under either of these licenses.
+#
+
+name: CI matrix (5.x)
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+jobs:
+  CI:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            jdk: 11
+          - os: ubuntu-latest
+            jdk: 21
+    uses: ./.github/workflows/ci.yml
+    with:
+      branch: ${{ github.event.pull_request.head.sha || github.ref_name }}
+      jdk: ${{ matrix.jdk }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  Deploy:
+    if: ${{ github.repository_owner == 'vert-x3' && (github.event_name == 'push' || github.event_name == 'schedule') }}
+    needs: CI
+    uses: ./.github/workflows/deploy.yml
+    with:
+      branch: ${{ github.event.pull_request.head.sha || github.ref_name }}
+      jdk: 11
+    secrets: inherit
