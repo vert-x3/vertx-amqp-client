@@ -27,7 +27,7 @@
   <artifactId>vertx-amqp-client</artifactId>
   <version>4.5.16-SNAPSHOT</version>
 
-  <name>Eclipse Vert.x AMQP 1.0 Client</name>
+  <name>Vert.x AMQP 1.0 Client</name>
 
   <scm>
     <connection>scm:git:git@github.com:vert-x3/vertx-amqp-client.git</connection>
