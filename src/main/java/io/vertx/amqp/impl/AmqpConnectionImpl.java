@@ -17,9 +17,8 @@ package io.vertx.amqp.impl;
 
 import io.vertx.amqp.*;
 import io.vertx.core.*;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.proton.*;
-import io.vertx.proton.impl.ProtonConnectionImpl;
 import org.apache.qpid.proton.amqp.*;
 import org.apache.qpid.proton.amqp.messaging.Target;
 import org.apache.qpid.proton.amqp.messaging.TerminusDurability;
@@ -178,12 +177,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   void runWithTrampoline(Handler<Void> action) {
-    // Check that we have the same context and that we are on an event loop
-    if (Vertx.currentContext() == context  && ((ContextInternal) context).nettyEventLoop().inEventLoop()) {
-      action.handle(null);
-    } else {
-      runOnContext(action);
-    }
+    ((ContextInternal) context).emit(action);
   }
 
   /**
@@ -192,7 +186,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
   private boolean isLocalOpen() {
     ProtonConnection conn = this.connection.get();
     return conn != null
-      && ((ProtonConnectionImpl) conn).getLocalState() == EndpointState.ACTIVE;
+      && conn.getLocalState() == EndpointState.ACTIVE;
   }
 
   /**
@@ -200,8 +194,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
    */
   private boolean isRemoteOpen() {
     ProtonConnection conn = this.connection.get();
-    return conn != null
-      && ((ProtonConnectionImpl) conn).getRemoteState() == EndpointState.ACTIVE;
+    return conn != null && conn.getRemoteState() == EndpointState.ACTIVE;
   }
 
   @Override
@@ -210,13 +203,12 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return this;
   }
 
-  @Override
-  public AmqpConnection close(Handler<AsyncResult<Void>> done) {
+  public AmqpConnection close(Completable<Void> done) {
     context.runOnContext(ignored -> {
       ProtonConnection actualConnection = connection.get();
       if (actualConnection == null || closed.get() || (!isLocalOpen() && !isRemoteOpen())) {
         if (done != null) {
-          done.handle(Future.succeededFuture());
+          done.succeed();
         }
         return;
       }
@@ -269,8 +261,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
     receivers.remove(receiver);
   }
 
-  @Override
-  public AmqpConnection createDynamicReceiver(Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+  public AmqpConnection createDynamicReceiver(Completable<AmqpReceiver> completionHandler) {
     return createReceiver(null, new AmqpReceiverOptions().setDynamic(true), completionHandler);
   }
 
@@ -281,14 +272,13 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return promise.future();
   }
 
-  @Override
-  public AmqpConnection createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+  public AmqpConnection createReceiver(String address, Completable<AmqpReceiver> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
 
     runWithTrampoline(x -> {
       ProtonConnection conn = connection.get();
       if (conn == null) {
-        completionHandler.handle(Future.failedFuture("Not connected"));
+        completionHandler.fail("Not connected");
       } else {
         ProtonReceiver receiver = conn.createReceiver(address, opts);
         new AmqpReceiverImpl(
@@ -307,9 +297,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return promise.future();
   }
 
-  @Override
   public AmqpConnection createReceiver(String address, AmqpReceiverOptions receiverOptions,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+                                       Completable<AmqpReceiver> completionHandler) {
     ProtonLinkOptions opts = new ProtonLinkOptions();
     AmqpReceiverOptions recOpts = receiverOptions == null ? new AmqpReceiverOptions() : receiverOptions;
     opts
@@ -319,7 +308,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
     runWithTrampoline(v -> {
       ProtonConnection conn = connection.get();
       if (conn == null) {
-        completionHandler.handle(Future.failedFuture("Not connected"));
+        completionHandler.fail("Not connected");
       } else {
         ProtonReceiver receiver = conn.createReceiver(address, opts);
 
@@ -374,8 +363,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
     }
   }
 
-  @Override
-  public AmqpConnection createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
+  public AmqpConnection createSender(String address, Completable<AmqpSender> completionHandler) {
     Objects.requireNonNull(address, "The address must be set");
     return createSender(address, new AmqpSenderOptions(), completionHandler);
   }
@@ -387,9 +375,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return promise.future();
   }
 
-  @Override
   public AmqpConnection createSender(String address, AmqpSenderOptions options,
-    Handler<AsyncResult<AmqpSender>> completionHandler) {
+                                     Completable<AmqpSender> completionHandler) {
     if (address == null && !options.isDynamic()) {
       throw new IllegalArgumentException("Address must be set if the link is not dynamic");
     }
@@ -399,7 +386,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
       ProtonConnection conn = connection.get();
       if (conn == null) {
-        completionHandler.handle(Future.failedFuture("Not connected"));
+        completionHandler.fail("Not connected");
       } else {
         ProtonSender sender;
         if (options != null) {
@@ -437,13 +424,12 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return promise.future();
   }
 
-  @Override
-  public AmqpConnection createAnonymousSender(Handler<AsyncResult<AmqpSender>> completionHandler) {
+  public AmqpConnection createAnonymousSender(Completable<AmqpSender> completionHandler) {
     Objects.requireNonNull(completionHandler, "The completion handler must be set");
     runWithTrampoline(x -> {
       ProtonConnection conn = connection.get();
       if (conn == null) {
-        completionHandler.handle(Future.failedFuture("Not connected"));
+        completionHandler.fail("Not connected");
       } else {
         ProtonSender sender = conn.createSender(null);
         AmqpSenderImpl.create(sender, this, completionHandler);

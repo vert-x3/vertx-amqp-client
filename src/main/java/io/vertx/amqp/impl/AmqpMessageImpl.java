@@ -277,7 +277,7 @@ public class AmqpMessageImpl implements AmqpMessage {
     if (properties == null) {
       return null;
     }
-    return JsonObject.mapFrom(properties.getValue());
+    return new JsonObject(properties.getValue());
   }
 
   @Override

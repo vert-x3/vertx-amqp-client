@@ -16,12 +16,8 @@
 package io.vertx.amqp;
 
 import io.vertx.amqp.impl.AmqpClientImpl;
-import io.vertx.codegen.annotations.Fluent;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 import java.util.Objects;
@@ -60,14 +56,8 @@ public interface AmqpClient {
    * Connects to the AMQP broker or router. The location is specified in the {@link AmqpClientOptions} as well as the
    * potential credential required.
    *
-   * @param connectionHandler handler that will process the result, giving either the connection or failure cause. Must
+   * @return a future notified with the result, giving either the connection or failure cause. Must
    *                          not be {@code null}.
-   */
-  @Fluent
-  AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler);
-
-  /**
-   * Like {@link #connect(Handler)} but returns a {@code Future} of the asynchronous result
    */
   Future<AmqpConnection> connect();
 
@@ -75,12 +65,7 @@ public interface AmqpClient {
    * Closes the client.
    * The client must always be closed once not needed anymore.
    *
-   * @param closeHandler the close handler notified when the operation completes. It can be {@code null}.
-   */
-  void close(@Nullable Handler<AsyncResult<Void>> closeHandler);
-
-  /**
-   * Like {@link #close(Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified when the operation completes
    */
   Future<Void> close();
 
@@ -90,14 +75,7 @@ public interface AmqpClient {
    * You can retrieve the connection using {@link AmqpReceiver#connection()}.
    *
    * @param address           The source address to attach the consumer to, must not be {@code null}
-   * @param completionHandler the handler called with the receiver. The receiver has been opened.
-   * @return the client.
-   */
-  @Fluent
-  AmqpClient createReceiver(String address, Handler<AsyncResult<AmqpReceiver>> completionHandler);
-
-  /**
-   * Like {@link #createReceiver(String, Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified with the receiver. The receiver has been opened.
    */
   Future<AmqpReceiver> createReceiver(String address);
 
@@ -107,16 +85,8 @@ public interface AmqpClient {
    *
    * @param address           The source address to attach the consumer to.
    * @param receiverOptions   The options for this receiver.
-   * @param completionHandler The handler called with the receiver, once opened. Note that the {@code messageHandler}
+   * @return a future notified with the receiver, once opened. Note that the {@code messageHandler}
    *                          can be called before the {@code completionHandler} if messages are awaiting delivery.
-   * @return the connection.
-   */
-  @Fluent
-  AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler);
-
-  /**
-   * Like {@link #createReceiver(String, AmqpReceiverOptions, Handler)} but returns a {@code Future} of the asynchronous result
    */
   Future<AmqpReceiver> createReceiver(String address, AmqpReceiverOptions receiverOptions);
 
@@ -124,14 +94,7 @@ public interface AmqpClient {
    * Creates a sender used to send messages to the given address. The address must be set.
    *
    * @param address           The target address to attach to, must not be {@code null}
-   * @param completionHandler The handler called with the sender, once opened
-   * @return the client.
-   */
-  @Fluent
-  AmqpClient createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler);
-
-  /**
-   * Like {@link #createSender(String, Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified with the sender, once opened
    */
   Future<AmqpSender> createSender(String address);
 
@@ -140,15 +103,7 @@ public interface AmqpClient {
    *
    * @param address           The target address to attach to, must not be {@code null}
    * @param options The options for this sender.
-   * @param completionHandler The handler called with the sender, once opened
-   * @return the client.
-   */
-  @Fluent
-  AmqpClient createSender(String address, AmqpSenderOptions options,
-                          Handler<AsyncResult<AmqpSender>> completionHandler);
-
-  /**
-   * Like {@link #createSender(String, AmqpSenderOptions, Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified with the sender, once opened
    */
   Future<AmqpSender> createSender(String address, AmqpSenderOptions options);
 

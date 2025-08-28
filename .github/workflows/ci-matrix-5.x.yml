@@ -14,32 +14,33 @@
 # You may elect to redistribute this code under either of these licenses.
 #
 
-name: CI
+name: CI matrix (5.x)
 on:
   workflow_call:
     inputs:
       branch:
         required: true
         type: string
-      jdk:
-        default: 8
-        type: string
-      os:
-        default: ubuntu-latest
-        type: string
 jobs:
-  Test:
-    name: Run tests
-    runs-on: ${{ inputs.os }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ inputs.branch }}
-      - name: Install JDK
-        uses: actions/setup-java@v2
-        with:
-          java-version: ${{ inputs.jdk }}
-          distribution: temurin
-      - name: Run tests
-        run: mvn -s .github/maven-ci-settings.xml -q clean verify -B
+  CI:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            jdk: 11
+          - os: ubuntu-latest
+            jdk: 21
+    uses: ./.github/workflows/ci.yml
+    with:
+      branch: ${{ inputs.branch }}
+      jdk: ${{ matrix.jdk }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  Deploy:
+    if: ${{ github.repository_owner == 'vert-x3' && (github.event_name == 'push' || github.event_name == 'schedule') }}
+    needs: CI
+    uses: ./.github/workflows/deploy.yml
+    with:
+      branch: ${{ inputs.branch }}
+      jdk: 11
+    secrets: inherit

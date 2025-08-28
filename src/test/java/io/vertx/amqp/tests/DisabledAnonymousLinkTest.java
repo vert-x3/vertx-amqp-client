@@ -13,13 +13,14 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
+import io.vertx.amqp.AmqpClient;
+import io.vertx.amqp.AmqpClientOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.proton.ProtonHelper;
 import io.vertx.proton.ProtonSession;
-import io.vertx.proton.impl.ProtonServerImpl;
 import org.apache.qpid.proton.amqp.transport.AmqpError;
 import org.junit.Test;
 
@@ -47,19 +48,18 @@ public class DisabledAnonymousLinkTest extends BareTestBase {
         serverSender.close();
       });
     });
-    ((ProtonServerImpl) server.getProtonServer()).setAdvertiseAnonymousRelayCapability(false);
+    server.getProtonServer().setAdvertiseAnonymousRelayCapability(false);
 
     AmqpClientOptions options = new AmqpClientOptions()
       .setHost("localhost")
       .setPort(server.actualPort());
 
-    this.client = AmqpClient.create(vertx, options).connect(res -> {
-      context.assertTrue(res.succeeded(), "Expected start to succeed");
-      res.result().close(shutdownRes -> {
-        context.assertTrue(shutdownRes.succeeded());
+    this.client = AmqpClient.create(vertx, options);
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
         asyncShutdown.complete();
-      });
-    });
+      }));
+    }));
 
     try {
       asyncShutdown.awaitSuccess();

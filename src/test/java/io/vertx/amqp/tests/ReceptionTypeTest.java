@@ -13,8 +13,12 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
+import io.vertx.amqp.AmqpClient;
+import io.vertx.amqp.AmqpClientOptions;
+import io.vertx.amqp.AmqpConnection;
+import io.vertx.amqp.AmqpMessage;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -54,8 +58,10 @@ public class ReceptionTypeTest extends BareTestBase {
     AtomicReference<AmqpConnection> reference = new AtomicReference<>();
     client = AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort()))
-      .connect(connection -> {
+      .setPort(server.actualPort()));
+    client
+      .connect()
+      .onComplete(connection -> {
         reference.set(connection.result());
         if (connection.failed()) {
           connection.cause().printStackTrace();
@@ -81,7 +87,7 @@ public class ReceptionTypeTest extends BareTestBase {
     CountDownLatch latch = new CountDownLatch(1);
     List<T> list = new CopyOnWriteArrayList<>();
 
-    connection.createReceiver(UUID.randomUUID().toString(), done -> {
+    connection.createReceiver(UUID.randomUUID().toString()).onComplete(done -> {
       if (done.failed()) {
         done.cause().printStackTrace();
       }

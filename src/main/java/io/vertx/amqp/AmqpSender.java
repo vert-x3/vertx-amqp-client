@@ -18,7 +18,6 @@ package io.vertx.amqp;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.WriteStream;
@@ -48,31 +47,19 @@ public interface AmqpSender extends WriteStream<AmqpMessage> {
   AmqpSender send(AmqpMessage message);
 
   /**
-   * Sends an AMQP message and waits for an acknowledgement. The acknowledgement handler is called with an
-   * {@link AsyncResult} marked as failed if the message has been rejected or re-routed. If the message has been accepted,
-   * the handler is called with a success.
+   * Sends an AMQP message and waits for an acknowledgement. It returns a future marked as failed if the message
+   * has been rejected or re-routed. If the message has been accepted, the handler is called with a success.
    *
    * @param message                the message, must not be {@code null}
-   * @param acknowledgementHandler the acknowledgement handler, must not be {@code null}
+   * @return a future notified with the acknowledgement
    * @return the current sender
-   */
-  @Fluent
-  AmqpSender sendWithAck(AmqpMessage message, Handler<AsyncResult<Void>> acknowledgementHandler);
-
-  /**
-   * Like {@link #sendWithAck(AmqpMessage, Handler)} but returns a {@code Future} of the asynchronous result
    */
   Future<Void> sendWithAck(AmqpMessage message);
 
   /**
    * Closes the sender.
    *
-   * @param handler called when the sender has been closed, must not be {@code null}
-   */
-  void close(Handler<AsyncResult<Void>> handler);
-
-  /**
-   * Like {@link #close(Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified when the sender has been closed
    */
   Future<Void> close();
 

@@ -13,7 +13,7 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;

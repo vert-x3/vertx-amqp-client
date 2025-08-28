@@ -13,8 +13,12 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
+import io.vertx.amqp.AmqpClient;
+import io.vertx.amqp.AmqpClientOptions;
+import io.vertx.amqp.AmqpReceiver;
+import io.vertx.amqp.AmqpReceiverOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
@@ -114,10 +118,9 @@ public class ReceiverTest extends BareTestBase {
     });
 
     client = AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      res.result().createReceiver(testName, done -> {
-        done.result().handler(msg -> {
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+      res.createReceiver(testName).onComplete(context.asyncAssertSuccess(done -> {
+        done.handler(msg -> {
           context.assertNotNull(msg, "message was null");
           context.assertNotNull(msg.bodyAsString(), "amqp message body content was null");
           context.assertEquals(sentContent, msg.bodyAsString(), "amqp message body was not as expected");
@@ -130,8 +133,8 @@ public class ReceiverTest extends BareTestBase {
           context.assertEquals(1, appProps.size(), "unexpected app properties");
           asyncRecvMsg.complete();
         });
-      });
-    });
+      }));
+    }));
 
     asyncSendMsg.awaitSuccess();
     asyncRecvMsg.awaitSuccess();
@@ -155,19 +158,16 @@ public class ReceiverTest extends BareTestBase {
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
       .setPort(server.actualPort())
-    ).connect(connResult -> {
-      context.assertTrue(connResult.succeeded());
-      AmqpConnection connection = connResult.result();
+    );
+    client.connect().onComplete(context.asyncAssertSuccess(connection -> {
 
-      connection.createReceiver(queue, recResult -> {
-        context.assertTrue(recResult.succeeded());
-        AmqpReceiver receiver = recResult.result();
+      connection.createReceiver(queue).onComplete(context.asyncAssertSuccess(receiver -> {
 
         context.assertNotNull(receiver.unwrap());
 
         receiver.handler(message -> list.add(message.bodyAsString()));
-      });
-    });
+      }));
+    }));
 
     assertThat(msgsAcked.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
@@ -192,21 +192,18 @@ public class ReceiverTest extends BareTestBase {
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
       .setPort(server.actualPort())
-    ).connect(connResult -> {
-      context.assertTrue(connResult.succeeded());
-      AmqpConnection connection = connResult.result();
+    );
+    client.connect().onComplete(context.asyncAssertSuccess(connection -> {
 
       AmqpReceiverOptions options = new AmqpReceiverOptions().setAutoAcknowledgement(false);
-      connection.createReceiver(queue, options, recResult -> {
-        context.assertTrue(recResult.succeeded());
-        AmqpReceiver receiver = recResult.result();
+      connection.createReceiver(queue, options).onComplete(context.asyncAssertSuccess(receiver -> {
 
         receiver.handler(message -> {
           list.add(message.bodyAsString());
           message.accepted();
         });
-      });
-    });
+      }));
+    }));
 
     assertThat(msgsAcked.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
@@ -231,21 +228,18 @@ public class ReceiverTest extends BareTestBase {
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
       .setPort(server.actualPort())
-    ).connect(connResult -> {
-      context.assertTrue(connResult.succeeded());
-      AmqpConnection connection = connResult.result();
+    );
+    client.connect().onComplete(context.asyncAssertSuccess(connection -> {
 
       AmqpReceiverOptions options = new AmqpReceiverOptions().setAutoAcknowledgement(false);
-      connection.createReceiver(queue, options, recResult -> {
-        context.assertTrue(recResult.succeeded());
-        AmqpReceiver receiver = recResult.result();
+      connection.createReceiver(queue, options).onComplete(context.asyncAssertSuccess(receiver -> {
 
         receiver.handler(message -> {
           list.add(message.bodyAsString());
           message.rejected();
         });
-      });
-    });
+      }));
+    }));
 
     assertThat(msgsAcked.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
@@ -283,21 +277,17 @@ public class ReceiverTest extends BareTestBase {
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
       .setPort(server.actualPort())
-    ).connect(connResult -> {
-      context.assertTrue(connResult.succeeded());
-      AmqpConnection connection = connResult.result();
+    );
+    client.connect().onComplete(context.asyncAssertSuccess(connection -> {
 
       AmqpReceiverOptions options = new AmqpReceiverOptions().setAutoAcknowledgement(false);
-      connection.createReceiver(queue, options, recResult -> {
-        context.assertTrue(recResult.succeeded());
-        AmqpReceiver receiver = recResult.result();
-
+      connection.createReceiver(queue, options).onComplete(context.asyncAssertSuccess(receiver -> {
         receiver.handler(message -> {
           list.add(message.bodyAsString());
           message.modified(true, undeliverable);
         });
-      });
-    });
+      }));
+    }));
 
     assertThat(msgsAcked.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
@@ -323,13 +313,11 @@ public class ReceiverTest extends BareTestBase {
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
       .setPort(server.actualPort())
-    ).createReceiver(queue, recResult -> {
-        context.assertTrue(recResult.succeeded());
-        AmqpReceiver receiver = recResult.result();
-
+    );
+    client.createReceiver(queue).onComplete(context.asyncAssertSuccess(receiver -> {
         receiver.handler(message -> list.add(message.bodyAsString()));
       }
-    );
+    ));
 
     assertThat(msgsAcked.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
@@ -390,15 +378,13 @@ public class ReceiverTest extends BareTestBase {
 
     client = AmqpClient.create(new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort()))
-      .connect(connection -> connection.result().createReceiver(queue, recResult -> {
-        context.assertTrue(recResult.succeeded());
-        AmqpReceiver receiver = recResult.result();
-
+      .setPort(server.actualPort()));
+    client.connect().onComplete(context.asyncAssertSuccess(connection -> connection
+      .createReceiver(queue).onComplete(context.asyncAssertSuccess(receiver -> {
         receiver.pause();
         receiver.handler(amqpMessage -> list.add(amqpMessage.bodyAsString()));
         receiverCreationPromise.complete(receiver);
-      }));
+      }))));
 
     await().until(receiverCreationFuture::succeeded);
 
@@ -431,20 +417,17 @@ public class ReceiverTest extends BareTestBase {
     });
 
     AmqpClient client = AmqpClient.create(vertx, new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
       // Set up a consumer using the client but DONT register the handler
-      res.result().createReceiver(name.getMethodName(), done -> {
-        context.assertTrue(done.succeeded());
-
+      res.createReceiver(name.getMethodName()).onComplete(context.asyncAssertSuccess( done -> {
         // Add the handler after a delay
         vertx.setTimer(250, x -> {
-          done.result().handler(msg -> {
+          done.handler(msg -> {
             list.add(msg.bodyAsString());
           });
         }); // timer
-      }); // receiver
-    }); // connect
+      })); // receiver
+    })); // connect
 
     assertThat(msgsAcked.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly("0", "1", "2", "3", "4");
@@ -467,16 +450,13 @@ public class ReceiverTest extends BareTestBase {
     });
 
     AmqpClient client = AmqpClient.create(vertx, new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
       final AtomicInteger received = new AtomicInteger();
       final AtomicLong pauseStartTime = new AtomicLong();
       final int delay = 250;
 
       // Set up a consumer using the client
-      res.result().createReceiver(name.getMethodName(), done -> {
-          context.assertTrue(done.succeeded());
-          AmqpReceiver receiver = done.result();
+      res.createReceiver(name.getMethodName()).onComplete(context.asyncAssertSuccess(receiver -> {
           receiver.handler(msg -> {
             int msgNum = received.getAndIncrement();
 
@@ -499,8 +479,8 @@ public class ReceiverTest extends BareTestBase {
               context.assertTrue(System.currentTimeMillis() >= pauseStartTime.get() + delay, "delivery occurred before expected");
             }
           });
-        });
-    });
+        }));
+    }));
 
     assertThat(msgsAcked.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly("0", "1", "2", "3", "4");
@@ -575,9 +555,7 @@ public class ReceiverTest extends BareTestBase {
 
     AmqpClient client = AmqpClient.create(vertx,
       new AmqpClientOptions().setPort(server.actualPort()).setHost("localhost"));
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-      AmqpConnection connection = res.result();
+    client.connect().onComplete(context.asyncAssertSuccess(connection -> {
 
       // Create publisher with given link name
       AmqpReceiverOptions options = new AmqpReceiverOptions();
@@ -590,11 +568,10 @@ public class ReceiverTest extends BareTestBase {
         options.addCapability(sourceCapability);
       }
 
-      connection.createReceiver("myAddress", options, receiver -> {
-        context.assertTrue(receiver.succeeded());
+      connection.createReceiver("myAddress", options).onComplete(context.asyncAssertSuccess(receiver -> {
         clientLinkOpenAsync.complete();
-      });
-    });
+      }));
+    }));
 
     serverLinkOpenAsync.awaitSuccess();
     clientLinkOpenAsync.awaitSuccess();
@@ -612,17 +589,14 @@ public class ReceiverTest extends BareTestBase {
         new FilterCheck(context, asyncServerFilterCheckComplete, Symbol.valueOf("selector"), UnsignedLong.valueOf(0x0000468C00000004L), selector));
 
     client = AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
-
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
       AmqpReceiverOptions options = new AmqpReceiverOptions();
       options.setSelector(selector);
 
-      res.result().createReceiver(testName, options, recvRes -> {
-        context.assertTrue(recvRes.succeeded());
+      res.createReceiver(testName, options).onComplete(context.asyncAssertSuccess(recvRes -> {
         asyncClientLinkOpenComplete.complete();
-      });
-    });
+      }));
+    }));
 
     asyncClientLinkOpenComplete.awaitSuccess();
     asyncServerFilterCheckComplete.awaitSuccess();
@@ -639,17 +613,15 @@ public class ReceiverTest extends BareTestBase {
         new FilterCheck(context, asyncServerFilterCheckComplete, Symbol.valueOf("no-local"), UnsignedLong.valueOf(0x0000468C00000003L), "NoLocalFilter{}"));
 
     client = AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
 
       AmqpReceiverOptions options = new AmqpReceiverOptions();
       options.setNoLocal(true);
 
-      res.result().createReceiver(testName, options, recvRes -> {
-        context.assertTrue(recvRes.succeeded());
+      res.createReceiver(testName, options).onComplete(context.asyncAssertSuccess(recvRes -> {
         asyncClientLinkOpenComplete.complete();
-      });
-    });
+      }));
+    }));
 
     asyncClientLinkOpenComplete.awaitSuccess();
     asyncServerFilterCheckComplete.awaitSuccess();
@@ -668,14 +640,12 @@ public class ReceiverTest extends BareTestBase {
     });
 
     client = AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()));
-    client.connect(res -> {
-      context.assertTrue(res.succeeded());
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
 
-      res.result().createReceiver(testName, recvRes -> {
-        context.assertTrue(recvRes.succeeded());
+      res.createReceiver(testName).onComplete(context.asyncAssertSuccess(recvRes -> {
         asyncClientLinkOpenComplete.complete();
-      });
-    });
+      }));
+    }));
 
     asyncClientLinkOpenComplete.awaitSuccess();
     asyncServerFilterCheckComplete.awaitSuccess();

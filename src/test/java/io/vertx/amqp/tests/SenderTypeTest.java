@@ -13,8 +13,12 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
+import io.vertx.amqp.AmqpClient;
+import io.vertx.amqp.AmqpClientOptions;
+import io.vertx.amqp.AmqpConnection;
+import io.vertx.amqp.AmqpMessage;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -61,8 +65,8 @@ public class SenderTypeTest extends BareTestBase {
     AtomicReference<AmqpConnection> reference = new AtomicReference<>();
     client = AmqpClient.create(vertx, new AmqpClientOptions()
       .setHost("localhost")
-      .setPort(server.actualPort()))
-      .connect(connection -> {
+      .setPort(server.actualPort()));
+    client.connect().onComplete(connection -> {
         reference.set(connection.result());
         if (connection.failed()) {
           connection.cause().printStackTrace();
@@ -90,15 +94,10 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withBooleanAsBody(true).build());
-        sender.send(AmqpMessage.create().withBooleanAsBody(Boolean.FALSE).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withBooleanAsBody(true).build());
+      sender.send(AmqpMessage.create().withBooleanAsBody(Boolean.FALSE).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(true, false);
@@ -115,15 +114,10 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withByteAsBody(valueA).build());
-        sender.send(AmqpMessage.create().withByteAsBody(Byte.valueOf(valueB)).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withByteAsBody(valueA).build());
+      sender.send(AmqpMessage.create().withByteAsBody(Byte.valueOf(valueB)).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(valueA, valueB);
@@ -140,15 +134,10 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withShortAsBody(valueA).build());
-        sender.send(AmqpMessage.create().withShortAsBody(Short.valueOf(valueB)).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withShortAsBody(valueA).build());
+      sender.send(AmqpMessage.create().withShortAsBody(Short.valueOf(valueB)).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(valueA, valueB);
@@ -165,15 +154,10 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withIntegerAsBody(valueA).build());
-        sender.send(AmqpMessage.create().withIntegerAsBody(Integer.valueOf(valueB)).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withIntegerAsBody(valueA).build());
+      sender.send(AmqpMessage.create().withIntegerAsBody(Integer.valueOf(valueB)).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(valueA, valueB);
@@ -190,15 +174,10 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withLongAsBody(valueA).build());
-        sender.send(AmqpMessage.create().withLongAsBody(Long.valueOf(valueB)).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withLongAsBody(valueA).build());
+      sender.send(AmqpMessage.create().withLongAsBody(Long.valueOf(valueB)).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(valueA, valueB);
@@ -215,15 +194,10 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withFloatAsBody(valueA).build());
-        sender.send(AmqpMessage.create().withFloatAsBody(Float.valueOf(valueB)).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withFloatAsBody(valueA).build());
+      sender.send(AmqpMessage.create().withFloatAsBody(Float.valueOf(valueB)).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(valueA, valueB);
@@ -240,15 +214,10 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withDoubleAsBody(valueA).build());
-        sender.send(AmqpMessage.create().withDoubleAsBody(Double.valueOf(valueB)).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withDoubleAsBody(valueA).build());
+      sender.send(AmqpMessage.create().withDoubleAsBody(Double.valueOf(valueB)).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(valueA, valueB);
@@ -265,15 +234,10 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withCharAsBody(valueA).build());
-        sender.send(AmqpMessage.create().withCharAsBody(Character.valueOf(valueB)).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withCharAsBody(valueA).build());
+      sender.send(AmqpMessage.create().withCharAsBody(Character.valueOf(valueB)).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(valueA, valueB);
@@ -294,14 +258,9 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withInstantAsBody(instant).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withInstantAsBody(instant).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(timestamp);
@@ -317,14 +276,9 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withUuidAsBody(value).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withUuidAsBody(value).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(value);
@@ -343,14 +297,9 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withBufferAsBody(value).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withBufferAsBody(value).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(dataContents);
@@ -366,14 +315,9 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withBody(value).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withBody(value).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(value);
@@ -389,14 +333,9 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withSymbolAsBody(value).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withSymbolAsBody(value).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(Symbol.valueOf(value));
@@ -415,14 +354,9 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withListAsBody(value).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withListAsBody(value).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(value);
@@ -442,14 +376,9 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withMapAsBody(value).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withMapAsBody(value).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat((Map<String, String>) list.get(0)).containsAllEntriesOf(value);
@@ -468,14 +397,9 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withJsonObjectAsBody(value).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withJsonObjectAsBody(value).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(dataContents);
@@ -493,14 +417,9 @@ public class SenderTypeTest extends BareTestBase {
       msgsRecieved.countDown();
     });
 
-    connection.createSender(address, done -> {
-      if (done.failed()) {
-        done.cause().printStackTrace();
-      } else {
-        AmqpSender sender = done.result();
-        sender.send(AmqpMessage.create().withJsonArrayAsBody(value).build());
-      }
-    });
+    connection.createSender(address).onComplete(context.asyncAssertSuccess(sender -> {
+      sender.send(AmqpMessage.create().withJsonArrayAsBody(value).build());
+    }));
 
     assertThat(msgsRecieved.await(6, TimeUnit.SECONDS)).isTrue();
     assertThat(list).containsExactly(dataContents);

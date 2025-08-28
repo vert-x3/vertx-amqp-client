@@ -13,8 +13,9 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
+import io.vertx.amqp.AmqpClient;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
@@ -47,10 +48,10 @@ public class BareTestBase {
     CountDownLatch latchForClient = new CountDownLatch(1);
     CountDownLatch latchForVertx = new CountDownLatch(1);
     if (client != null) {
-      client.close(x -> latchForClient.countDown());
+      client.close().onComplete(x -> latchForClient.countDown());
       latchForClient.await(10, TimeUnit.SECONDS);
     }
-    vertx.close(x -> latchForVertx.countDown());
+    vertx.close().onComplete(x -> latchForVertx.countDown());
     latchForVertx.await(10, TimeUnit.SECONDS);
   }
 

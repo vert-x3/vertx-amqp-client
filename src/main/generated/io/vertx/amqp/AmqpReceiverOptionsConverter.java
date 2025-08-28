@@ -1,26 +1,9 @@
-/*
- * Copyright (c) 2018-2019 The original author or authors
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * and Apache License v2.0 which accompanies this distribution.
- *
- *        The Eclipse Public License is available at
- *        http://www.eclipse.org/legal/epl-v10.html
- *
- *        The Apache License v2.0 is available at
- *        http://www.opensource.org/licenses/apache2.0.php
- *
- * You may elect to redistribute this code under either of these licenses.
- */
 package io.vertx.amqp;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.impl.JsonUtil;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
 
 /**
  * Converter and mapper for {@link io.vertx.amqp.AmqpReceiverOptions}.
@@ -28,16 +11,22 @@ import java.util.Base64;
  */
 public class AmqpReceiverOptionsConverter {
 
-
-  private static final Base64.Decoder BASE64_DECODER = JsonUtil.BASE64_DECODER;
-  private static final Base64.Encoder BASE64_ENCODER = JsonUtil.BASE64_ENCODER;
-
-  public static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, AmqpReceiverOptions obj) {
+   static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, AmqpReceiverOptions obj) {
     for (java.util.Map.Entry<String, Object> member : json) {
       switch (member.getKey()) {
-        case "autoAcknowledgement":
+        case "linkName":
+          if (member.getValue() instanceof String) {
+            obj.setLinkName((String)member.getValue());
+          }
+          break;
+        case "dynamic":
           if (member.getValue() instanceof Boolean) {
-            obj.setAutoAcknowledgement((Boolean)member.getValue());
+            obj.setDynamic((Boolean)member.getValue());
+          }
+          break;
+        case "qos":
+          if (member.getValue() instanceof String) {
+            obj.setQos((String)member.getValue());
           }
           break;
         case "capabilities":
@@ -63,29 +52,14 @@ public class AmqpReceiverOptionsConverter {
             obj.setDurable((Boolean)member.getValue());
           }
           break;
-        case "dynamic":
-          if (member.getValue() instanceof Boolean) {
-            obj.setDynamic((Boolean)member.getValue());
-          }
-          break;
-        case "linkName":
-          if (member.getValue() instanceof String) {
-            obj.setLinkName((String)member.getValue());
-          }
-          break;
         case "maxBufferedMessages":
           if (member.getValue() instanceof Number) {
             obj.setMaxBufferedMessages(((Number)member.getValue()).intValue());
           }
           break;
-        case "noLocal":
+        case "autoAcknowledgement":
           if (member.getValue() instanceof Boolean) {
-            obj.setNoLocal((Boolean)member.getValue());
-          }
-          break;
-        case "qos":
-          if (member.getValue() instanceof String) {
-            obj.setQos((String)member.getValue());
+            obj.setAutoAcknowledgement((Boolean)member.getValue());
           }
           break;
         case "selector":
@@ -93,33 +67,38 @@ public class AmqpReceiverOptionsConverter {
             obj.setSelector((String)member.getValue());
           }
           break;
+        case "noLocal":
+          if (member.getValue() instanceof Boolean) {
+            obj.setNoLocal((Boolean)member.getValue());
+          }
+          break;
       }
     }
   }
 
-  public static void toJson(AmqpReceiverOptions obj, JsonObject json) {
+   static void toJson(AmqpReceiverOptions obj, JsonObject json) {
     toJson(obj, json.getMap());
   }
 
-  public static void toJson(AmqpReceiverOptions obj, java.util.Map<String, Object> json) {
-    json.put("autoAcknowledgement", obj.isAutoAcknowledgement());
+   static void toJson(AmqpReceiverOptions obj, java.util.Map<String, Object> json) {
+    if (obj.getLinkName() != null) {
+      json.put("linkName", obj.getLinkName());
+    }
+    json.put("dynamic", obj.isDynamic());
+    if (obj.getQos() != null) {
+      json.put("qos", obj.getQos());
+    }
     if (obj.getCapabilities() != null) {
       JsonArray array = new JsonArray();
       obj.getCapabilities().forEach(item -> array.add(item));
       json.put("capabilities", array);
     }
     json.put("durable", obj.isDurable());
-    json.put("dynamic", obj.isDynamic());
-    if (obj.getLinkName() != null) {
-      json.put("linkName", obj.getLinkName());
-    }
     json.put("maxBufferedMessages", obj.getMaxBufferedMessages());
-    json.put("noLocal", obj.isNoLocal());
-    if (obj.getQos() != null) {
-      json.put("qos", obj.getQos());
-    }
+    json.put("autoAcknowledgement", obj.isAutoAcknowledgement());
     if (obj.getSelector() != null) {
       json.put("selector", obj.getSelector());
     }
+    json.put("noLocal", obj.isNoLocal());
   }
 }

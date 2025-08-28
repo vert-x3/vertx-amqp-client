@@ -20,13 +20,9 @@ import io.vertx.amqp.AmqpMessage;
 import io.vertx.amqp.AmqpReceiver;
 import io.vertx.amqp.AmqpReceiverOptions;
 import io.vertx.codegen.annotations.Nullable;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.VertxException;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.*;
+import io.vertx.core.internal.logging.Logger;
+import io.vertx.core.internal.logging.LoggerFactory;
 import io.vertx.proton.ProtonReceiver;
 
 import java.util.ArrayDeque;
@@ -68,7 +64,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     AmqpConnectionImpl connection,
     AmqpReceiverOptions options,
     ProtonReceiver receiver,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+    Completable<AmqpReceiver> completionHandler) {
     this.address = address;
     this.receiver = receiver;
     this.connection = connection;
@@ -97,7 +93,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     this.receiver
       .openHandler(res -> {
         if (res.failed()) {
-          completionHandler.handle(res.mapEmpty());
+          completionHandler.complete(null, res.cause());
         } else {
           this.connection.register(this);
           synchronized (this) {
@@ -105,7 +101,7 @@ public class AmqpReceiverImpl implements AmqpReceiver {
               this.address = res.result().getRemoteAddress();
             }
           }
-          completionHandler.handle(Future.succeededFuture(this));
+          completionHandler.succeed(this);
         }
       });
 
@@ -310,18 +306,17 @@ public class AmqpReceiverImpl implements AmqpReceiver {
     return connection;
   }
 
-  @Override
-  public void close(Handler<AsyncResult<Void>> handler) {
-    Handler<AsyncResult<Void>> actualHandler;
+  public void close(Completable<Void> handler) {
+    Completable<Void> actualHandler;
     if (handler == null) {
-      actualHandler = x -> { /* NOOP */ };
+      actualHandler = (res, err) -> { /* NOOP */ };
     } else {
       actualHandler = handler;
     }
 
     synchronized (this) {
       if (closed) {
-        actualHandler.handle(Future.succeededFuture());
+        actualHandler.succeed();
         return;
       }
       closed = true;
@@ -332,19 +327,19 @@ public class AmqpReceiverImpl implements AmqpReceiver {
       if (this.receiver.isOpen()) {
         try {
           if (isDurable()) {
-            receiver.detachHandler(done -> actualHandler.handle(done.mapEmpty()))
+            receiver.detachHandler(done -> actualHandler.complete(null, done.cause()))
               .detach();
           } else {
             receiver
-              .closeHandler(done -> actualHandler.handle(done.mapEmpty()))
+              .closeHandler(done -> actualHandler.complete(null, done.cause()))
               .close();
           }
         } catch (Exception e) {
           // Somehow closed remotely
-          actualHandler.handle(Future.failedFuture(e));
+          actualHandler.fail(e);
         }
       } else {
-        actualHandler.handle(Future.succeededFuture());
+        actualHandler.succeed();
       }
     });
 

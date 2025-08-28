@@ -17,8 +17,8 @@ package io.vertx.amqp.impl;
 
 import io.vertx.amqp.*;
 import io.vertx.core.*;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.PromiseInternal;
 import io.vertx.proton.ProtonClient;
 
 import java.util.ArrayList;
@@ -46,7 +46,6 @@ public class AmqpClientImpl implements AmqpClient {
     this.mustCloseVertxOnClose = mustCloseVertxOnClose;
   }
 
-  @Override
   public AmqpClient connect(Handler<AsyncResult<AmqpConnection>> connectionHandler) {
     Objects.requireNonNull(connectionHandler, "Handler must not be null");
     connect().onComplete(connectionHandler);
@@ -69,31 +68,30 @@ public class AmqpClientImpl implements AmqpClient {
     return future;
   }
 
-  @Override
-  public void close(Handler<AsyncResult<Void>> handler) {
-    List<Future> actions = new ArrayList<>();
+  public void close(Completable<Void> handler) {
+    List<Future<Void>> actions = new ArrayList<>();
     for (AmqpConnection connection : connections) {
-      Promise<Void> future = Promise.promise();
-      connection.close(future);
-      actions.add(future.future());
+      actions.add(connection.close());
     }
 
-    CompositeFuture.join(actions).onComplete(done -> {
+    Future.join(actions).onComplete(done -> {
       connections.clear();
       if (mustCloseVertxOnClose) {
-        vertx.close(x -> {
+        vertx
+          .close()
+          .onComplete(x -> {
           if (done.succeeded() && x.succeeded()) {
             if (handler != null) {
-              handler.handle(Future.succeededFuture());
+              handler.succeed();
             }
           } else {
             if (handler != null) {
-              handler.handle(Future.failedFuture(done.failed() ? done.cause() : x.cause()));
+              handler.fail(done.failed() ? done.cause() : x.cause());
             }
           }
         });
       } else if (handler != null) {
-        handler.handle(done.mapEmpty());
+        handler.complete(null, done.cause());
       }
     });
   }
@@ -105,14 +103,13 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  @Override
   public AmqpClient createReceiver(String address,
-    Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+                                   Completable<AmqpReceiver> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
-        completionHandler.handle(res.mapEmpty());
+        completionHandler.complete(null, res.cause());
       } else {
-        res.result().createReceiver(address, completionHandler);
+        res.result().createReceiver(address).onComplete(completionHandler);
       }
     });
   }
@@ -124,13 +121,12 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  @Override
-  public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions, Handler<AsyncResult<AmqpReceiver>> completionHandler) {
+  public AmqpClient createReceiver(String address, AmqpReceiverOptions receiverOptions, Completable<AmqpReceiver> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
-        completionHandler.handle(res.mapEmpty());
+        completionHandler.complete(null, res.cause());
       } else {
-        res.result().createReceiver(address, receiverOptions, completionHandler);
+        res.result().createReceiver(address, receiverOptions).onComplete(completionHandler);
       }
     });
   }
@@ -142,13 +138,12 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  @Override
-  public AmqpClient createSender(String address, Handler<AsyncResult<AmqpSender>> completionHandler) {
+  public AmqpClient createSender(String address, Completable<AmqpSender> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
-        completionHandler.handle(res.mapEmpty());
+        completionHandler.complete(null, res.cause());
       } else {
-        res.result().createSender(address, completionHandler);
+        res.result().createSender(address).onComplete(completionHandler);
       }
     });
   }
@@ -160,14 +155,13 @@ public class AmqpClientImpl implements AmqpClient {
     return promise.future();
   }
 
-  @Override
   public AmqpClient createSender(String address, AmqpSenderOptions options,
-                                 Handler<AsyncResult<AmqpSender>> completionHandler) {
+                                 Completable<AmqpSender> completionHandler) {
     return connect(res -> {
       if (res.failed()) {
-        completionHandler.handle(res.mapEmpty());
+        completionHandler.complete(null, res.cause());
       } else {
-        res.result().createSender(address, options, completionHandler);
+        res.result().createSender(address, options).onComplete(completionHandler);
       }
     });
   }

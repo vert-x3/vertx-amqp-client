@@ -13,10 +13,18 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
+import io.netty.handler.ssl.ApplicationProtocolConfig;
+import io.netty.handler.ssl.IdentityCipherSuiteFilter;
+import io.netty.handler.ssl.JdkSslContext;
+import io.netty.handler.ssl.SslContext;
+import io.vertx.amqp.AmqpClient;
+import io.vertx.amqp.AmqpClientOptions;
 import io.vertx.core.http.ClientAuth;
+import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.PfxOptions;
+import io.vertx.core.spi.tls.SslContextFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.proton.ProtonConnection;
@@ -27,6 +35,15 @@ import org.apache.qpid.proton.amqp.transport.Target;
 import org.junit.After;
 import org.junit.Test;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.security.KeyStore;
 import java.util.concurrent.ExecutionException;
 
 public class SSLTest extends BareTestBase {
@@ -56,7 +73,7 @@ public class SSLTest extends BareTestBase {
     ProtonServerOptions serverOptions = new ProtonServerOptions();
     serverOptions.setSsl(true);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
@@ -65,13 +82,75 @@ public class SSLTest extends BareTestBase {
       .setSsl(true)
       .setHost("localhost")
       .setPort(server.actualPort())
-      .setPfxTrustOptions(clientPfxOptions);
+      .setTrustOptions(clientPfxOptions);
 
-    AmqpClient.create(vertx, options).connect(res -> {
+    AmqpClient.create(vertx, options).connect().onComplete(context.asyncAssertSuccess(res -> {
       // Expect start to succeed
-      context.assertTrue(res.succeeded(), "expected start to succeed");
       async.complete();
-    });
+    }));
+
+    async.awaitSuccess();
+  }
+
+  // This test is here to cover a WildFly use case for passing in an SSLContext for which there are no
+  // configuration options.
+  // This is currently done by casing to AmqpClientImpl and calling setSuppliedSSLContext().
+  @Test(timeout = 20000)
+  public void testConnectWithSuppliedSslContextSucceeds(TestContext context) throws Exception {
+    Async async = context.async();
+
+    ProtonServerOptions serverOptions = new ProtonServerOptions();
+    serverOptions.setSsl(true);
+    PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
+
+    server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
+
+    Path tsPath = Paths.get(".").resolve(TRUSTSTORE);
+    TrustManagerFactory tmFactory;
+    try (InputStream trustStoreStream = Files.newInputStream(tsPath, StandardOpenOption.READ)){
+      KeyStore trustStore = KeyStore.getInstance("pkcs12");
+      trustStore.load(trustStoreStream, PASSWORD.toCharArray());
+      tmFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      tmFactory.init(trustStore);
+    }
+
+    SSLContext sslContext = SSLContext.getInstance("TLS");
+    sslContext.init(
+      null,
+      tmFactory.getTrustManagers(),
+      null
+    );
+
+    AmqpClientOptions options = new AmqpClientOptions()
+      .setSsl(true)
+      .setHost("localhost")
+      .setPort(server.actualPort())
+      .setSslEngineOptions(new JdkSSLEngineOptions() {
+        @Override
+        public SslContextFactory sslContextFactory() {
+          return new SslContextFactory() {
+            @Override
+            public SslContext create() throws SSLException {
+              return new JdkSslContext(
+                sslContext,
+                true,
+                null,
+                IdentityCipherSuiteFilter.INSTANCE,
+                ApplicationProtocolConfig.DISABLED,
+                io.netty.handler.ssl.ClientAuth.NONE,
+                null,
+                false);
+            }
+          };
+        }
+      });
+
+    AmqpClient client = AmqpClient.create(vertx, options);
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
+        // Expect start to succeed
+        async.complete();
+      }));
 
     async.awaitSuccess();
   }
@@ -91,12 +170,11 @@ public class SSLTest extends BareTestBase {
       .setSsl(true)
       .setHost("localhost")
       .setPort(server.actualPort())
-      .setPfxTrustOptions(clientPfxOptions);
+      .setTrustOptions(clientPfxOptions);
 
-    AmqpClient.create(vertx, options).connect(res -> {
-      context.assertTrue(res.failed());
+    AmqpClient.create(vertx, options).connect().onComplete(context.asyncAssertFailure(err -> {
       async.complete();
-    });
+    }));
 
     async.awaitSuccess();
   }
@@ -108,7 +186,7 @@ public class SSLTest extends BareTestBase {
     ProtonServerOptions serverOptions = new ProtonServerOptions();
     serverOptions.setSsl(true);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
@@ -117,14 +195,13 @@ public class SSLTest extends BareTestBase {
     options.setSsl(true)
       .setHost("localhost")
       .setPort(server.actualPort())
-      .setPfxTrustOptions(pfxOptions);
+      .setTrustOptions(pfxOptions);
 
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
+    client.connect().onComplete(context.asyncAssertFailure(err -> {
       // Expect start to fail due to remote peer not being trusted
-      context.assertFalse(res.succeeded(), "expected start to fail due to untrusted server");
       async.complete();
-    });
+    }));
 
     async.awaitSuccess();
   }
@@ -136,7 +213,7 @@ public class SSLTest extends BareTestBase {
     ProtonServerOptions serverOptions = new ProtonServerOptions();
     serverOptions.setSsl(true);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
@@ -147,11 +224,10 @@ public class SSLTest extends BareTestBase {
       .setTrustAll(true);
 
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
+    client.connect().onComplete(context.asyncAssertSuccess(res -> {
       // Expect start to succeed
-      context.assertTrue(res.succeeded(), "expected start to succeed due to trusting all certs");
       async.complete();
-    });
+    }));
 
     async.awaitSuccess();
   }
@@ -208,10 +284,10 @@ public class SSLTest extends BareTestBase {
     serverOptions.setSsl(true);
     serverOptions.setClientAuth(ClientAuth.REQUIRED);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     PfxOptions pfxOptions = new PfxOptions().setPath(TRUSTSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxTrustOptions(pfxOptions);
+    serverOptions.setTrustOptions(pfxOptions);
 
     server = new MockServer(vertx, conn -> handleStartupProcess(conn, context), serverOptions);
 
@@ -219,15 +295,15 @@ public class SSLTest extends BareTestBase {
       .setHost("localhost")
       .setPort(server.actualPort())
       .setSsl(true)
-      .setPfxTrustOptions(pfxOptions);
+      .setTrustOptions(pfxOptions);
 
     if (supplyClientCert) {
       PfxOptions clientKeyPfxOptions = new PfxOptions().setPath(KEYSTORE_CLIENT).setPassword(PASSWORD);
-      options.setPfxKeyCertOptions(clientKeyPfxOptions);
+      options.setKeyCertOptions(clientKeyPfxOptions);
     }
 
     client = AmqpClient.create(vertx, options);
-    client.connect(res -> {
+    client.connect().onComplete(res -> {
       if (supplyClientCert) {
         // Expect start to succeed
         context.assertTrue(res.succeeded(), "expected start to succeed due to supplying client certs");
@@ -258,7 +334,7 @@ public class SSLTest extends BareTestBase {
     ProtonServerOptions serverOptions = new ProtonServerOptions();
     serverOptions.setSsl(true);
     PfxOptions serverPfxOptions = new PfxOptions().setPath(WRONG_HOST_KEYSTORE).setPassword(PASSWORD);
-    serverOptions.setPfxKeyCertOptions(serverPfxOptions);
+    serverOptions.setKeyCertOptions(serverPfxOptions);
 
     server = new MockServer(vertx, conn -> {
       handleStartupProcess(conn, context);
@@ -269,7 +345,7 @@ public class SSLTest extends BareTestBase {
       .setHost("localhost")
       .setPort(server.actualPort())
       .setSsl(true)
-      .setPfxTrustOptions(clientPfxOptions);
+      .setTrustOptions(clientPfxOptions);
 
     // Verify/update the hostname verification settings
     context.assertEquals(VERIFY_HTTPS, options.getHostnameVerificationAlgorithm(),
@@ -278,8 +354,8 @@ public class SSLTest extends BareTestBase {
       options.setHostnameVerificationAlgorithm(NO_VERIFY);
     }
 
-    client = AmqpClient.create(vertx, options)
-      .connect(res -> {
+    client = AmqpClient.create(vertx, options);
+    client.connect().onComplete(res -> {
         if (verifyHost) {
           // Expect start to fail
           context.assertFalse(res.succeeded(), "expected start to fail due to server cert not matching hostname");

@@ -13,8 +13,11 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  */
-package io.vertx.amqp;
+package io.vertx.amqp.tests;
 
+import io.vertx.amqp.AmqpClient;
+import io.vertx.amqp.AmqpClientOptions;
+import io.vertx.amqp.AmqpConnection;
 import io.vertx.amqp.impl.AmqpConnectionImpl;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
@@ -78,19 +81,11 @@ public class ConnectionMetadataTest {
     });
 
     AmqpClient.create(new AmqpClientOptions().setHost("localhost").setPort(server.actualPort()))
-      .connect(ar -> {
-        if (ar.failed()) {
-          context.fail(ar.cause());
-        } else {
-          ar.result().close(x -> {
-            if (x.failed()) {
-              context.fail(x.cause());
-            } else {
-              asyncShutdown.complete();
-            }
-          });
-        }
-      });
+      .connect()
+      .compose(AmqpConnection::close)
+      .onComplete(context.asyncAssertSuccess(x -> {
+        asyncShutdown.complete();
+      }));
   }
 
   @Test(timeout = 20000)
@@ -132,14 +127,11 @@ public class ConnectionMetadataTest {
     }
 
     AmqpClient.create(opts)
-      .connect(res -> {
-        context.assertTrue(res.succeeded(), "Expected connection to succeed");
-
-        res.result().close(shutdownRes -> {
-          context.assertTrue(shutdownRes.succeeded());
+      .connect().onComplete(context.asyncAssertSuccess(conn -> {
+        conn.close().onComplete(context.asyncAssertSuccess(shutdownRes -> {
           asyncShutdown.complete();
-        });
-      });
+        }));
+      }));
 
     try {
       asyncShutdown.awaitSuccess();

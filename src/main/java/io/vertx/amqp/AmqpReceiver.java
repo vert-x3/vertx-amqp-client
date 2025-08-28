@@ -19,12 +19,10 @@ import io.vertx.codegen.annotations.CacheReturn;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.proton.ProtonReceiver;
-import io.vertx.proton.ProtonSender;
 
 import static io.vertx.codegen.annotations.GenIgnore.PERMITTED_TYPE;
 
@@ -64,12 +62,7 @@ public interface AmqpReceiver extends ReadStream<AmqpMessage> {
   /**
    * Closes the receiver.
    *
-   * @param handler handler called when the receiver has been closed, can be {@code null}
-   */
-  void close(Handler<AsyncResult<Void>> handler);
-
-  /**
-   * Like {@link #close(Handler)} but returns a {@code Future} of the asynchronous result
+   * @return a future notified when the receiver has been closed
    */
   Future<Void> close();
 
