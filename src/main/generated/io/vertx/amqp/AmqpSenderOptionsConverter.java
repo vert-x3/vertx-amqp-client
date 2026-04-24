@@ -2,8 +2,6 @@ package io.vertx.amqp;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 
 /**
  * Converter and mapper for {@link io.vertx.amqp.AmqpSenderOptions}.
@@ -47,6 +45,26 @@ public class AmqpSenderOptionsConverter {
             });
           }
           break;
+        case "linkProperties":
+          if (member.getValue() instanceof JsonObject) {
+            java.util.Map<String, java.lang.Object> map = new java.util.LinkedHashMap<>();
+            ((Iterable<java.util.Map.Entry<String, Object>>)member.getValue()).forEach(entry -> {
+              if (entry.getValue() instanceof Object)
+                map.put(entry.getKey(), entry.getValue());
+            });
+            obj.setLinkProperties(map);
+          }
+          break;
+        case "sourceOptions":
+          if (member.getValue() instanceof JsonObject) {
+            obj.setSourceOptions(new io.vertx.amqp.SourceOptions((io.vertx.core.json.JsonObject)member.getValue()));
+          }
+          break;
+        case "targetOptions":
+          if (member.getValue() instanceof JsonObject) {
+            obj.setTargetOptions(new io.vertx.amqp.TargetOptions((io.vertx.core.json.JsonObject)member.getValue()));
+          }
+          break;
       }
     }
   }
@@ -65,6 +83,17 @@ public class AmqpSenderOptionsConverter {
       JsonArray array = new JsonArray();
       obj.getCapabilities().forEach(item -> array.add(item));
       json.put("capabilities", array);
+    }
+    if (obj.getLinkProperties() != null) {
+      JsonObject map = new JsonObject();
+      obj.getLinkProperties().forEach((key, value) -> map.put(key, value));
+      json.put("linkProperties", map);
+    }
+    if (obj.getSourceOptions() != null) {
+      json.put("sourceOptions", obj.getSourceOptions().toJson());
+    }
+    if (obj.getTargetOptions() != null) {
+      json.put("targetOptions", obj.getTargetOptions().toJson());
     }
   }
 }

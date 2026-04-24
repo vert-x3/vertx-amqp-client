@@ -19,8 +19,6 @@ import io.vertx.amqp.AmqpClient;
 import io.vertx.amqp.AmqpClientOptions;
 import io.vertx.amqp.AmqpReceiver;
 import io.vertx.amqp.AmqpReceiverOptions;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -55,13 +53,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 public class ReceiverTest extends BareTestBase {
 
@@ -366,8 +364,9 @@ public class ReceiverTest extends BareTestBase {
 
     final String queue = UUID.randomUUID().toString();
     final List<String> list = new CopyOnWriteArrayList<>();
-    final Promise<AmqpReceiver> receiverCreationPromise = Promise.promise();
-    final Future<AmqpReceiver> receiverCreationFuture = receiverCreationPromise.future();
+    CountDownLatch receiverCreated = new CountDownLatch(1);
+    AtomicReference<AmqpReceiver> receiverRef = new AtomicReference<>();
+    CountDownLatch firstBatchReceived = new CountDownLatch(400);
 
     server = setupMockServer(context, msgCount, (delivery, i) -> {
       DeliveryState state = delivery.getRemoteState();
@@ -382,17 +381,21 @@ public class ReceiverTest extends BareTestBase {
     client.connect().onComplete(context.asyncAssertSuccess(connection -> connection
       .createReceiver(queue).onComplete(context.asyncAssertSuccess(receiver -> {
         receiver.pause();
-        receiver.handler(amqpMessage -> list.add(amqpMessage.bodyAsString()));
-        receiverCreationPromise.complete(receiver);
+        receiver.handler(amqpMessage -> {
+          list.add(amqpMessage.bodyAsString());
+          firstBatchReceived.countDown();
+        });
+        receiverRef.set(receiver);
+        receiverCreated.countDown();
       }))));
 
-    await().until(receiverCreationFuture::succeeded);
+    assertThat(receiverCreated.await(6, TimeUnit.SECONDS)).isTrue();
 
-    AmqpReceiver amqpReceiver = receiverCreationFuture.result();
+    AmqpReceiver amqpReceiver = receiverRef.get();
 
     amqpReceiver.fetch(400);
 
-    await().pollInterval(20, TimeUnit.MILLISECONDS).until(() -> list.size() == 400);
+    assertThat(firstBatchReceived.await(6, TimeUnit.SECONDS)).isTrue();
 
     amqpReceiver.fetch(1600);
 
