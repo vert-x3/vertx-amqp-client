@@ -16,7 +16,9 @@
 package io.vertx.amqp;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import io.vertx.codegen.annotations.DataObject;
@@ -34,6 +36,9 @@ public class AmqpSenderOptions {
   private boolean dynamic;
   private boolean autoDrained = true;
   private List<String> capabilities = new ArrayList<>();
+  private Map<String, Object> linkProperties;
+  private SourceOptions sourceOptions;
+  private TargetOptions targetOptions;
 
   public AmqpSenderOptions() {
 
@@ -44,6 +49,15 @@ public class AmqpSenderOptions {
     setDynamic(other.isDynamic());
     setLinkName(other.getLinkName());
     setAutoDrained(other.isAutoDrained());
+    if (other.linkProperties != null) {
+      setLinkProperties(new HashMap<>(other.linkProperties));
+    }
+    if (other.sourceOptions != null) {
+      setSourceOptions(new SourceOptions(other.sourceOptions));
+    }
+    if (other.targetOptions != null) {
+      setTargetOptions(new TargetOptions(other.targetOptions));
+    }
   }
 
   public AmqpSenderOptions(JsonObject json) {
@@ -147,6 +161,75 @@ public class AmqpSenderOptions {
       this.capabilities = new ArrayList<>();
     }
     this.capabilities.add(capability);
+    return this;
+  }
+
+  /**
+   * Gets the link properties to be sent in the AMQP attach frame.
+   *
+   * @return the link properties map, or {@code null} if not set.
+   */
+  public Map<String, Object> getLinkProperties() {
+    return linkProperties;
+  }
+
+  /**
+   * Sets link properties to be sent in the AMQP attach frame.
+   * Keys are converted to AMQP Symbol type when applied.
+   *
+   * @param linkProperties the link properties map
+   * @return the options
+   */
+  public AmqpSenderOptions setLinkProperties(Map<String, Object> linkProperties) {
+    this.linkProperties = linkProperties;
+    return this;
+  }
+
+  /**
+   * Gets the source terminus options.
+   *
+   * @return the source options, or {@code null} if not set.
+   */
+  public SourceOptions getSourceOptions() {
+    return sourceOptions;
+  }
+
+  /**
+   * Sets the source terminus options for fine-grained control over the sender's source terminus.
+   *
+   * @param sourceOptions the source terminus options
+   * @return the options
+   */
+  public AmqpSenderOptions setSourceOptions(SourceOptions sourceOptions) {
+    this.sourceOptions = sourceOptions;
+    return this;
+  }
+
+  /**
+   * Gets the target terminus options.
+   *
+   * @return the target options, or {@code null} if not set.
+   */
+  public TargetOptions getTargetOptions() {
+    return targetOptions;
+  }
+
+  /**
+   * Sets the target terminus options for fine-grained control over durability, expiry policy, timeout, and capabilities.
+   * <p>
+   * If {@link TargetOptions#getCapabilities()} is set, it overrides the capabilities set via
+   * {@link #setCapabilities(List)} and {@link #addCapability(String)}.
+   * <p>
+   * If {@link TargetOptions#getAddress()} is set, it overrides the address passed to
+   * {@link AmqpConnection#createSender(String, AmqpSenderOptions)}.
+   * It may also conflict with the {@link #setDynamic(boolean)} option, which requests the peer to
+   * generate the target address.
+   *
+   * @param targetOptions the target terminus options
+   * @return the options
+   */
+  public AmqpSenderOptions setTargetOptions(TargetOptions targetOptions) {
+    this.targetOptions = targetOptions;
     return this;
   }
 }

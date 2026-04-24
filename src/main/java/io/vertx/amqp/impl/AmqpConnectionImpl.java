@@ -20,7 +20,9 @@ import io.vertx.core.*;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.proton.*;
 import org.apache.qpid.proton.amqp.*;
+import org.apache.qpid.proton.amqp.messaging.Source;
 import org.apache.qpid.proton.amqp.messaging.Target;
+import org.apache.qpid.proton.amqp.messaging.Terminus;
 import org.apache.qpid.proton.amqp.messaging.TerminusDurability;
 import org.apache.qpid.proton.amqp.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.proton.engine.EndpointState;
@@ -32,6 +34,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class AmqpConnectionImpl implements AmqpConnection {
 
@@ -318,6 +321,8 @@ public class AmqpConnectionImpl implements AmqpConnection {
           }
 
           configureTheSource(recOpts, receiver);
+          configureTheReceiverTarget(recOpts, receiver);
+          applyLinkProperties(recOpts.getLinkProperties(), receiver);
         }
 
         new AmqpReceiverImpl(address, this, recOpts, receiver, completionHandler);
@@ -334,8 +339,7 @@ public class AmqpConnectionImpl implements AmqpConnection {
   }
 
   private void configureTheSource(AmqpReceiverOptions receiverOptions, ProtonReceiver receiver) {
-    org.apache.qpid.proton.amqp.messaging.Source source = (org.apache.qpid.proton.amqp.messaging.Source) receiver
-      .getSource();
+    Source source = (Source) receiver.getSource();
 
     List<String> capabilities = receiverOptions.getCapabilities();
     if (!capabilities.isEmpty()) {
@@ -345,6 +349,12 @@ public class AmqpConnectionImpl implements AmqpConnection {
     if (receiverOptions.isDurable()) {
       source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
       source.setDurable(TerminusDurability.UNSETTLED_STATE);
+    }
+
+    SourceOptions sourceOptions = receiverOptions.getSourceOptions();
+    if (sourceOptions != null) {
+      applyTerminusOptions(sourceOptions.getAddress(), sourceOptions.getDurability(), sourceOptions.getExpiryPolicy(),
+        sourceOptions.getTimeout(), sourceOptions.getCapabilities(), source);
     }
 
     final Map<Symbol, DescribedType> filters = new HashMap<>();
@@ -360,6 +370,15 @@ public class AmqpConnectionImpl implements AmqpConnection {
 
     if(!filters.isEmpty()) {
       source.setFilter(filters);
+    }
+  }
+
+  private void configureTheReceiverTarget(AmqpReceiverOptions receiverOptions, ProtonReceiver receiver) {
+    TargetOptions targetOptions = receiverOptions.getTargetOptions();
+    if (targetOptions != null) {
+      Target target = (Target) receiver.getTarget();
+      applyTerminusOptions(targetOptions.getAddress(), targetOptions.getDurability(), targetOptions.getExpiryPolicy(),
+        targetOptions.getTimeout(), targetOptions.getCapabilities(), target);
     }
   }
 
@@ -397,7 +416,9 @@ public class AmqpConnectionImpl implements AmqpConnection {
           sender = conn.createSender(address, opts);
           sender.setAutoDrained(options.isAutoDrained());
 
+          configureTheSenderSource(options, sender);
           configureTheTarget(options, sender);
+          applyLinkProperties(options.getLinkProperties(), sender);
         } else {
           sender = conn.createSender(address);
         }
@@ -408,12 +429,55 @@ public class AmqpConnectionImpl implements AmqpConnection {
     return this;
   }
 
+  private void configureTheSenderSource(AmqpSenderOptions senderOptions, ProtonSender sender) {
+    SourceOptions sourceOptions = senderOptions.getSourceOptions();
+    if (sourceOptions != null) {
+      Source source = (Source) sender.getSource();
+      applyTerminusOptions(sourceOptions.getAddress(), sourceOptions.getDurability(), sourceOptions.getExpiryPolicy(),
+        sourceOptions.getTimeout(), sourceOptions.getCapabilities(), source);
+    }
+  }
+
   private void configureTheTarget(AmqpSenderOptions senderOptions, ProtonSender sender) {
-    Target target = (org.apache.qpid.proton.amqp.messaging.Target) sender.getTarget();
+    Target target = (Target) sender.getTarget();
 
     List<String> capabilities = senderOptions.getCapabilities();
     if (!capabilities.isEmpty()) {
       target.setCapabilities(capabilities.stream().map(Symbol::valueOf).toArray(Symbol[]::new));
+    }
+
+    TargetOptions targetOptions = senderOptions.getTargetOptions();
+    if (targetOptions != null) {
+      applyTerminusOptions(targetOptions.getAddress(), targetOptions.getDurability(), targetOptions.getExpiryPolicy(),
+        targetOptions.getTimeout(), targetOptions.getCapabilities(), target);
+    }
+  }
+
+  private void applyTerminusOptions(String address, String durability, String expiryPolicy, int timeout,
+                                    List<String> capabilities,
+                                    Terminus terminus) {
+    if (address != null) {
+      terminus.setAddress(address);
+    }
+    if (expiryPolicy != null) {
+      terminus.setExpiryPolicy(TerminusExpiryPolicy.valueOf(expiryPolicy.toUpperCase()));
+    }
+    if (durability != null) {
+      terminus.setDurable(TerminusDurability.valueOf(durability.toUpperCase()));
+    }
+    if (timeout >= 0) {
+      terminus.setTimeout(UnsignedInteger.valueOf(timeout));
+    }
+    if (capabilities != null && !capabilities.isEmpty()) {
+      terminus.setCapabilities(capabilities.stream().map(Symbol::valueOf).toArray(Symbol[]::new));
+    }
+  }
+
+  private void applyLinkProperties(Map<String, Object> linkProperties, ProtonLink<?> link) {
+    if (linkProperties != null && !linkProperties.isEmpty()) {
+      Map<Symbol, Object> props = linkProperties.entrySet().stream()
+        .collect(Collectors.toMap(e -> Symbol.valueOf(e.getKey()), Map.Entry::getValue));
+      link.setProperties(props);
     }
   }
 
